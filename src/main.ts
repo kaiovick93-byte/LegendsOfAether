@@ -7,24 +7,34 @@ import { WorldScene } from "./scenes/WorldScene";
 import { HouseInteriorScene } from "./scenes/HouseInteriorScene";
 import { GreenWoodsScene } from "./scenes/GreenWoodsScene";
 import { CaveScene } from "./scenes/CaveScene";
+import { CastleScene } from "./scenes/CastleScene";
 
-const game = new Phaser.Game ({
-    type: Phaser.AUTO,
-    parent: "app",
-    width: GAME_WIDTH,
-    height: GAME_HEIGHT,
-    backgroundColor: "#0d1220",
-    pixelArt: false,
-    roundPixels: true,
-    antialias: true,
-    physics: {
-        default: "arcade",
-        arcade: {
-            gravity: { y: 0 },
-            debug: false
-        }
-    },
-    scene: [BootScene, PreloadScene, MenuScene, WorldScene, HouseInteriorScene, GreenWoodsScene, CaveScene]
+const game = new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: "app",
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT,
+  backgroundColor: "#0d1220",
+  pixelArt: false,
+  roundPixels: true,
+  antialias: true,
+  physics: {
+    default: "arcade",
+    arcade: {
+      gravity: { y: 0 },
+      debug: false
+    }
+  },
+  scene: [
+    BootScene,
+    PreloadScene,
+    MenuScene,
+    WorldScene,
+    HouseInteriorScene,
+    GreenWoodsScene,
+    CaveScene,
+    CastleScene
+  ]
 });
 
 export default game;

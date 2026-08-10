@@ -123,6 +123,15 @@ export const ITEM_CATALOG: ItemDefinition[] = [
     description: "Relíquia rara que reforça corpo e espírito.",
     value: 350,
     statBonuses: { attack: 8, defense: 8, hp: 24, mana: 24 }
+  },
+  {
+    id: "royal_signet",
+    name: "Selo Real de Aether",
+    type: "trinket",
+    rarity: "legendary",
+    description: "Uma relíquia sagrada que representa a queda do poder sombrio",
+    value: 500,
+    statBonuses: { attack: 10, defense: 10, hp: 30, mana: 20, speed: 2 }
   }
 ];
 
