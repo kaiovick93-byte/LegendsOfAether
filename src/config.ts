@@ -19,7 +19,7 @@ export const WORLD = {
     heightTiles: 40
 };
 
-export const Player = {
+export const PLAYER = {
     speed: 170,
     maxHp: 100,
     maxMana: 50
