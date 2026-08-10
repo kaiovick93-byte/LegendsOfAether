@@ -55,7 +55,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   };
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, "player-placeholder");
+    super(scene, x, y, "player-down-1");
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -69,16 +69,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setOffset(3, 3);
   }
 
-  public move(inputX: number, inputY: number): void {
+  public move(inputX: number, inputY: number): boolean {
     if (this.dead) {
-      return;
+      return false;
     }
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setVelocity(0);
 
     if (inputX === 0 && inputY === 0) {
-      return;
+      return false;
     }
 
     body.setVelocity(inputX * this.speed, inputY * this.speed);
@@ -89,6 +89,28 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     } else if (inputY !== 0) {
       this.facing = inputY > 0 ? "down" : "up";
     }
+
+    return true;
+  }
+
+  public updateAnimation(isMoving: boolean): void {
+    if (this.dead) {
+      this.anims.stop();
+      return;
+    }
+
+    const walkKey = `player-walk-${this.facing}`;
+    const idleTexture = `player-${this.facing}-1`;
+
+    if (isMoving) {
+      if (this.anims.currentAnim?.key !== walkKey) {
+        this.anims.play(walkKey, true);
+      }
+      return;
+    }
+
+    this.anims.stop();
+    this.setTexture(idleTexture);
   }
 
   public canAttack(now: number): boolean {
@@ -119,6 +141,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       body.setVelocity(0);
       this.setTint(0x666666);
       this.setAlpha(0.75);
+      this.anims.stop();
     }
   }
 
@@ -194,17 +217,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setAlpha(1);
   }
 
-  public isDead(): boolean {
-    return this.dead;
-  }
-
-  public respaw(x: number, y: number): void {
+  public respawn(x: number, y: number): void {
     this.setPosition(x, y);
     this.hp = this.maxHp;
     this.mana = this.maxMana;
     this.dead = false;
     this.clearTint();
     this.setAlpha(1);
+  }
+
+  public isDead(): boolean {
+    return this.dead;
   }
 
   private recalculateLevelBaseStats(): void {

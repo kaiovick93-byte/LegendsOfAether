@@ -83,10 +83,15 @@ export class PreloadScene extends Phaser.Scene {
   private createPlaceholderTextures(): void {
     const g = this.add.graphics();
 
-    g.clear();
-    g.fillStyle(0x4da3ff, 1);
-    g.fillRoundedRect(0, 0, 24, 24, 6);
-    g.generateTexture("player-placeholder", 24, 24);
+    const directions = ["down", "up", "left", "right"] as const;
+
+    for (const dir of directions) {
+      for (let frame = 0; frame < 3; frame += 1) {
+        g.clear();
+        this.drawPlayerFrame(g, dir, frame);
+        g.generateTexture(`player-${dir}-${frame}`, 24, 24);
+      }
+    }
 
     g.clear();
     g.fillStyle(0xff6b6b, 1);
@@ -124,14 +129,85 @@ export class PreloadScene extends Phaser.Scene {
     g.strokeRect(0, 0, 32, 32);
     g.generateTexture("path-placeholder", 32, 32);
 
-    //NPC
-    g.clear();
-    g.fillStyle(0xf4d35e, 1);
-    g.fillRoundedRect(0, 0, 24, 30, 6);
-    g.lineStyle(2, 0x8a6d2f, 1);
-    g.strokeRoundedRect(0, 0, 24, 30, 6);
-    g.generateTexture("npc-placeholder", 24, 30);
-
     g.destroy();
+  }
+
+  private drawPlayerFrame(
+    g: Phaser.GameObjects.Graphics,
+    direction: "down" | "up" | "left" | "right",
+    frame: number
+  ): void {
+    const bodyColor = 0x4da3ff;
+    const pantsColor = 0x3b4a66;
+    const skinColor = 0xffd6b0;
+    const hairColor = 0x2d1f1b;
+    const shoeColor = 0x1c2533;
+
+    const bob = frame === 1 ? 1 : 0;
+    const step = frame === 0 ? -1 : frame === 2 ? 1 : 0;
+
+    // sombra
+    g.fillStyle(0x000000, 0.15);
+    g.fillEllipse(12, 22, 14, 4);
+
+    // pernas
+    g.fillStyle(pantsColor, 1);
+
+    if (direction === "left" || direction === "right") {
+      g.fillRect(8 + step, 14 + bob, 4, 6);
+      g.fillRect(13 - step, 14 - bob, 4, 6);
+    } else {
+      g.fillRect(9, 14 + step, 4, 6);
+      g.fillRect(13, 14 - step, 4, 6);
+    }
+
+    // pés
+    g.fillStyle(shoeColor, 1);
+    if (direction === "left" || direction === "right") {
+      g.fillRect(8 + step, 19 + bob, 4, 2);
+      g.fillRect(13 - step, 19 - bob, 4, 2);
+    } else {
+      g.fillRect(9, 19 + step, 4, 2);
+      g.fillRect(13, 19 - step, 4, 2);
+    }
+
+    // tronco
+    g.fillStyle(bodyColor, 1);
+    g.fillRoundedRect(7, 8, 10, 9, 2);
+
+    // cabeça / cabelo / face
+    g.fillStyle(skinColor, 1);
+    g.fillRoundedRect(8, 2, 8, 7, 2);
+
+    g.fillStyle(hairColor, 1);
+    if (direction === "down") {
+      g.fillRect(8, 1, 8, 3);
+      g.fillRect(8, 2, 2, 3);
+      g.fillRect(14, 2, 2, 3);
+    } else if (direction === "up") {
+      g.fillRect(8, 1, 8, 3);
+      g.fillRect(8, 1, 2, 6);
+      g.fillRect(14, 1, 2, 6);
+    } else {
+      g.fillRect(8, 1, 8, 3);
+      g.fillRect(direction === "left" ? 8 : 12, 1, 4, 6);
+    }
+
+    // braços
+    g.fillStyle(skinColor, 1);
+    if (direction === "left") {
+      g.fillRect(5, 9 + bob, 3, 5);
+      g.fillRect(16, 9 - bob, 3, 5);
+    } else if (direction === "right") {
+      g.fillRect(5, 9 - bob, 3, 5);
+      g.fillRect(16, 9 + bob, 3, 5);
+    } else {
+      g.fillRect(5, 9 + bob, 3, 5);
+      g.fillRect(16, 9 - bob, 3, 5);
+    }
+
+    // pequeno detalhe frontal
+    g.fillStyle(0xffffff, 0.22);
+    g.fillRect(8, 8, 10, 2);
   }
 }
