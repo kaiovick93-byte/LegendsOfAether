@@ -22,5 +22,5 @@ export const WORLD = {
 export const Player = {
     speed: 170,
     maxHp: 100,
-    maxMana 50
+    maxMana: 50
 };
