@@ -16,6 +16,8 @@ import { Npc } from "../npc/Npc";
 import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
+import { Minimap } from "../ui/Minimap";
+import { Wandering Npc } from "../npc/WanderingNpc";
 
 interface LootDrop {
   item: ItemDefinition;
@@ -79,6 +81,10 @@ export class WorldScene extends Phaser.Scene {
 
   private forestZone!: Phaser.GameObjects.Zone;
 
+  private minimap!: Minimap;
+
+  private ambientNpcs: WanderingNpc[] = [];
+
   constructor() {
     super("WorldScene");
   }
@@ -106,8 +112,39 @@ export class WorldScene extends Phaser.Scene {
     this.deathOverlay.hide();
 
     this.createHUD();
+    this.minimap = new Minimap(this, {
+      worldWidth: WORLD.widthTiles * TILE_SIZE,
+      WorldHeight: WORLD.heightTiles * TILE_SIZE,
+      x: 800.
+      y: 16,
+      width: 144,
+      height: 112,
+      title: "AETHER"
+    });
+
+    this.minimap.addMarker({
+      id: "house", x: 19 * TILE_SIZE,
+      y: 22 * TILE_SIZE, color: 0xff4166, label: "Casa"
+    });
+
+    this.minimap.addMarker({
+      id: "forest", x: 54 * TILE_SIZE,
+      y: 6 * TILE_SIZE, color: 0x73e6a8, label: "Floresta"
+    });
+
+    this.minimap.addMarker({
+      id: "npc", x: 470,
+      y: 334, color: 0x7ee0ff, label: "NPC"
+    });
+
+    this.minimap.addMarker({
+      id: "boss", x: 760,
+      y: 250, color: 0xff6b6b, label: "Rei"
+    });
+
     this.spawnEnemies();
     this.spawnQuestNpc();
+    this.spwanAmbientNpcs();
     this.spawnBoss();
 
     this.combat = new CombatSystem(this, (enemy, player) => {
@@ -163,6 +200,11 @@ export class WorldScene extends Phaser.Scene {
 
   shutdown(): void {
     this.requestSave();
+
+    for (const npc of this.ambientNpcs) {
+      npc.destroy();
+    }
+    this.ambientNpcs = [];
 
     if (this.saveTimer) {
       this.saveTimer.remove(false);
@@ -314,6 +356,8 @@ export class WorldScene extends Phaser.Scene {
 
     this.updateLootIndicators();
     this.updateHUD();
+
+    this.minimap.update(this.player.x, this.player.y);
   }
 
   private createWorld(): void {
@@ -738,6 +782,41 @@ export class WorldScene extends Phaser.Scene {
       sprite: container,
       collected: false
     });
+  }
+
+  private spawnAmbientNpcs(): void {
+    this.ambientNpcs.push(
+      new WanderingNpc(this, {
+        name: "Morador",
+        homeX: 160,
+        homeY: 250,
+        color: 0x7ee0ff,
+        wanderRadius: 24,
+        moveSpeed: 0.85
+      })
+    );
+
+    this.ambientNpcs.push(
+      new WanderingNpc(this, {
+        name: "Viajante",
+        homeX: 280,
+        homeY: 300,
+        color: 0x73e6a8,
+        wanderRadius: 30,
+        moveSpeed: 1
+      })
+    );
+
+    this.ambientNpcs.push(
+      new WanderingNpc(this, {
+        name: "Mercador",
+        homeX: 540,
+        homeY: 252,
+        color: 0xffd166,
+        wanderRadius: 18,
+        moveSpeed: 0.7
+      })
+    );
   }
 
   private getRarityColor(rarity: ItemDefinition["rarity"]): number {

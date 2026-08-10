@@ -12,6 +12,7 @@ import { DeathOverlay } from "../ui/DeathOverlay";
 import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
+import { Minimap } from "../ui/Minimap";
 
 interface LootDrop {
   item: ItemDefinition;
@@ -62,6 +63,8 @@ export class CaveScene extends Phaser.Scene {
   private caveExitZone!: Phaser.GameObjects.Zone;
   private bossArenaZone!: Phaser.GameObjects.Zone;
 
+  private minimap!: Minimap;
+
   constructor() {
     super("CaveScene");
   }
@@ -85,6 +88,21 @@ export class CaveScene extends Phaser.Scene {
     this.deathOverlay.hide();
 
     this.createHUD();
+
+        this.minimap = new Minimap(this, {
+      worldWidth: WORLD.widthTiles * TILE_SIZE,
+      worldHeight: WORLD.heightTiles * TILE_SIZE,
+      x: 800,
+      y: 16,
+      width: 144,
+      height: 112,
+      title: "CAVERNA"
+    });
+
+    this.minimap.addMarker({ id: "exit", x: 3 * TILE_SIZE, y: 29 * TILE_SIZE, color: 0xffd166, label: "Saída" });
+    this.minimap.addMarker({ id: "boss", x: 790, y: 170, color: 0xff6b6b, label: "Chefe" });
+
+
     this.spawnEnemies();
     this.spawnBoss();
 
@@ -225,6 +243,8 @@ export class CaveScene extends Phaser.Scene {
 
     this.updateLootIndicators();
     this.updateHUD();
+
+    this.minimap.update(this.player.x, this.player.y);
   }
 
   private createWorld(): void {

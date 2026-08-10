@@ -12,6 +12,8 @@ import { DeathOverlay } from "../ui/DeathOverlay";
 import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
+import { Minimap } from "../ui/Minimap";
+import { WanderingNpc } from "../npc/WanderingNpc";
 
 interface LootDrop {
   item: ItemDefinition;
@@ -64,6 +66,10 @@ export class CastleScene extends Phaser.Scene {
   private throneRoomZone!: Phaser.GameObjects.Zone;
   private finalChestOpened = false;
 
+  private minimap!: Minimap;
+
+  private ambientNpcs: WanderingNpc[] = [];
+
   constructor() {
     super("CastleScene");
   }
@@ -87,8 +93,25 @@ export class CastleScene extends Phaser.Scene {
     this.deathOverlay.hide();
 
     this.createHUD();
+
+        this.minimap = new Minimap(this, {
+      worldWidth: WORLD.widthTiles * TILE_SIZE,
+      worldHeight: WORLD.heightTiles * TILE_SIZE,
+      x: 800,
+      y: 16,
+      width: 144,
+      height: 112,
+      title: "CASTELO"
+    });
+
+    this.minimap.addMarker({ id: "exit", x: 3 * TILE_SIZE, y: 29 * TILE_SIZE, color: 0xffd166, label: "Saída" });
+    this.minimap.addMarker({ id: "throne", x: 49 * TILE_SIZE, y: 12 * TILE_SIZE, color: 0xffd166, label: "Trono" });
+    this.minimap.addMarker({ id: "boss", x: 760, y: 170, color: 0xff6b6b, label: "Rei" });
+
+
     this.spawnEnemies();
     this.spawnBoss();
+    this.spawnGuardNpcs();
 
     this.combat = new CombatSystem(this, (enemy, player) => {
       this.spawnLoot(enemy.x, enemy.y);
@@ -128,6 +151,11 @@ export class CastleScene extends Phaser.Scene {
 
   shutdown(): void {
     this.requestSave();
+
+    for (const npc of this.ambientNpcs) {
+      npc.destroy();
+    }
+    this.ambientNpcs = [];
 
     if (this.saveTimer) {
       this.saveTimer.remove(false);
@@ -249,6 +277,8 @@ export class CastleScene extends Phaser.Scene {
 
     this.updateLootIndicators();
     this.updateHUD();
+
+    this.minimap.update(this.player.x, this.player.y);
   }
 
   private createWorld(): void {
@@ -339,6 +369,30 @@ export class CastleScene extends Phaser.Scene {
     }
 
     this.player.setTexture("player-down-1");
+  }
+
+    private spawnGuardNpcs(): void {
+    this.ambientNpcs.push(
+      new WanderingNpc(this, {
+        name: "Guarda Real",
+        homeX: 180,
+        homeY: 420,
+        color: 0x9b7bff,
+        wanderRadius: 18,
+        moveSpeed: 0.7
+      })
+    );
+
+    this.ambientNpcs.push(
+      new WanderingNpc(this, {
+        name: "Sentinela",
+        homeX: 300,
+        homeY: 300,
+        color: 0xff6b6b,
+        wanderRadius: 14,
+        moveSpeed: 0.65
+      })
+    );
   }
 
   private loadSavedGame(): void {

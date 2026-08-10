@@ -15,6 +15,8 @@ import { Npc } from "../npc/Npc";
 import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
+import { Minimap } from "../ui/Minimap";
+import { WanderingNpc } from "../npc/WanderingNpc";
 
 interface LootDrop {
   item: ItemDefinition;
@@ -75,6 +77,10 @@ export class GreenWoodsScene extends Phaser.Scene {
   private castleGateZone!: Phaser.GameObjects.Zone;
   private castleKey!: Phaser.Input.Keyboard.Key;
 
+  private minimap!: Minimap;
+
+  private ambientNpcs: WanderingNpc[] = [;]
+
   constructor() {
     super("GreenWoodsScene");
   }
@@ -102,8 +108,25 @@ export class GreenWoodsScene extends Phaser.Scene {
     this.deathOverlay.hide();
 
     this.createHUD();
+
+     this.minimap = new Minimap(this, {
+      worldWidth: WORLD.widthTiles * TILE_SIZE,
+      worldHeight: WORLD.heightTiles * TILE_SIZE,
+      x: 800,
+      y: 16,
+      width: 144,
+      height: 112,
+      title: "FLORESTA"
+    });
+
+    this.minimap.addMarker({ id: "city", x: 12 * TILE_SIZE, y: 36 * TILE_SIZE, color: 0xffd166, label: "Cidade" });
+    this.minimap.addMarker({ id: "cave", x: 50 * TILE_SIZE, y: 10 * TILE_SIZE, color: 0x7ee0ff, label: "Caverna" });
+    this.minimap.addMarker({ id: "castle", x: 52 * TILE_SIZE, y: 4 * TILE_SIZE, color: 0xc084fc, label: "Castelo" });
+
+
     this.spawnEnemies();
     this.spawnForestGuide();
+    this.spawnAmbienteNpcs();
 
     this.combat = new CombatSystem(this, (enemy, player) => {
       this.spawnLoot(enemy.x, enemy.y);
@@ -158,6 +181,11 @@ export class GreenWoodsScene extends Phaser.Scene {
 
   shutdown(): void {
     this.requestSave();
+
+    for (const npc of this.ambientNpcs) {
+      npc.destroy();
+    }
+    this.ambientNpcs = [];
 
     if (this.saveTimer) {
       this.saveTimer.remove(false);
@@ -304,7 +332,7 @@ export class GreenWoodsScene extends Phaser.Scene {
       this.hintText.setText("Espaço: atacar | E: coletar | I: inventário | R: equipar | H: cura | M: mana");
     }
 
-    
+    this.minimap.update(this.player.x, this.player.y);
   }
 
   private createWorld(): void {
@@ -434,6 +462,41 @@ export class GreenWoodsScene extends Phaser.Scene {
     this.player.loadState(save.player);
     this.equipment.loadFromData(save.equipment, this.inventory, getItemDefinition);
     this.questManager.loadFromData(save.quest);
+  }
+
+    private spawnAmbientNpcs(): void {
+    this.ambientNpcs.push(
+      new WanderingNpc(this, {
+        name: "Lenhador",
+        homeX: 180,
+        homeY: 470,
+        color: 0x8cc0ff,
+        wanderRadius: 22,
+        moveSpeed: 0.8
+      })
+    );
+
+    this.ambientNpcs.push(
+      new WanderingNpc(this, {
+        name: "Explorador",
+        homeX: 330,
+        homeY: 190,
+        color: 0xc084fc,
+        wanderRadius: 28,
+        moveSpeed: 1
+      })
+    );
+
+    this.ambientNpcs.push(
+      new WanderingNpc(this, {
+        name: "Caçador",
+        homeX: 610,
+        homeY: 320,
+        color: 0xffd166,
+        wanderRadius: 26,
+        moveSpeed: 0.9
+      })
+    );
   }
 
   private spawnEnemies(): void {
