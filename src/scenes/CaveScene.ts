@@ -1,20 +1,15 @@
 import Phaser from "phaser";
 import { CombatSystem } from "../combat/CombatSystem";
-import { BossEnemy } from "../entities/BossEnemy";
 import { Enemy } from "../entities/Enemy";
 import { Player } from "../entities/Player";
 import { Inventory } from "../inventory/Inventory";
 import { InventoryPanel } from "../ui/InventoryPanel";
 import { EquipmentManager } from "../equipment/EquipmentManager";
 import { SaveManager } from "../save/SaveManager";
-import { ShopPanel } from "../shop/ShopPanel";
-import { QuestManager } from "../quests/QuestManager";
-import { QuestPanel } from "../ui/QuestPanel";
-import { BossBar } from "../ui/BossBar";
-import { DeathOverlay } from "../ui/DeathOverlay";
-import { Npc } from "../npc/Npc";
 import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
+import { BossBar } from "../ui/BossBar";
+import { DeathOverlay } from "../ui/DeathOverlay";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
 
 interface LootDrop {
@@ -23,21 +18,15 @@ interface LootDrop {
   collected: boolean;
 }
 
-export class WorldScene extends Phaser.Scene {
+export class CaveScene extends Phaser.Scene {
   private player!: Player;
   private combat!: CombatSystem;
   private inventory!: Inventory;
   private inventoryPanel!: InventoryPanel;
   private equipment!: EquipmentManager;
   private saveManager!: SaveManager;
-  private shopPanel!: ShopPanel;
-  private questManager!: QuestManager;
-  private questPanel!: QuestPanel;
   private bossBar!: BossBar;
   private deathOverlay!: DeathOverlay;
-
-  private questNpc!: Npc;
-  private boss!: BossEnemy;
 
   private enemies: Enemy[] = [];
   private lootDrops: LootDrop[] = [];
@@ -52,17 +41,11 @@ export class WorldScene extends Phaser.Scene {
   };
 
   private attackKey!: Phaser.Input.Keyboard.Key;
-  private interactKey!: Phaser.Input.Keyboard.Key;
+  private exitKey!: Phaser.Input.Keyboard.Key;
   private inventoryKey!: Phaser.Input.Keyboard.Key;
   private equipKey!: Phaser.Input.Keyboard.Key;
-  private shopKey!: Phaser.Input.Keyboard.Key;
-  private questKey!: Phaser.Input.Keyboard.Key;
   private healKey!: Phaser.Input.Keyboard.Key;
   private manaKey!: Phaser.Input.Keyboard.Key;
-  private oneKey!: Phaser.Input.Keyboard.Key;
-  private twoKey!: Phaser.Input.Keyboard.Key;
-  private threeKey!: Phaser.Input.Keyboard.Key;
-  private fourKey!: Phaser.Input.Keyboard.Key;
 
   private hpBarFill!: Phaser.GameObjects.Rectangle;
   private xpBarFill!: Phaser.GameObjects.Rectangle;
@@ -72,21 +55,17 @@ export class WorldScene extends Phaser.Scene {
 
   private saveTimer?: Phaser.Time.TimerEvent;
   private isRespawning = false;
-  private respawnPoint = { x: 220, y: 260 };
+  private respawnPoint = { x: 72, y: 420 };
 
-  private houseDoorZone!: Phaser.GameObjects.Zone;
-  private enterHouseKey!: Phaser.Input.Keyboard.Key;
-
-  private forestZone!: Phaser.GameObjects.Zone;
+  private caveExitZone!: Phaser.GameObjects.Zone;
 
   constructor() {
-    super("WorldScene");
+    super("CaveScene");
   }
 
   create(): void {
     this.saveManager = new SaveManager();
     this.inventory = new Inventory(24);
-    this.questManager = new QuestManager();
 
     this.createWorld();
     this.createPlayer();
@@ -96,9 +75,6 @@ export class WorldScene extends Phaser.Scene {
     this.inventoryPanel = new InventoryPanel(this, this.inventory);
     this.inventoryPanel.setVisible(false);
 
-    this.questPanel = new QuestPanel(this);
-    this.questPanel.hide();
-
     this.bossBar = new BossBar(this);
     this.bossBar.hide();
 
@@ -106,21 +82,14 @@ export class WorldScene extends Phaser.Scene {
     this.deathOverlay.hide();
 
     this.createHUD();
-    this.spawnEnemies();
-    this.spawnQuestNpc();
-    this.spawnBoss();
 
     this.combat = new CombatSystem(this, (enemy, player) => {
       this.spawnLoot(enemy.x, enemy.y);
-      player.addGold(8 + enemy.xpReward);
+      player.addGold(12 + enemy.xpReward);
       this.requestSave();
     });
 
-    this.shopPanel = new ShopPanel(this, this.player, this.inventory, () => {
-      this.inventoryPanel.refresh();
-      this.requestSave();
-    });
-    this.shopPanel.setVisible(false);
+    this.spawnEnemies();
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys("W,A,S,D") as {
@@ -129,27 +98,17 @@ export class WorldScene extends Phaser.Scene {
       S: Phaser.Input.Keyboard.Key;
       D: Phaser.Input.Keyboard.Key;
     };
+
     this.attackKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.exitKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
     this.inventoryKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.equipKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-    this.shopKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.T);
-    this.questKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
     this.healKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.H);
     this.manaKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.M);
-    this.enterHouseKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-    this.oneKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
-    this.twoKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
-    this.threeKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
-    this.fourKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.FOUR);
 
     this.cameras.main.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
     this.physics.world.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-
-    for (const obstacle of this.obstacles) {
-      this.physics.add.collider(this.player, obstacle);
-    }
 
     this.saveTimer = this.time.addEvent({
       delay: 15000,
@@ -191,31 +150,8 @@ export class WorldScene extends Phaser.Scene {
       this.combat.enemyAttack(enemy, this.player);
     }
 
-    if (this.boss && this.boss.active) {
-      this.boss.updateAI(this.player);
-      this.combat.enemyAttack(this.boss, this.player);
-      this.bossBar.update(this.boss);
-
-      const distToBoss = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y);
-      if (distToBoss < 260) {
-        this.bossBar.show(this.boss);
-      } else if (!this.boss.isAlive()) {
-        this.bossBar.hide();
-      }
-    }
-
     if (Phaser.Input.Keyboard.JustDown(this.attackKey)) {
-      const nearBoss =
-        this.boss &&
-        this.boss.active &&
-        Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y) < 80;
-
-      if (nearBoss) {
-        this.combat.playerAttack(this.player, [this.boss, ...this.enemies]);
-      } else {
-        this.combat.playerAttack(this.player, this.enemies);
-      }
-
+      this.combat.playerAttack(this.player, this.enemies);
       this.requestSave();
     }
 
@@ -238,11 +174,6 @@ export class WorldScene extends Phaser.Scene {
       this.inventoryPanel.refresh();
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.shopKey)) {
-      this.shopPanel.toggle();
-      this.shopPanel.refresh();
-    }
-
     if (Phaser.Input.Keyboard.JustDown(this.equipKey)) {
       const equipped = this.equipment.autoEquipBestAvailable(this.inventory);
       if (equipped > 0) {
@@ -254,62 +185,27 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
-    const nearHouseDoor = Phaser.Math.Distance.Between(
+    const nearExit = Phaser.Math.Distance.Between(
       this.player.x,
       this.player.y,
-      this.houseDoorZone.x,
-      this.houseDoorZone.y
-    ) < 36;
+      this.caveExitZone.x,
+      this.caveExitZone.y
+    ) < 42;
 
-    if (nearHouseDoor) {
-      this.hintText.setText("E: entrar na casa | resto dos controles normais");
+    if (nearExit) {
+      this.hintText.setText("X: voltar à floresta | E: coletar | I: inventário");
+    } else {
+      this.hintText.setText("Espaço: atacar | X: sair | E: coletar | I: inventário | R: equipar | H: cura | M: mana");
     }
 
-    const nearForest = Phaser.Math.Distance.Between(
-      this.player.x,
-      this.player.y,
-      this.forestZone.x,
-      this.forestZone.y
-    ) < 36;
-
-    if(nearForest) {
-      this.hintText.setText("E: entrar na floresta | restante dos controles normais");
-    }
-
-    if (Phaser.Input.Keyboard.JustDown(this.enterHouseKey) && nearForest) {
+    if (Phaser.Input.Keyboard.JustDown(this.exitKey) && nearExit) {
       this.requestSave();
-
       this.scene.start("GreenWoodsScene");
       return;
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.enterHouseKey) && nearHouseDoor) {
-      this.registry.set("playerState", {
-        gold: this.player.gold,
-        hp: this.player.hp,
-        mana: this.player.mana
-      });
-
-      this.scene.start("HouseInteriorScene");
-      return;
-    }
-
-    if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
-      if (this.shopPanel.isVisible()) {
-        return;
-      }
+    if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E))) {
       this.collectNearbyLoot();
-    }
-
-    if (Phaser.Input.Keyboard.JustDown(this.questKey)) {
-      this.handleQuestInteraction();
-    }
-
-    if (this.shopPanel.isVisible()) {
-      if (Phaser.Input.Keyboard.JustDown(this.oneKey)) this.shopPanel.buyByShortcut(0);
-      if (Phaser.Input.Keyboard.JustDown(this.twoKey)) this.shopPanel.buyByShortcut(1);
-      if (Phaser.Input.Keyboard.JustDown(this.threeKey)) this.shopPanel.buyByShortcut(2);
-      if (Phaser.Input.Keyboard.JustDown(this.fourKey)) this.shopPanel.buyByShortcut(3);
     }
 
     this.updateLootIndicators();
@@ -320,96 +216,47 @@ export class WorldScene extends Phaser.Scene {
     const mapWidth = WORLD.widthTiles * TILE_SIZE;
     const mapHeight = WORLD.heightTiles * TILE_SIZE;
 
-    this.cameras.main.setBackgroundColor("#24354f");
+    this.cameras.main.setBackgroundColor("#16131b");
 
-    this.add.tileSprite(0, 0, mapWidth, mapHeight, "grass-placeholder")
+    this.add.tileSprite(0, 0, mapWidth, mapHeight, "path-placeholder")
       .setOrigin(0)
       .setDepth(0);
 
-    for (let x = 28; x < 36; x++) {
-      for (let y = 8; y < 14; y++) {
-        this.add.image(x * TILE_SIZE, y * TILE_SIZE, "water-placeholder")
-          .setOrigin(0)
-          .setDepth(0.2);
+    // paredes e colunas
+    for (let x = 0; x < WORLD.widthTiles; x++) {
+      this.add.rectangle(x * TILE_SIZE, 0, 32, 32, 0x2a2430, 1).setOrigin(0).setDepth(0.2);
+      this.add.rectangle(x * TILE_SIZE, mapHeight - 32, 32, 32, 0x2a2430, 1).setOrigin(0).setDepth(0.2);
+    }
+
+    for (let y = 0; y < WORLD.heightTiles; y++) {
+      this.add.rectangle(0, y * TILE_SIZE, 32, 32, 0x2a2430, 1).setOrigin(0).setDepth(0.2);
+      this.add.rectangle(mapWidth - 32, y * TILE_SIZE, 32, 32, 0x2a2430, 1).setOrigin(0).setDepth(0.2);
+    }
+
+    // sala principal com rochas
+    for (let x = 8; x < 52; x += 6) {
+      for (let y = 6; y < 30; y += 7) {
+        if ((x + y) % 3 === 0) {
+          this.createRock(x, y);
+        }
       }
     }
 
-    for (let x = 8; x < 18; x++) {
-      for (let y = 14; y < 18; y++) {
-        this.add.image(x * TILE_SIZE, y * TILE_SIZE, "path-placeholder")
-          .setOrigin(0)
-          .setDepth(0.15);
-      }
-    }
-
-    this.createTree(6, 7);
-    this.createTree(7, 7);
-    this.createTree(8, 7);
-    this.createTree(9, 7);
-    this.createTree(10, 7);
-    this.createTree(11, 7);
-    this.createTree(12, 7);
-    this.createTree(40, 20);
-    this.createTree(41, 20);
-    this.createTree(42, 20);
-    this.createTree(43, 20);
-    this.createTree(18, 28);
-    this.createTree(19, 28);
-    this.createTree(20, 28);
-    this.createTree(21, 28);
-    this.createTree(22, 28);
-
-    this.createHouse(14, 22);
-    this.createHouse(17, 22);
-    this.createHouse(20, 22);
-
-    this.add.rectangle(mapWidth / 2, mapHeight / 2, mapWidth, mapHeight, 0x000000, 0)
-      .setStrokeStyle(4, 0x1e2a3f, 0.9);
-
-    this.add.rectangle(19 * TILE_SIZE, 22 * TILE_SIZE + 46, 20, 12, 0x4a2f24, 1)
+    this.add.rectangle(3 * TILE_SIZE, 29 * TILE_SIZE, 60, 18, 0x62495a, 1)
       .setOrigin(0)
       .setDepth(1.5);
 
-    this.houseDoorZone = this.add.zone(19 * TILE_SIZE + 10, 22 * TILE_SIZE + 52, 28, 24);
-    this.physics.add.existing(this.houseDoorZone, true);
-
-    this.add.rectangle(54 * TILE_SIZE, 6 * TILE_SIZE, 70, 26, 0x2b5d38, 1)
-      .setOrigin(0)
-      .setDepth(1.5);
-
-    this.forestZone = this.add.zone(54 * TILE_SIZE + 37, 6 * TILE_SIZE + 12, 48, 24);
-    this.physics.add.existing(this.forestZone, true);
+    this.caveExitZone = this.add.zone(3 * TILE_SIZE + 24, 29 * TILE_SIZE + 10, 48, 24);
+    this.physics.add.existing(this.caveExitZone, true);
   }
 
-  private spawnQuestNpc(): void {
-    this.questNpc = new Npc(this, 470, 334, this.questManager.quest.giverName);
-  }
-
-  private spawnBoss(): void {
-    this.boss = new BossEnemy(this, 760, 250);
-    this.boss.setDepth(11);
-  }
-
-  private createTree(tileX: number, tileY: number): void {
+  private createRock(tileX: number, tileY: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
 
-    this.add.image(x, y, "tree-placeholder").setOrigin(0).setDepth(1);
+    this.add.rectangle(x, y, 32, 32, 0x5a556b, 1).setOrigin(0).setDepth(1);
 
-    const collider = this.add.rectangle(x + 8, y + 18, 18, 12, 0x000000, 0);
-    this.physics.add.existing(collider, true);
-    this.obstacles.push(collider);
-  }
-
-  private createHouse(tileX: number, tileY: number): void {
-    const x = tileX * TILE_SIZE;
-    const y = tileY * TILE_SIZE;
-
-    this.add.rectangle(x, y + 10, 64, 38, 0x8f6a4a, 1).setOrigin(0).setDepth(1);
-    this.add.rectangle(x + 8, y + 16, 18, 16, 0xc7d8ff, 1).setOrigin(0).setDepth(1.1);
-    this.add.triangle(x, y, 0, 46, 32, 0, 64, 46, 0x7b4a2f, 1).setOrigin(0).setDepth(1.2);
-
-    const collider = this.add.rectangle(x + 2, y + 12, 60, 34, 0x000000, 0);
+    const collider = this.add.rectangle(x + 2, y + 2, 28, 28, 0x000000, 0);
     this.physics.add.existing(collider, true);
     this.obstacles.push(collider);
   }
@@ -449,15 +296,14 @@ export class WorldScene extends Phaser.Scene {
     const save = this.saveManager.load();
 
     if (!save) {
-      this.player.addGold(25);
       this.player.loadState({
-        x: 220,
-        y: 260,
+        x: this.respawnPoint.x,
+        y: this.respawnPoint.y,
         hp: this.player.maxHp,
         mana: this.player.maxMana,
-        level: 1,
+        level: 2,
         xp: 0,
-        gold: 25
+        gold: 18
       });
       this.equipment.syncPlayer();
       return;
@@ -466,37 +312,36 @@ export class WorldScene extends Phaser.Scene {
     this.inventory.loadFromData(save.inventory, getItemDefinition);
     this.player.loadState(save.player);
     this.equipment.loadFromData(save.equipment, this.inventory, getItemDefinition);
-    this.questManager.loadFromData(save.quest);
   }
 
   private spawnEnemies(): void {
     this.enemies.push(
-      new Enemy(this, 350, 220, "enemy-placeholder", "Goblin", {
-        hp: 30,
+      new Enemy(this, 280, 220, "enemy-placeholder", "Morcego Sombrio", {
+        hp: 26,
+        speed: 112,
+        attackDamage: 10,
+        aggroRange: 250,
+        xpReward: 18
+      })
+    );
+
+    this.enemies.push(
+      new Enemy(this, 540, 260, "enemy-placeholder", "Esqueleto", {
+        hp: 48,
+        speed: 66,
+        attackDamage: 13,
+        aggroRange: 240,
+        xpReward: 25
+      })
+    );
+
+    this.enemies.push(
+      new Enemy(this, 700, 120, "enemy-placeholder", "Cultista", {
+        hp: 54,
         speed: 72,
-        attackDamage: 8,
-        aggroRange: 200,
-        xpReward: 12
-      })
-    );
-
-    this.enemies.push(
-      new Enemy(this, 520, 340, "enemy-placeholder", "Slime", {
-        hp: 22,
-        speed: 58,
-        attackDamage: 6,
-        aggroRange: 180,
-        xpReward: 10
-      })
-    );
-
-    this.enemies.push(
-      new Enemy(this, 640, 180, "enemy-placeholder", "Bat", {
-        hp: 18,
-        speed: 90,
-        attackDamage: 5,
-        aggroRange: 230,
-        xpReward: 14
+        attackDamage: 15,
+        aggroRange: 260,
+        xpReward: 32
       })
     );
   }
@@ -538,7 +383,7 @@ export class WorldScene extends Phaser.Scene {
     this.hintText = this.add.text(
       GAME_WIDTH - 18,
       GAME_HEIGHT - 18,
-      "Espaço: atacar | E: coletar/entrar | I: inventário | R: equipar | T: loja | Q: missão | H: cura | M: mana",
+      "Espaço: atacar | X: sair | E: coletar | I: inventário | R: equipar | H: cura | M: mana",
       {
         fontFamily: "Arial",
         fontSize: "14px",
@@ -558,19 +403,6 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(80);
   }
 
-  private updateHUD(): void {
-    const hpRatio = Phaser.Math.Clamp(this.player.hp / this.player.maxHp, 0, 1);
-    const xpNeed = this.player.level * 100;
-    const xpRatio = Phaser.Math.Clamp(this.player.xp / xpNeed, 0, 1);
-
-    this.hpBarFill.width = 180 * hpRatio;
-    this.xpBarFill.width = 180 * xpRatio;
-
-    this.hudText.setText(
-      `HP ${this.player.hp}/${this.player.maxHp} | ATK ${this.player.attackDamage} | DEF ${this.player.defense} | Lv ${this.player.level} | XP ${this.player.xp}/${xpNeed} | Ouro ${this.player.gold}`
-    );
-  }
-
   private handleInput(): void {
     const left = this.cursors.left.isDown || this.wasd.A.isDown;
     const right = this.cursors.right.isDown || this.wasd.D.isDown;
@@ -584,83 +416,13 @@ export class WorldScene extends Phaser.Scene {
     this.player.updateAnimation(moving);
   }
 
-  private handlePlayerDeath(): void {
-    if (this.isRespawning || !this.player.isDead()) {
-      return;
-    }
-
-    this.isRespawning = true;
-    this.deathOverlay.show("Você perdeu 10 ouro e vai reaparecer.");
-
-    const lostGold = Math.min(10, this.player.gold);
-    this.player.gold -= lostGold;
-
-    this.time.delayedCall(2400, () => {
-      this.player.respawn(this.respawnPoint.x, this.respawnPoint.y);
-      this.deathOverlay.hide();
-      this.isRespawning = false;
-      this.requestSave();
-    });
-  }
-
-  private handleQuestInteraction(): void {
-    const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.questNpc.x, this.questNpc.y);
-
-    if (dist > 48) {
-      this.showQuestMessage("Aproxime-se da NPC para falar.");
-      return;
-    }
-
-    if (!this.questManager.isAccepted()) {
-      this.questManager.accept();
-      this.showQuestMessage(
-        this.questManager.quest.title,
-        this.questManager.quest.introText,
-        "Missão aceita. Traga 3 Orelhas de Goblin."
-      );
-      this.requestSave();
-      return;
-    }
-
-    if (this.questManager.isReadyToTurnIn(this.inventory)) {
-      this.questManager.turnIn(this.player, this.inventory);
-      this.inventoryPanel.refresh();
-      this.showQuestMessage(
-        this.questManager.quest.title,
-        this.questManager.quest.turnInText,
-        `Recompensa: ${this.questManager.quest.rewardGold} ouro e ${this.questManager.quest.rewardXp} XP`
-      );
-      this.requestSave();
-      return;
-    }
-
-    this.showQuestMessage(
-      this.questManager.quest.title,
-      this.questManager.getQuestStateText(this.inventory),
-      this.questManager.getActionText(this.inventory)
-    );
-  }
-
-  private showQuestMessage(title: string, body: string, hint: string): void {
-    this.questPanel.show(title, body, hint);
-    this.time.delayedCall(2600, () => {
-      this.questPanel.hide();
-    });
-  }
-
   private updateLootIndicators(): void {
     for (const drop of this.lootDrops) {
       if (drop.collected) {
         continue;
       }
 
-      const dist = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        drop.sprite.x,
-        drop.sprite.y
-      );
-
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, drop.sprite.x, drop.sprite.y);
       const label = drop.sprite.list[1] as Phaser.GameObjects.Text | undefined;
 
       if (label) {
@@ -671,17 +433,9 @@ export class WorldScene extends Phaser.Scene {
 
   private collectNearbyLoot(): void {
     const nearest = this.lootDrops.find((drop) => {
-      if (drop.collected) {
-        return false;
-      }
+      if (drop.collected) return false;
 
-      const dist = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        drop.sprite.x,
-        drop.sprite.y
-      );
-
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, drop.sprite.x, drop.sprite.y);
       return dist <= 34;
     });
 
@@ -791,6 +545,25 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  private handlePlayerDeath(): void {
+    if (this.isRespawning || !this.player.isDead()) {
+      return;
+    }
+
+    this.isRespawning = true;
+    this.deathOverlay.show("Você perdeu 10 ouro e vai reaparecer.");
+
+    const lostGold = Math.min(10, this.player.gold);
+    this.player.gold -= lostGold;
+
+    this.time.delayedCall(2400, () => {
+      this.player.respawn(this.respawnPoint.x, this.respawnPoint.y);
+      this.deathOverlay.hide();
+      this.isRespawning = false;
+      this.requestSave();
+    });
+  }
+
   private requestSave(): void {
     this.saveManager.save({
       version: 1,
@@ -798,7 +571,7 @@ export class WorldScene extends Phaser.Scene {
       player: this.player.serialize(),
       inventory: this.inventory.serialize(),
       equipment: this.equipment.serialize(),
-      quest: this.questManager.serialize()
+      quest: null
     });
 
     this.registry.set("playerState", {
