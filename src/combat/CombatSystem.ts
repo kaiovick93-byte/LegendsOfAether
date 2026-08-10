@@ -3,7 +3,10 @@ import { Enemy } from "../entities/Enemy";
 import { Player } from "../entities/Player";
 
 export class CombatSystem {
-  constructor(private readonly scene: Phaser.Scene) {}
+  constructor(
+    private readonly scene: Phaser.Scene,
+    private readonly onEnemyDefeated?: (enemy: Enemy, player: Player) => void
+  ) {}
 
   public playerAttack(player: Player, enemies: Enemy[]): void {
     const now = this.scene.time.now;
@@ -29,24 +32,20 @@ export class CombatSystem {
       if (Phaser.Geom.Intersects.RectangleToRectangle(hitBox, enemyBounds)) {
         hitSomething = true;
 
+        const wasAlive = enemy.isAlive();
         enemy.takeDamage(player.attackDamage);
 
-        this.spawnFloatingText(
-          enemy.x,
-          enemy.y - 24,
-          `-${player.attackDamage}`,
-          "#ffdddd"
-        );
+        this.spawnFloatingText(enemy.x, enemy.y - 24, `-${player.attackDamage}`, "#ffdddd");
 
-        if (!enemy.isAlive() && !enemy.rewardGranted) {
+        if (wasAlive && !enemy.isAlive() && !enemy.rewardGranted) {
           enemy.rewardGranted = true;
           player.gainXp(enemy.xpReward);
-          this.spawnFloatingText(
-            enemy.x,
-            enemy.y - 42,
-            `+${enemy.xpReward} XP`,
-            "#73e6a8"
-          );
+
+          this.spawnFloatingText(enemy.x, enemy.y - 42, `+${enemy.xpReward} XP`, "#73e6a8");
+
+          if (this.onEnemyDefeated) {
+            this.onEnemyDefeated(enemy, player);
+          }
         }
       }
     }
@@ -71,12 +70,7 @@ export class CombatSystem {
     enemy.registerAttack(now);
     player.takeDamage(enemy.attackDamage);
 
-    this.spawnFloatingText(
-      player.x,
-      player.y - 30,
-      `-${enemy.attackDamage}`,
-      "#ff6b6b"
-    );
+    this.spawnFloatingText(player.x, player.y - 30, `-${enemy.attackDamage}`, "#ff6b6b");
   }
 
   private getAttackHitBox(player: Player): Phaser.Geom.Rectangle {
@@ -106,12 +100,7 @@ export class CombatSystem {
     );
 
     effect.setDepth(25);
-
-    if (facing === "left" || facing === "right") {
-      effect.setAngle(18);
-    } else {
-      effect.setAngle(0);
-    }
+    effect.setAngle(facing === "left" || facing === "right" ? 18 : 0);
 
     this.scene.tweens.add({
       targets: effect,
@@ -121,12 +110,7 @@ export class CombatSystem {
     });
   }
 
-  private spawnFloatingText(
-    x: number,
-    y: number,
-    text: string,
-    color: string
-  ): void {
+  private spawnFloatingText(x: number, y: number, text: string, color: string): void {
     const label = this.scene.add.text(x, y, text, {
       fontFamily: "Arial",
       fontSize: "14px",
