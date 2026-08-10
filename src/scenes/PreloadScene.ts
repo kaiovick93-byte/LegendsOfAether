@@ -83,5 +83,53 @@ export class PreloadScene extends Phaser.Scene {
         g.fill.fillRoundedRect(0, 0, 24, 24, 6);
 
         g.generateTextures("player-placeholder", 24, 24);
+
+         //Enemy
+        g.clear();
+        g.fillStyle(0x2f8g5b, 1);
+        g.fill.fillRoundedRect(0, 0, 24, 24, 6);
+
+        g.generateTextures("enemy-placeholder", 24, 24);
+
+         //Tree
+        g.clear();
+        g.fillStyle(0x2g8g5b, 1);
+        g.fillRect(8, 0, 16, 22);
+        g.fillStyle(0x6b3f2a, 1);
+        g.fillRect(11, 18, 10, 14);
+
+        g.generateTextures("tree-placeholder", 32, 32);
+
+         //Grass
+        g.clear();
+        g.fillStyle(0x4b9b5a, 1);
+        g.fillRect(0, 0, 32, 32);
+        g.lineStyle(1, 0x3f824c, 1);
+        for (let i = 0; i < 32; i += 4) {
+            g.lineBetween(i, 0, i + 4, 32);
+        }
+
+        g.generateTextures("grass-placeholder", 32, 32);
+
+        //Water
+        g.clear();
+        g.fillStyle(0x2a78c7, 1);
+        g.fillRect(0, 0, 32, 32);
+        g.lineStyle(1, 0x6bb8ff, 0.6);
+        g.lineBetween(0, 10, 32, 10);
+        g.lineBetween(0, 20, 32, 20);
+
+        g.generateTextures("water-placeholder", 32, 32);
+
+        //Path
+        g.clear();
+        g.fillStyle(0xb59b71, 1);
+        g.fillRect(0, 0, 32, 32);
+        g.lineStyle(1, 0x8d7652, 0.8);
+        g.strokeRect(0, 0, 32, 32);
+
+        g.generateTextures("path-placeholder", 32, 32);
+
+        g.destroy();
     }
 }
