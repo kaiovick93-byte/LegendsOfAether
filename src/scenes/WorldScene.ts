@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { CombatSystem } from "../combat/CombatSystem";
 import { Enemy } from "../entities/Enemy";
+import { BossEnemy } from "../entities/BossEnemy";
 import { Player } from "../entities/Player";
 import { Inventory } from "../inventory/Inventory";
 import { InventoryPanel } from "../ui/InventoryPanel";
@@ -9,6 +10,7 @@ import { SaveManager } from "../save/SaveManager";
 import { ShopPanel } from "../shop/ShopPanel";
 import { QuestManager } from "../quests/QuestManager";
 import { QuestPanel } from "../ui/QuestPanel";
+import { BossBar } from "../ui/BossBar";
 import { Npc } from "../npc/Npc";
 import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
@@ -29,8 +31,10 @@ export class WorldScene extends Phaser.Scene {
   private shopPanel!: ShopPanel;
   private questManager!: QuestManager;
   private questPanel!: QuestPanel;
+  private bossBar!: BossBar;
 
   private questNpc!: Npc;
+  private boss!: BossEnemy;
 
   private enemies: Enemy[] = [];
   private lootDrops: LootDrop[] = [];
@@ -82,9 +86,13 @@ export class WorldScene extends Phaser.Scene {
     this.questPanel = new QuestPanel(this);
     this.questPanel.hide();
 
+    this.bossBar = new BossBar(this);
+    this.bossBar.hide();
+
     this.createHUD();
     this.spawnEnemies();
     this.spawnQuestNpc();
+    this.spawnBoss();
 
     this.combat = new CombatSystem(this, (enemy, player) => {
       this.spawnLoot(enemy.x, enemy.y);
@@ -156,8 +164,26 @@ export class WorldScene extends Phaser.Scene {
       this.combat.enemyAttack(enemy, this.player);
     }
 
+    if (this.boss && this.boss.active) {
+      this.boss.updateAI(this.player);
+      this.combat.enemyAttack(this.boss, this.player);
+      this.bossBar.update(this.boss);
+
+      const distToBoss = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y);
+      if (distToBoss < 260) {
+        this.bossBar.show(this.boss);
+      } else if (!this.boss.isAlive()) {
+        this.bossBar.hide();
+      }
+    }
+
     if (Phaser.Input.Keyboard.JustDown(this.attackKey)) {
-      this.combat.playerAttack(this.player, this.enemies);
+      const nearBoss = this.boss && this.boss.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y) < 80;
+      if (nearBoss) {
+        this.combat.playerAttack(this.player, [this.boss, ...this.enemies]);
+      } else {
+        this.combat.playerAttack(this.player, this.enemies);
+      }
       this.requestSave();
     }
 
@@ -257,6 +283,11 @@ export class WorldScene extends Phaser.Scene {
 
   private spawnQuestNpc(): void {
     this.questNpc = new Npc(this, 470, 334, this.questManager.quest.giverName);
+  }
+
+  private spawnBoss(): void {
+    this.boss = new BossEnemy(this, 760, 250);
+    this.boss.setDepth(11);
   }
 
   private createTree(tileX: number, tileY: number): void {
