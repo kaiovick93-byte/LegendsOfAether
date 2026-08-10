@@ -26,6 +26,11 @@ export class Inventory {
     return this.entries.length;
   }
 
+  public countItem(itemId: string): number {
+    const entry = this.entries.find((item) => item.item.id === itemId);
+    return entry?.quantity ?? 0;
+  }
+
   public canAdd(item: ItemDefinition): boolean {
     const existing = this.entries.find((entry) => entry.item.id === item.id);
     if (existing) {

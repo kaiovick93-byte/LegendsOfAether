@@ -124,6 +124,14 @@ export class PreloadScene extends Phaser.Scene {
     g.strokeRect(0, 0, 32, 32);
     g.generateTexture("path-placeholder", 32, 32);
 
+    //NPC
+    g.clear();
+    g.fillStyle(0xf4d35e, 1);
+    g.fillRoundedRect(0, 0, 24, 30, 6);
+    g.lineStyle(2, 0x8a6d2f, 1);
+    g.strokeRoundedRect(0, 0, 24, 30, 6);
+    g.generateTexture("npc-placeholder", 24, 30);
+
     g.destroy();
   }
 }

@@ -19,12 +19,19 @@ export interface SavedPlayerState {
   gold: number;
 }
 
+export interface SavedQuestState {
+  id: string;
+  accepted: boolean;
+  completed: boolean;
+}
+
 export interface SavedGameState {
   version: 1;
   savedAt: number;
   player: SavedPlayerState;
   inventory: SavedInventoryEntry[];
   equipment: SavedEquipmentState;
+  quest: SavedQuestState | null;
 }
 
 export class SaveManager {

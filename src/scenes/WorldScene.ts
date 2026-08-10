@@ -7,6 +7,9 @@ import { InventoryPanel } from "../ui/InventoryPanel";
 import { EquipmentManager } from "../equipment/EquipmentManager";
 import { SaveManager } from "../save/SaveManager";
 import { ShopPanel } from "../shop/ShopPanel";
+import { QuestManager } from "../quests/QuestManager";
+import { QuestPanel } from "../ui/QuestPanel";
+import { Npc } from "../npc/Npc";
 import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
 
@@ -24,6 +27,10 @@ export class WorldScene extends Phaser.Scene {
   private equipment!: EquipmentManager;
   private saveManager!: SaveManager;
   private shopPanel!: ShopPanel;
+  private questManager!: QuestManager;
+  private questPanel!: QuestPanel;
+
+  private questNpc!: Npc;
 
   private enemies: Enemy[] = [];
   private lootDrops: LootDrop[] = [];
@@ -42,7 +49,11 @@ export class WorldScene extends Phaser.Scene {
   private inventoryKey!: Phaser.Input.Keyboard.Key;
   private equipKey!: Phaser.Input.Keyboard.Key;
   private shopKey!: Phaser.Input.Keyboard.Key;
-  private shortcutKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private questKey!: Phaser.Input.Keyboard.Key;
+  private oneKey!: Phaser.Input.Keyboard.Key;
+  private twoKey!: Phaser.Input.Keyboard.Key;
+  private threeKey!: Phaser.Input.Keyboard.Key;
+  private fourKey!: Phaser.Input.Keyboard.Key;
 
   private hpBarFill!: Phaser.GameObjects.Rectangle;
   private xpBarFill!: Phaser.GameObjects.Rectangle;
@@ -58,21 +69,26 @@ export class WorldScene extends Phaser.Scene {
   create(): void {
     this.saveManager = new SaveManager();
     this.inventory = new Inventory(24);
+    this.questManager = new QuestManager();
 
     this.createWorld();
     this.createPlayer();
     this.equipment = new EquipmentManager(this.player);
-
     this.loadSavedGame();
 
     this.inventoryPanel = new InventoryPanel(this, this.inventory);
     this.inventoryPanel.setVisible(false);
 
+    this.questPanel = new QuestPanel(this);
+    this.questPanel.hide();
+
     this.createHUD();
     this.spawnEnemies();
+    this.spawnQuestNpc();
 
-    this.combat = new CombatSystem(this, (enemy) => {
+    this.combat = new CombatSystem(this, (enemy, player) => {
       this.spawnLoot(enemy.x, enemy.y);
+      player.addGold(8 + enemy.xpReward);
       this.requestSave();
     });
 
@@ -94,6 +110,11 @@ export class WorldScene extends Phaser.Scene {
     this.inventoryKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.equipKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     this.shopKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.T);
+    this.questKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+    this.oneKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
+    this.twoKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
+    this.threeKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
+    this.fourKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.FOUR);
 
     this.cameras.main.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
     this.physics.world.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
@@ -109,14 +130,17 @@ export class WorldScene extends Phaser.Scene {
       callback: () => this.requestSave()
     });
 
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
     window.addEventListener("beforeunload", this.handleBeforeUnload);
   }
 
   shutdown(): void {
     this.requestSave();
+
     if (this.saveTimer) {
       this.saveTimer.remove(false);
     }
+
     window.removeEventListener("beforeunload", this.handleBeforeUnload);
   }
 
@@ -165,23 +189,15 @@ export class WorldScene extends Phaser.Scene {
       this.collectNearbyLoot();
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.one ?? false)) {
-      // reservado
+    if (Phaser.Input.Keyboard.JustDown(this.questKey)) {
+      this.handleQuestInteraction();
     }
 
     if (this.shopPanel.isVisible()) {
-      if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ONE))) {
-        this.shopPanel.buyByShortcut(0);
-      }
-      if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TWO))) {
-        this.shopPanel.buyByShortcut(1);
-      }
-      if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.THREE))) {
-        this.shopPanel.buyByShortcut(2);
-      }
-      if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.FOUR))) {
-        this.shopPanel.buyByShortcut(3);
-      }
+      if (Phaser.Input.Keyboard.JustDown(this.oneKey)) this.shopPanel.buyByShortcut(0);
+      if (Phaser.Input.Keyboard.JustDown(this.twoKey)) this.shopPanel.buyByShortcut(1);
+      if (Phaser.Input.Keyboard.JustDown(this.threeKey)) this.shopPanel.buyByShortcut(2);
+      if (Phaser.Input.Keyboard.JustDown(this.fourKey)) this.shopPanel.buyByShortcut(3);
     }
 
     this.updateLootIndicators();
@@ -239,6 +255,10 @@ export class WorldScene extends Phaser.Scene {
       .setStrokeStyle(4, 0x1e2a3f, 0.9);
   }
 
+  private spawnQuestNpc(): void {
+    this.questNpc = new Npc(this, 470, 334, this.questManager.quest.giverName);
+  }
+
   private createTree(tileX: number, tileY: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
@@ -289,6 +309,7 @@ export class WorldScene extends Phaser.Scene {
     this.inventory.loadFromData(save.inventory, getItemDefinition);
     this.player.loadState(save.player);
     this.equipment.loadFromData(save.equipment, this.inventory, getItemDefinition);
+    this.questManager.loadFromData(save.quest);
   }
 
   private spawnEnemies(): void {
@@ -360,7 +381,7 @@ export class WorldScene extends Phaser.Scene {
     this.hintText = this.add.text(
       GAME_WIDTH - 18,
       GAME_HEIGHT - 18,
-      "Espaço: atacar | E: coletar | I: inventário | R: equipar | T: loja",
+      "Espaço: atacar | E: coletar | I: inventário | R: equipar | T: loja | Q: missão",
       {
         fontFamily: "Arial",
         fontSize: "14px",
@@ -392,6 +413,51 @@ export class WorldScene extends Phaser.Scene {
     const moveY = (down ? 1 : 0) - (up ? 1 : 0);
 
     this.player.move(moveX, moveY);
+  }
+
+  private handleQuestInteraction(): void {
+    const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.questNpc.x, this.questNpc.y);
+
+    if (dist > 48) {
+      this.showQuestMessage("Aproxime-se da NPC para falar.");
+      return;
+    }
+
+    if (!this.questManager.isAccepted()) {
+      this.questManager.accept();
+      this.showQuestMessage(
+        this.questManager.quest.title,
+        this.questManager.quest.introText,
+        "Missão aceita. Traga 3 Orelhas de Goblin."
+      );
+      this.requestSave();
+      return;
+    }
+
+    if (this.questManager.isReadyToTurnIn(this.inventory)) {
+      this.questManager.turnIn(this.player, this.inventory);
+      this.inventoryPanel.refresh();
+      this.showQuestMessage(
+        this.questManager.quest.title,
+        this.questManager.quest.turnInText,
+        `Recompensa: ${this.questManager.quest.rewardGold} ouro e ${this.questManager.quest.rewardXp} XP`
+      );
+      this.requestSave();
+      return;
+    }
+
+    this.showQuestMessage(
+      this.questManager.quest.title,
+      this.questManager.getQuestStateText(this.inventory),
+      this.questManager.getActionText(this.inventory)
+    );
+  }
+
+  private showQuestMessage(title: string, body: string, hint: string): void {
+    this.questPanel.show(title, body, hint);
+    this.time.delayedCall(2600, () => {
+      this.questPanel.hide();
+    });
   }
 
   private updateLootIndicators(): void {
@@ -528,7 +594,8 @@ export class WorldScene extends Phaser.Scene {
       savedAt: Date.now(),
       player: this.player.serialize(),
       inventory: this.inventory.serialize(),
-      equipment: this.equipment.serialize()
+      equipment: this.equipment.serialize(),
+      quest: this.questManager.serialize()
     });
   }
 
