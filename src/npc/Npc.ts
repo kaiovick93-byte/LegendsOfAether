@@ -2,10 +2,25 @@ import Phaser from "phaser";
 
 export class Npc extends Phaser.GameObjects.Container {
   public readonly npcName: string;
+  public readonly dialogue: string[];
 
-  constructor(scene: Phaser.Scene, x: number, y: number, npcName: string) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    npcName: string,
+    dialogue: string[] = []
+  ) {
     super(scene, x, y);
+
     this.npcName = npcName;
+    this.dialogue = dialogue.length > 0
+      ? dialogue
+      : [
+          "Olá, viajante.",
+          "O mundo de Aether está em perigo.",
+          "Fale comigo novamente se quiser ouvir mais."
+        ];
 
     const body = scene.add.rectangle(0, 0, 24, 30, 0xf4d35e, 1);
     body.setStrokeStyle(2, 0x8a6d2f, 1);

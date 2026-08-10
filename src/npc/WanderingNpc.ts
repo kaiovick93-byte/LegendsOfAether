@@ -10,10 +10,12 @@ export interface WanderingNpcOptions {
   minPauseMs?: number;
   maxPauseMs?: number;
   moveSpeed?: number;
+  dialogue?: string[];
 }
 
 export class WanderingNpc extends Phaser.GameObjects.Container {
   public readonly npcName: string;
+  public readonly dialogue: string[];
 
   private readonly homeX: number;
   private readonly homeY: number;
@@ -30,6 +32,12 @@ export class WanderingNpc extends Phaser.GameObjects.Container {
     super(scene, options.homeX, options.homeY);
 
     this.npcName = options.name;
+    this.dialogue = options.dialogue ?? [
+      "Eu gosto de caminhar por aqui.",
+      "A floresta parece viva quando há alguém passando.",
+      "Dizem que o castelo guarda uma relíquia antiga."
+    ];
+
     this.homeX = options.homeX;
     this.homeY = options.homeY;
     this.wanderRadius = options.wanderRadius ?? 36;

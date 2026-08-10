@@ -18,6 +18,7 @@ import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
 import { Minimap } from "../ui/Minimap";
 import { Wandering Npc } from "../npc/WanderingNpc";
+import { DialogueBox } from "../ui/DialogueBox";
 
 interface LootDrop {
   item: ItemDefinition;
@@ -85,6 +86,10 @@ export class WorldScene extends Phaser.Scene {
 
   private ambientNpcs: WanderingNpc[] = [];
 
+  private dialogueBox!: DialogueBox;
+  private talkKey!: Phaser.Input.Keyboard.Key;
+  private currentTalkTarget: | { x: number; y: number; name: string; dialogue: string [] } | null = null;
+
   constructor() {
     super("WorldScene");
   }
@@ -121,6 +126,9 @@ export class WorldScene extends Phaser.Scene {
       height: 112,
       title: "AETHER"
     });
+
+    this.dialogueBox = new DialogueBox(this);
+    this.talkKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
 
     this.minimap.addMarker({
       id: "house", x: 19 * TILE_SIZE,
@@ -214,6 +222,21 @@ export class WorldScene extends Phaser.Scene {
   }
 
   update(): void {
+      if (this.dialogueBox.isOpen()) {
+      this.player.move(0, 0);
+      this.player.updateAnimation(false);
+
+      if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER))) {
+        this.advanceDialogue();
+      }
+
+      if (Phaser.Input.Keyboard.JustDown(this.attackKey) || Phaser.Input.Keyboard.JustDown(this.interactKey) || Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE))) {
+        this.dialogueBox.close();
+      }
+
+      return;
+    }
+
     if (this.player.isDead()) {
       this.player.move(0, 0);
       this.player.updateAnimation(false);
@@ -334,6 +357,10 @@ export class WorldScene extends Phaser.Scene {
 
       this.scene.start("HouseInteriorScene");
       return;
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.talkKey)) {
+      this.tryStartDialogue();
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
@@ -511,6 +538,88 @@ export class WorldScene extends Phaser.Scene {
     this.player.loadState(save.player);
     this.equipment.loadFromData(save.equipment, this.inventory, getItemDefinition);
     this.questManager.loadFromData(save.quest);
+  }
+
+    private tryStartDialogue(): void {
+    const nearbyNpc = this.findNearestNpc();
+
+    if (!nearbyNpc) {
+      this.showMessage("Não há ninguém perto para conversar.", "#9aa8c7");
+      return;
+    }
+
+    this.currentTalkTarget = {
+      x: nearbyNpc.x,
+      y: nearbyNpc.y,
+      name: nearbyNpc.npcName,
+      dialogue: nearbyNpc.dialogue
+    };
+
+    this.dialogueBox.open(nearbyNpc.npcName, [nearbyNpc.dialogue[0] ?? "..."]);
+  }
+
+  private advanceDialogue(): void {
+    if (!this.currentTalkTarget || !this.dialogueBox.isOpen()) {
+      return;
+    }
+
+    const current = this.currentTalkTarget.dialogue;
+    const index = Phaser.Math.Clamp(
+      current.length - 1,
+      0,
+      current.length - 1
+    );
+
+    // simples: ao apertar Enter, fecha a caixa atual e reinicia a conversa
+    this.dialogueBox.close();
+    this.currentTalkTarget = null;
+    this.showMessage("Conversa encerrada.", "#9aa8c7");
+  }
+
+  private findNearestNpc():
+    | { x: number; y: number; npcName: string; dialogue: string[] }
+    | null {
+    const candidates: Array<{ x: number; y: number; npcName: string; dialogue: string[] }> = [];
+
+    const pushNpc = (npc: any): void => {
+      if (!npc || !npc.npcName || !npc.dialogue) {
+        return;
+      }
+
+      candidates.push({
+        x: npc.x,
+        y: npc.y,
+        npcName: npc.npcName,
+        dialogue: npc.dialogue
+      });
+    };
+
+    // NPCs fixos
+    pushNpc(this.questNpc);
+    pushNpc((this as any).ambientNpcs?.[0]);
+    pushNpc((this as any).ambientNpcs?.[1]);
+    pushNpc((this as any).ambientNpcs?.[2]);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    let nearest = null as (typeof candidates)[number] | null;
+    let nearestDist = Number.POSITIVE_INFINITY;
+
+    for (const npc of candidates) {
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
+      if (dist < nearestDist) {
+        nearest = npc;
+        nearestDist = dist;
+      }
+    }
+
+    if (!nearest || nearestDist > 52) {
+      return null;
+    }
+
+    return nearest;
   }
 
   private spawnEnemies(): void {
