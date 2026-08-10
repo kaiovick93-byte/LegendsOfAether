@@ -198,6 +198,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.dead;
   }
 
+  public respaw(x: number, y: number): void {
+    this.setPosition(x, y);
+    this.hp = this.maxHp;
+    this.mana = this.maxMana;
+    this.dead = false;
+    this.clearTint();
+    this.setAlpha(1);
+  }
+
   private recalculateLevelBaseStats(): void {
     this.baseMaxHp = PLAYER.maxHp + (this.level - 1) * 12;
     this.baseMaxMana = PLAYER.maxMana + (this.level - 1) * 4;

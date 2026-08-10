@@ -15,6 +15,7 @@ import { Npc } from "../npc/Npc";
 import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
+import { DeathOverlay } from "../ui/DeathOverlay";
 
 interface LootDrop {
   item: ItemDefinition;
@@ -70,6 +71,10 @@ export class WorldScene extends Phaser.Scene {
 
   private saveTimer?: Phaser.Time.TimerEvent;
 
+  private deathOverlay!: DeathOverlay;
+  private isRespawning = false;
+  private respawnPoint = { x: 220, y: 260 };
+
   constructor() {
     super("WorldScene");
   }
@@ -89,6 +94,9 @@ export class WorldScene extends Phaser.Scene {
 
     this.questPanel = new QuestPanel(this);
     this.questPanel.hide();
+
+    this.deathOverlay = new DeathOverlay(this);
+    this.deathOverlay.hide();
 
     this.bossBar = new BossBar(this);
     this.bossBar.hide();
@@ -148,6 +156,25 @@ export class WorldScene extends Phaser.Scene {
     window.addEventListener("beforeunload", this.handleBeforeUnload);
   }
 
+  private handlePlayerDeath(): void {
+    if (this.isRespawning || !this.player.isDead()){
+      return;
+    }
+
+    this.isRespawning = true;
+    this.deathOverlay.show("Você perdeu 10 ouro e vai reaparecer.");
+
+    const lostGold = Math.min(10, this.player.gold);
+    this.player.gold -= lostGold;
+
+    this.time.delayedCall(2400, () => {
+      this.player.respawn(this.respawnPoint.x, this.respawnPoint.y);
+      this.player.gold = Math.max(0, this.player.gold);
+      this.deathOverlay.hide();
+      this.isRespawning = false;
+      this.requestSave();
+    });
+  }
   shutdown(): void {
     this.requestSave();
 
@@ -168,6 +195,13 @@ export class WorldScene extends Phaser.Scene {
 
       enemy.updateAI(this.player);
       this.combat.enemyAttack(enemy, this.player);
+    }
+
+    if (this.player.isDead()) {
+      this.player.move(0, 0);
+      this.handlePlayerDeath();
+      this.updateHUD();
+      return;
     }
 
     if (this.boss && this.boss.active) {
@@ -340,7 +374,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private createPlayer(): void {
-    this.player = new Player(this, 220, 260);
+    this.player = new Player(this, this.respawnPoint.x, this.respawnPoint.y);
     this.player.setDepth(10);
   }
 
