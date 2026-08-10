@@ -398,6 +398,8 @@ export class CastleScene extends Phaser.Scene {
   private spawnBoss(): void {
     this.boss = new CastleBoss(this, 760, 170);
     this.boss.setDepth(11);
+
+    this.showMessage("O Rei Sombrio desperta no salão do trono...","#ffd166");
   }
 
   private spawnFinalChest(): void {
@@ -422,11 +424,21 @@ export class CastleScene extends Phaser.Scene {
   }
 
   private openFinalChest(): void {
-    if (this.inventory.addItem(getItemDefinition("royal_signet")!, 1)) {
+    const relic = getItemDefinition("royal_signet");
+
+    if (!relic) {
+        this.showMessage("Relíquia final não encontrada.","#ff6b6b");
+        return;
+    }
+
+    if (this.inventory.addItem(relic, 1)) {
       this.showPickupText("Selo Real de Aether obtido!");
       this.inventoryPanel.refresh();
       this.requestSave();
       this.showMessage("Você encontrou a relíquia final do castelo!", "#ffd166");
+      this.time.delayedCall(1800, () => {
+        this.scene.start("VictoryScene");
+      });
       return;
     }
 

@@ -25,7 +25,7 @@ export class MenuScene extends Phaser.Scene {
     const panel = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 420, 220, 0x182033, 1);
     panel.setStrokeStyle(2, 0x32405f, 1);
 
-    const startButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 25, "INICIAR JOGO", {
+    const startButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 25, "INICIAR / CONTINUAR", {
       fontFamily: "Arial",
       fontSize: "24px",
       color: "#73e6a8",

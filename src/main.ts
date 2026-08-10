@@ -8,6 +8,7 @@ import { HouseInteriorScene } from "./scenes/HouseInteriorScene";
 import { GreenWoodsScene } from "./scenes/GreenWoodsScene";
 import { CaveScene } from "./scenes/CaveScene";
 import { CastleScene } from "./scenes/CastleScene";
+import { VictoryScene } from "./scenes/VictoryScene";
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -33,7 +34,8 @@ const game = new Phaser.Game({
     HouseInteriorScene,
     GreenWoodsScene,
     CaveScene,
-    CastleScene
+    CastleScene,
+    VictoryScene
   ]
 });
 
