@@ -5,6 +5,11 @@ export interface InventoryEntry {
   quantity: number;
 }
 
+export interface SerializedInventoryEntry {
+  itemId: string;
+  quantity: number;
+}
+
 export class Inventory {
   private entries: InventoryEntry[] = [];
   public readonly maxSlots: number;
@@ -67,5 +72,31 @@ export class Inventory {
 
   public clear(): void {
     this.entries = [];
+  }
+
+  public serialize(): SerializedInventoryEntry[] {
+    return this.entries.map((entry) => ({
+      itemId: entry.item.id,
+      quantity: entry.quantity
+    }));
+  }
+
+  public loadFromData(
+    data: SerializedInventoryEntry[],
+    resolver: (itemId: string) => ItemDefinition | undefined
+  ): void {
+    this.entries = [];
+
+    for (const entry of data) {
+      const item = resolver(entry.itemId);
+      if (!item || entry.quantity <= 0) {
+        continue;
+      }
+
+      this.entries.push({
+        item,
+        quantity: entry.quantity
+      });
+    }
   }
 }

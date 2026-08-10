@@ -11,6 +11,16 @@ type EquipmentBonuses = {
   speed?: number;
 };
 
+export interface SerializedPlayerState {
+  x: number;
+  y: number;
+  hp: number;
+  mana: number;
+  level: number;
+  xp: number;
+  gold: number;
+}
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   public hp = PLAYER.maxHp;
   public maxHp = PLAYER.maxHp;
@@ -18,6 +28,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public maxMana = PLAYER.maxMana;
   public level = 1;
   public xp = 0;
+  public gold = 0;
 
   public speed = PLAYER.speed;
   public attackDamage = 12;
@@ -122,18 +133,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public gainXp(amount: number): void {
     this.xp += amount;
 
-    const needed = this.level * 100;
-    if (this.xp >= needed) {
-      this.xp -= needed;
+    while (this.xp >= this.level * 100) {
+      this.xp -= this.level * 100;
       this.level += 1;
-      this.baseMaxHp += 12;
-      this.baseMaxMana += 4;
-      this.baseAttackDamage += 2;
-      this.baseSpeed += 3;
+      this.recalculateLevelBaseStats();
       this.recalculateDerivedStats();
       this.hp = this.maxHp;
       this.mana = this.maxMana;
     }
+  }
+
+  public addGold(amount: number): void {
+    this.gold += Math.max(0, amount);
+  }
+
+  public spendGold(amount: number): boolean {
+    if (amount < 0 || this.gold < amount) {
+      return false;
+    }
+
+    this.gold -= amount;
+    return true;
   }
 
   public applyEquipmentBonuses(bonuses: EquipmentBonuses): void {
@@ -148,8 +168,41 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.recalculateDerivedStats();
   }
 
+  public serialize(): SerializedPlayerState {
+    return {
+      x: this.x,
+      y: this.y,
+      hp: this.hp,
+      mana: this.mana,
+      level: this.level,
+      xp: this.xp,
+      gold: this.gold
+    };
+  }
+
+  public loadState(state: SerializedPlayerState): void {
+    this.setPosition(state.x, state.y);
+    this.level = Math.max(1, state.level);
+    this.xp = Math.max(0, state.xp);
+    this.gold = Math.max(0, state.gold);
+    this.recalculateLevelBaseStats();
+    this.recalculateDerivedStats();
+    this.hp = Phaser.Math.Clamp(state.hp, 1, this.maxHp);
+    this.mana = Phaser.Math.Clamp(state.mana, 0, this.maxMana);
+    this.dead = false;
+    this.clearTint();
+    this.setAlpha(1);
+  }
+
   public isDead(): boolean {
     return this.dead;
+  }
+
+  private recalculateLevelBaseStats(): void {
+    this.baseMaxHp = PLAYER.maxHp + (this.level - 1) * 12;
+    this.baseMaxMana = PLAYER.maxMana + (this.level - 1) * 4;
+    this.baseAttackDamage = 12 + (this.level - 1) * 2;
+    this.baseSpeed = PLAYER.speed + (this.level - 1) * 3;
   }
 
   private recalculateDerivedStats(): void {

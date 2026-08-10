@@ -4,6 +4,12 @@ import { Player } from "../entities/Player";
 
 type EquipmentSlot = "weapon" | "armor" | "trinket";
 
+export interface SerializedEquipmentState {
+  weapon: string | null;
+  armor: string | null;
+  trinket: string | null;
+}
+
 interface EquipmentStats {
   attack?: number;
   defense?: number;
@@ -127,7 +133,63 @@ export class EquipmentManager {
     return equippedCount;
   }
 
-  private findBest(entries: Array<{ item: ItemDefinition; quantity: number }>, type: ItemType): ItemDefinition | null {
+  public serialize(): SerializedEquipmentState {
+    return {
+      weapon: this.slots.weapon?.id ?? null,
+      armor: this.slots.armor?.id ?? null,
+      trinket: this.slots.trinket?.id ?? null
+    };
+  }
+
+  public loadFromData(
+    data: SerializedEquipmentState | null,
+    inventory: Inventory,
+    resolver: (itemId: string) => ItemDefinition | undefined
+  ): void {
+    this.slots.weapon = null;
+    this.slots.armor = null;
+    this.slots.trinket = null;
+
+    if (!data) {
+      this.syncPlayer();
+      return;
+    }
+
+    this.applySlotFromSave("weapon", data.weapon, inventory, resolver);
+    this.applySlotFromSave("armor", data.armor, inventory, resolver);
+    this.applySlotFromSave("trinket", data.trinket, inventory, resolver);
+
+    this.syncPlayer();
+  }
+
+  private applySlotFromSave(
+    slot: EquipmentSlot,
+    itemId: string | null,
+    inventory: Inventory,
+    resolver: (itemId: string) => ItemDefinition | undefined
+  ): void {
+    if (!itemId) {
+      this.slots[slot] = null;
+      return;
+    }
+
+    const item = resolver(itemId);
+    if (!item) {
+      this.slots[slot] = null;
+      return;
+    }
+
+    if (inventory.hasItem(item.id, 1)) {
+      inventory.removeItem(item.id, 1);
+    }
+
+    this.slots[slot] = item;
+  }
+
+  private findBest(
+    entries: Array<{ item: ItemDefinition; quantity: number }>,
+    type: ItemType
+  ): ItemDefinition | null {
     const candidates = entries
       .filter((entry) => entry.item.type === type)
       .map((entry) => entry.item);

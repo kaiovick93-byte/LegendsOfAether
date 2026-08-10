@@ -5,7 +5,9 @@ import { Player } from "../entities/Player";
 import { Inventory } from "../inventory/Inventory";
 import { InventoryPanel } from "../ui/InventoryPanel";
 import { EquipmentManager } from "../equipment/EquipmentManager";
-import { getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
+import { SaveManager } from "../save/SaveManager";
+import { ShopPanel } from "../shop/ShopPanel";
+import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
 
 interface LootDrop {
@@ -20,6 +22,8 @@ export class WorldScene extends Phaser.Scene {
   private inventory!: Inventory;
   private inventoryPanel!: InventoryPanel;
   private equipment!: EquipmentManager;
+  private saveManager!: SaveManager;
+  private shopPanel!: ShopPanel;
 
   private enemies: Enemy[] = [];
   private lootDrops: LootDrop[] = [];
@@ -37,33 +41,46 @@ export class WorldScene extends Phaser.Scene {
   private interactKey!: Phaser.Input.Keyboard.Key;
   private inventoryKey!: Phaser.Input.Keyboard.Key;
   private equipKey!: Phaser.Input.Keyboard.Key;
+  private shopKey!: Phaser.Input.Keyboard.Key;
+  private shortcutKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
 
   private hpBarFill!: Phaser.GameObjects.Rectangle;
   private xpBarFill!: Phaser.GameObjects.Rectangle;
   private hudText!: Phaser.GameObjects.Text;
   private hintText!: Phaser.GameObjects.Text;
 
+  private saveTimer?: Phaser.Time.TimerEvent;
+
   constructor() {
     super("WorldScene");
   }
 
   create(): void {
+    this.saveManager = new SaveManager();
     this.inventory = new Inventory(24);
 
     this.createWorld();
     this.createPlayer();
-
     this.equipment = new EquipmentManager(this.player);
+
+    this.loadSavedGame();
+
     this.inventoryPanel = new InventoryPanel(this, this.inventory);
     this.inventoryPanel.setVisible(false);
 
     this.createHUD();
     this.spawnEnemies();
 
-    this.combat = new CombatSystem(this, (enemy, player) => {
+    this.combat = new CombatSystem(this, (enemy) => {
       this.spawnLoot(enemy.x, enemy.y);
-      player.gainXp(0);
+      this.requestSave();
     });
+
+    this.shopPanel = new ShopPanel(this, this.player, this.inventory, () => {
+      this.inventoryPanel.refresh();
+      this.requestSave();
+    });
+    this.shopPanel.setVisible(false);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys("W,A,S,D") as {
@@ -76,6 +93,7 @@ export class WorldScene extends Phaser.Scene {
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.inventoryKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.equipKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+    this.shopKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.T);
 
     this.cameras.main.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
     this.physics.world.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
@@ -84,6 +102,22 @@ export class WorldScene extends Phaser.Scene {
     for (const obstacle of this.obstacles) {
       this.physics.add.collider(this.player, obstacle);
     }
+
+    this.saveTimer = this.time.addEvent({
+      delay: 15000,
+      loop: true,
+      callback: () => this.requestSave()
+    });
+
+    window.addEventListener("beforeunload", this.handleBeforeUnload);
+  }
+
+  shutdown(): void {
+    this.requestSave();
+    if (this.saveTimer) {
+      this.saveTimer.remove(false);
+    }
+    window.removeEventListener("beforeunload", this.handleBeforeUnload);
   }
 
   update(): void {
@@ -100,6 +134,7 @@ export class WorldScene extends Phaser.Scene {
 
     if (Phaser.Input.Keyboard.JustDown(this.attackKey)) {
       this.combat.playerAttack(this.player, this.enemies);
+      this.requestSave();
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.inventoryKey)) {
@@ -107,18 +142,46 @@ export class WorldScene extends Phaser.Scene {
       this.inventoryPanel.refresh();
     }
 
+    if (Phaser.Input.Keyboard.JustDown(this.shopKey)) {
+      this.shopPanel.toggle();
+      this.shopPanel.refresh();
+    }
+
     if (Phaser.Input.Keyboard.JustDown(this.equipKey)) {
       const equipped = this.equipment.autoEquipBestAvailable(this.inventory);
       if (equipped > 0) {
         this.showPickupText(`Equipado: ${equipped} item(ns)`);
+        this.inventoryPanel.refresh();
+        this.requestSave();
       } else {
         this.showPickupText("Nada para equipar");
       }
-      this.inventoryPanel.refresh();
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
+      if (this.shopPanel.isVisible()) {
+        return;
+      }
       this.collectNearbyLoot();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.one ?? false)) {
+      // reservado
+    }
+
+    if (this.shopPanel.isVisible()) {
+      if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ONE))) {
+        this.shopPanel.buyByShortcut(0);
+      }
+      if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TWO))) {
+        this.shopPanel.buyByShortcut(1);
+      }
+      if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.THREE))) {
+        this.shopPanel.buyByShortcut(2);
+      }
+      if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.FOUR))) {
+        this.shopPanel.buyByShortcut(3);
+      }
     }
 
     this.updateLootIndicators();
@@ -205,6 +268,29 @@ export class WorldScene extends Phaser.Scene {
     this.player.setDepth(10);
   }
 
+  private loadSavedGame(): void {
+    const save = this.saveManager.load();
+
+    if (!save) {
+      this.player.addGold(25);
+      this.player.loadState({
+        x: 220,
+        y: 260,
+        hp: this.player.maxHp,
+        mana: this.player.maxMana,
+        level: 1,
+        xp: 0,
+        gold: 25
+      });
+      this.equipment.syncPlayer();
+      return;
+    }
+
+    this.inventory.loadFromData(save.inventory, getItemDefinition);
+    this.player.loadState(save.player);
+    this.equipment.loadFromData(save.equipment, this.inventory, getItemDefinition);
+  }
+
   private spawnEnemies(): void {
     this.enemies.push(
       new Enemy(this, 350, 220, "enemy-placeholder", "Goblin", {
@@ -238,7 +324,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private createHUD(): void {
-    this.add.rectangle(110, 42, 228, 86, 0x182033, 0.92)
+    this.add.rectangle(126, 48, 252, 92, 0x182033, 0.92)
       .setScrollFactor(0)
       .setStrokeStyle(2, 0x32405f, 1)
       .setDepth(50);
@@ -274,7 +360,7 @@ export class WorldScene extends Phaser.Scene {
     this.hintText = this.add.text(
       GAME_WIDTH - 18,
       GAME_HEIGHT - 18,
-      "Espaço: atacar | E: coletar | I: inventário | R: equipar",
+      "Espaço: atacar | E: coletar | I: inventário | R: equipar | T: loja",
       {
         fontFamily: "Arial",
         fontSize: "14px",
@@ -292,7 +378,7 @@ export class WorldScene extends Phaser.Scene {
     this.xpBarFill.width = 180 * xpRatio;
 
     this.hudText.setText(
-      `HP ${this.player.hp}/${this.player.maxHp} | ATK ${this.player.attackDamage} | DEF ${this.player.defense} | Lv ${this.player.level} | XP ${this.player.xp}/${xpNeed}`
+      `HP ${this.player.hp}/${this.player.maxHp} | ATK ${this.player.attackDamage} | DEF ${this.player.defense} | Lv ${this.player.level} | XP ${this.player.xp}/${xpNeed} | Ouro ${this.player.gold}`
     );
   }
 
@@ -361,15 +447,16 @@ export class WorldScene extends Phaser.Scene {
 
     this.showPickupText(nearest.item.name);
     this.inventoryPanel.refresh();
+    this.requestSave();
   }
 
   private spawnLoot(x: number, y: number): void {
     const item = getRandomDropDefinition();
 
     const container = this.add.container(x, y - 8);
-    const rarityColor = this.getRarityColor(item.rarity);
+    const rarity = this.getRarityColor(item.rarity);
 
-    const orb = this.add.circle(0, 0, 8, rarityColor, 1);
+    const orb = this.add.circle(0, 0, 8, rarity, 1);
     orb.setStrokeStyle(2, 0xffffff, 0.45);
 
     const label = this.add.text(16, -10, item.name, {
@@ -434,4 +521,18 @@ export class WorldScene extends Phaser.Scene {
       onComplete: () => pickup.destroy()
     });
   }
+
+  private requestSave(): void {
+    this.saveManager.save({
+      version: 1,
+      savedAt: Date.now(),
+      player: this.player.serialize(),
+      inventory: this.inventory.serialize(),
+      equipment: this.equipment.serialize()
+    });
+  }
+
+  private handleBeforeUnload = (): void => {
+    this.requestSave();
+  };
 }
