@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { CombatSystem } from "../combat/CombatSystem";
-import { Enemy } from "../entities/Enemy";
 import { BossEnemy } from "../entities/BossEnemy";
+import { Enemy } from "../entities/Enemy";
 import { Player } from "../entities/Player";
 import { Inventory } from "../inventory/Inventory";
 import { InventoryPanel } from "../ui/InventoryPanel";
@@ -13,6 +13,7 @@ import { QuestPanel } from "../ui/QuestPanel";
 import { BossBar } from "../ui/BossBar";
 import { Npc } from "../npc/Npc";
 import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
+import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
 
 interface LootDrop {
@@ -54,6 +55,8 @@ export class WorldScene extends Phaser.Scene {
   private equipKey!: Phaser.Input.Keyboard.Key;
   private shopKey!: Phaser.Input.Keyboard.Key;
   private questKey!: Phaser.Input.Keyboard.Key;
+  private healKey!: Phaser.Input.Keyboard.Key;
+  private manaKey!: Phaser.Input.Keyboard.Key;
   private oneKey!: Phaser.Input.Keyboard.Key;
   private twoKey!: Phaser.Input.Keyboard.Key;
   private threeKey!: Phaser.Input.Keyboard.Key;
@@ -63,6 +66,7 @@ export class WorldScene extends Phaser.Scene {
   private xpBarFill!: Phaser.GameObjects.Rectangle;
   private hudText!: Phaser.GameObjects.Text;
   private hintText!: Phaser.GameObjects.Text;
+  private messageText!: Phaser.GameObjects.Text;
 
   private saveTimer?: Phaser.Time.TimerEvent;
 
@@ -119,6 +123,8 @@ export class WorldScene extends Phaser.Scene {
     this.equipKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     this.shopKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.T);
     this.questKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+    this.healKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.H);
+    this.manaKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.M);
     this.oneKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
     this.twoKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
     this.threeKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
@@ -178,13 +184,32 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.attackKey)) {
-      const nearBoss = this.boss && this.boss.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y) < 80;
+      const nearBoss =
+        this.boss &&
+        this.boss.active &&
+        Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y) < 80;
+
       if (nearBoss) {
         this.combat.playerAttack(this.player, [this.boss, ...this.enemies]);
       } else {
         this.combat.playerAttack(this.player, this.enemies);
       }
+
       this.requestSave();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.healKey)) {
+      const result = useHealingConsumable(this.player, this.inventory);
+      this.showMessage(result.message, result.used ? "#73e6a8" : "#ff6b6b");
+      this.inventoryPanel.refresh();
+      if (result.used) this.requestSave();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.manaKey)) {
+      const result = useManaConsumable(this.player, this.inventory);
+      this.showMessage(result.message, result.used ? "#7ee0ff" : "#ff6b6b");
+      this.inventoryPanel.refresh();
+      if (result.used) this.requestSave();
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.inventoryKey)) {
@@ -412,13 +437,24 @@ export class WorldScene extends Phaser.Scene {
     this.hintText = this.add.text(
       GAME_WIDTH - 18,
       GAME_HEIGHT - 18,
-      "Espaço: atacar | E: coletar | I: inventário | R: equipar | T: loja | Q: missão",
+      "Espaço: atacar | E: coletar | I: inventário | R: equipar | T: loja | Q: missão | H: cura | M: mana",
       {
         fontFamily: "Arial",
         fontSize: "14px",
         color: "#c8d1ea"
       }
     ).setOrigin(1, 1).setScrollFactor(0).setDepth(52);
+
+    this.messageText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 42, "", {
+      fontFamily: "Arial",
+      fontSize: "16px",
+      color: "#73e6a8",
+      backgroundColor: "#182033",
+      padding: { left: 10, right: 10, top: 6, bottom: 6 }
+    })
+      .setOrigin(0.5, 1)
+      .setScrollFactor(0)
+      .setDepth(80);
   }
 
   private updateHUD(): void {
@@ -619,18 +655,20 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  private requestSave(): void {
-    this.saveManager.save({
-      version: 1,
-      savedAt: Date.now(),
-      player: this.player.serialize(),
-      inventory: this.inventory.serialize(),
-      equipment: this.equipment.serialize(),
-      quest: this.questManager.serialize()
+  private showMessage(text: string, color = "#73e6a8"): void {
+    this.messageText.setText(text);
+    this.messageText.setColor(color);
+
+    this.tweens.killTweensOf(this.messageText);
+    this.messageText.setAlpha(1);
+
+    this.tweens.add({
+      targets: this.messageText,
+      alpha: 0,
+      delay: 1200,
+      duration: 700
     });
   }
 
-  private handleBeforeUnload = (): void => {
-    this.requestSave();
-  };
-}
+  private requestSave(): void {
+  
