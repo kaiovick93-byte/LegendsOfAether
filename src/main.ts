@@ -4,6 +4,7 @@ import { BootScene } from "./scenes/BootScene";
 import { PreloadScene } from "./scenes/PreloadScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { WorldScene } from "./scenes/WorldScene";
+import { HouseInteriorScene } from "./scenes/HouseInteriorScene";
 
 const game = new Phaser.Game ({
     type: Phaser.AUTO,
@@ -21,7 +22,7 @@ const game = new Phaser.Game ({
             debug: false
         }
     },
-    scene: [BootScene, PreloadScene, MenuScene, WorldScene]
+    scene: [BootScene, PreloadScene, MenuScene, WorldScene, HouseInteriorScene]
 });
 
 export default game;

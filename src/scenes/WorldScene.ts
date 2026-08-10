@@ -75,6 +75,9 @@ export class WorldScene extends Phaser.Scene {
   private isRespawning = false;
   private respawnPoint = { x: 220, y: 260 };
 
+  private houseDoorZone!: Phaser.GameObjects.Zone;
+  private enterHouseKey!: Phaser.Input.Keyboard.Key;
+
   constructor() {
     super("WorldScene");
   }
@@ -88,6 +91,12 @@ export class WorldScene extends Phaser.Scene {
     this.createPlayer();
     this.equipment = new EquipmentManager(this.player);
     this.loadSavedGame();
+
+    this.registry.set("playerState", {
+      gold: this.player.gold,
+      hp: this.player.hp,
+      mana: this.player.mana
+    });
 
     this.inventoryPanel = new InventoryPanel(this, this.inventory);
     this.inventoryPanel.setVisible(false);
@@ -154,6 +163,8 @@ export class WorldScene extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
     window.addEventListener("beforeunload", this.handleBeforeUnload);
+
+    this.enterHouseKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
   }
 
   private handlePlayerDeath(): void {
@@ -186,6 +197,12 @@ export class WorldScene extends Phaser.Scene {
   }
 
   update(): void {
+    const nearHouseDoor = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.houseDoorZone.x, this.houseDoorZone.y) < 36;
+
+    if(nearHouseDoor) {
+      this.hintText.setText("E: entrar na casa | restante dos controles normais");
+    }
+
     this.handleInput();
 
     for (const enemy of this.enemies) {
@@ -215,6 +232,19 @@ export class WorldScene extends Phaser.Scene {
       } else if (!this.boss.isAlive()) {
         this.bossBar.hide();
       }
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.enterHouseKey) && nearHouseDoor) {
+      
+      this.registry.set("playerState", { 
+        gold: this.player.gold,
+        hp: this.player.hp,
+        mana: this.player.mana
+      });
+
+      this.scene.start("HouseInteriorScene");
+
+      return;
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.attackKey)) {
@@ -432,6 +462,12 @@ export class WorldScene extends Phaser.Scene {
         xpReward: 14
       })
     );
+
+    this.add.rectangle(19 * TILE_SIZE, 22 * TILE_SIZE + 46, 20, 12, 0x4a2f24, 1).setOrigin(0).setDepth(1.5);
+
+    this.houseDoorZone = this.add.zone(19 * TILE_SIZE + 10, 22 * TILE_SIZE + 52, 28, 24);
+
+    this.physics.add.existing(this.houseDoorZone, true);
   }
 
   private createHUD(): void {
@@ -705,4 +741,24 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private requestSave(): void {
+    this.SaveManager.save({
+      version: 1,
+      savedAt: Date.now(),
+      player: this.player.serialize(),
+      inventory: this.inventory.serialize(),
+      equipment: this.equipment.serialize(),
+      quest: this.questManager.serialize()
+    });
+
+    this.registry.set("playerState", {
+      gold: this.player.gold,
+      hp: this.player.hp,
+      mana: this.player.mana
+    });
+  }
+
+  private handleBeforeUnload = (): void => {
+    this.requestSave();
+  };
+}
   
