@@ -1,15 +1,16 @@
 import Phaser from "phaser";
 import { CombatSystem } from "../combat/CombatSystem";
+import { CaveBoss } from "../entities/CaveBoss";
 import { Enemy } from "../entities/Enemy";
 import { Player } from "../entities/Player";
 import { Inventory } from "../inventory/Inventory";
 import { InventoryPanel } from "../ui/InventoryPanel";
 import { EquipmentManager } from "../equipment/EquipmentManager";
 import { SaveManager } from "../save/SaveManager";
-import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
-import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
 import { BossBar } from "../ui/BossBar";
 import { DeathOverlay } from "../ui/DeathOverlay";
+import { getItemDefinition, getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
+import { useHealingConsumable, useManaConsumable } from "../items/itemUse";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
 
 interface LootDrop {
@@ -31,6 +32,7 @@ export class CaveScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private lootDrops: LootDrop[] = [];
   private obstacles: Phaser.GameObjects.Rectangle[] = [];
+  private boss!: CaveBoss;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: {
@@ -46,6 +48,7 @@ export class CaveScene extends Phaser.Scene {
   private equipKey!: Phaser.Input.Keyboard.Key;
   private healKey!: Phaser.Input.Keyboard.Key;
   private manaKey!: Phaser.Input.Keyboard.Key;
+  private interactKey!: Phaser.Input.Keyboard.Key;
 
   private hpBarFill!: Phaser.GameObjects.Rectangle;
   private xpBarFill!: Phaser.GameObjects.Rectangle;
@@ -56,8 +59,8 @@ export class CaveScene extends Phaser.Scene {
   private saveTimer?: Phaser.Time.TimerEvent;
   private isRespawning = false;
   private respawnPoint = { x: 72, y: 420 };
-
   private caveExitZone!: Phaser.GameObjects.Zone;
+  private bossArenaZone!: Phaser.GameObjects.Zone;
 
   constructor() {
     super("CaveScene");
@@ -82,14 +85,14 @@ export class CaveScene extends Phaser.Scene {
     this.deathOverlay.hide();
 
     this.createHUD();
+    this.spawnEnemies();
+    this.spawnBoss();
 
     this.combat = new CombatSystem(this, (enemy, player) => {
       this.spawnLoot(enemy.x, enemy.y);
       player.addGold(12 + enemy.xpReward);
       this.requestSave();
     });
-
-    this.spawnEnemies();
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys("W,A,S,D") as {
@@ -105,6 +108,7 @@ export class CaveScene extends Phaser.Scene {
     this.equipKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     this.healKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.H);
     this.manaKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+    this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
     this.cameras.main.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
     this.physics.world.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
@@ -142,16 +146,27 @@ export class CaveScene extends Phaser.Scene {
     this.handleInput();
 
     for (const enemy of this.enemies) {
-      if (!enemy.active) {
-        continue;
-      }
-
+      if (!enemy.active) continue;
       enemy.updateAI(this.player);
       this.combat.enemyAttack(enemy, this.player);
     }
 
+    if (this.boss && this.boss.active) {
+      this.boss.updateAI(this.player);
+      this.combat.enemyAttack(this.boss, this.player);
+      this.bossBar.update(this.boss);
+
+      const distToBoss = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y);
+      if (distToBoss < 280) {
+        this.bossBar.show(this.boss);
+      } else if (!this.boss.isAlive()) {
+        this.bossBar.hide();
+      }
+    }
+
     if (Phaser.Input.Keyboard.JustDown(this.attackKey)) {
-      this.combat.playerAttack(this.player, this.enemies);
+      const attackList = [this.boss, ...this.enemies];
+      this.combat.playerAttack(this.player, attackList);
       this.requestSave();
     }
 
@@ -204,7 +219,7 @@ export class CaveScene extends Phaser.Scene {
       return;
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E))) {
+    if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
       this.collectNearbyLoot();
     }
 
@@ -216,13 +231,12 @@ export class CaveScene extends Phaser.Scene {
     const mapWidth = WORLD.widthTiles * TILE_SIZE;
     const mapHeight = WORLD.heightTiles * TILE_SIZE;
 
-    this.cameras.main.setBackgroundColor("#16131b");
+    this.cameras.main.setBackgroundColor("#141018");
 
     this.add.tileSprite(0, 0, mapWidth, mapHeight, "path-placeholder")
       .setOrigin(0)
       .setDepth(0);
 
-    // paredes e colunas
     for (let x = 0; x < WORLD.widthTiles; x++) {
       this.add.rectangle(x * TILE_SIZE, 0, 32, 32, 0x2a2430, 1).setOrigin(0).setDepth(0.2);
       this.add.rectangle(x * TILE_SIZE, mapHeight - 32, 32, 32, 0x2a2430, 1).setOrigin(0).setDepth(0.2);
@@ -233,7 +247,6 @@ export class CaveScene extends Phaser.Scene {
       this.add.rectangle(mapWidth - 32, y * TILE_SIZE, 32, 32, 0x2a2430, 1).setOrigin(0).setDepth(0.2);
     }
 
-    // sala principal com rochas
     for (let x = 8; x < 52; x += 6) {
       for (let y = 6; y < 30; y += 7) {
         if ((x + y) % 3 === 0) {
@@ -248,6 +261,13 @@ export class CaveScene extends Phaser.Scene {
 
     this.caveExitZone = this.add.zone(3 * TILE_SIZE + 24, 29 * TILE_SIZE + 10, 48, 24);
     this.physics.add.existing(this.caveExitZone, true);
+
+    this.bossArenaZone = this.add.zone(52 * TILE_SIZE + 20, 12 * TILE_SIZE + 20, 110, 80);
+    this.physics.add.existing(this.bossArenaZone, true);
+
+    this.add.rectangle(52 * TILE_SIZE, 12 * TILE_SIZE, 140, 96, 0x8cc0ff, 0.12)
+      .setOrigin(0)
+      .setDepth(0.1);
   }
 
   private createRock(tileX: number, tileY: number): void {
@@ -272,10 +292,7 @@ export class CaveScene extends Phaser.Scene {
 
     for (const dir of directions) {
       const key = `player-walk-${dir}`;
-
-      if (this.anims.exists(key)) {
-        continue;
-      }
+      if (this.anims.exists(key)) continue;
 
       this.anims.create({
         key,
@@ -344,6 +361,11 @@ export class CaveScene extends Phaser.Scene {
         xpReward: 32
       })
     );
+  }
+
+  private spawnBoss(): void {
+    this.boss = new CaveBoss(this, 790, 170);
+    this.boss.setDepth(11);
   }
 
   private createHUD(): void {
@@ -418,9 +440,7 @@ export class CaveScene extends Phaser.Scene {
 
   private updateLootIndicators(): void {
     for (const drop of this.lootDrops) {
-      if (drop.collected) {
-        continue;
-      }
+      if (drop.collected) continue;
 
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, drop.sprite.x, drop.sprite.y);
       const label = drop.sprite.list[1] as Phaser.GameObjects.Text | undefined;
@@ -551,9 +571,9 @@ export class CaveScene extends Phaser.Scene {
     }
 
     this.isRespawning = true;
-    this.deathOverlay.show("Você perdeu 10 ouro e vai reaparecer.");
+    this.deathOverlay.show("Você perdeu 12 ouro e vai reaparecer.");
 
-    const lostGold = Math.min(10, this.player.gold);
+    const lostGold = Math.min(12, this.player.gold);
     this.player.gold -= lostGold;
 
     this.time.delayedCall(2400, () => {
@@ -564,6 +584,19 @@ export class CaveScene extends Phaser.Scene {
     });
   }
 
+  private updateHUD(): void {
+    const hpRatio = Phaser.Math.Clamp(this.player.hp / this.player.maxHp, 0, 1);
+    const xpNeed = this.player.level * 100;
+    const xpRatio = Phaser.Math.Clamp(this.player.xp / xpNeed, 0, 1);
+
+    this.hpBarFill.width = 180 * hpRatio;
+    this.xpBarFill.width = 180 * xpRatio;
+
+    this.hudText.setText(
+      `HP ${this.player.hp}/${this.player.maxHp} | ATK ${this.player.attackDamage} | DEF ${this.player.defense} | Lv ${this.player.level} | XP ${this.player.xp}/${xpNeed} | Ouro ${this.player.gold}`
+    );
+  }
+
   private requestSave(): void {
     this.saveManager.save({
       version: 1,
@@ -572,12 +605,6 @@ export class CaveScene extends Phaser.Scene {
       inventory: this.inventory.serialize(),
       equipment: this.equipment.serialize(),
       quest: null
-    });
-
-    this.registry.set("playerState", {
-      gold: this.player.gold,
-      hp: this.player.hp,
-      mana: this.player.mana
     });
   }
 
