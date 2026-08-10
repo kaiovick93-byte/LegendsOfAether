@@ -133,20 +133,36 @@ export function getItemDefinition(id: string): ItemDefinition | undefined {
 export function getRandomDropDefinition(): ItemDefinition {
   const roll = Math.random();
 
-  if (roll < 0.45) {
+  if (roll < 0.18) {
+    return ITEM_CATALOG.find((item) => item.id === "rusty_sword")!;
+  }
+
+  if (roll < 0.30) {
+    return ITEM_CATALOG.find((item) => item.id === "leather_armor")!;
+  }
+
+  if (roll < 0.40) {
+    return ITEM_CATALOG.find((item) => item.id === "hunter_bow")!;
+  }
+
+  if (roll < 0.52) {
     return ITEM_CATALOG.find((item) => item.id === "healing_potion")!;
   }
 
-  if (roll < 0.7) {
-    return ITEM_CATALOG.find((item) => item.id === "goblin_ear")!;
+  if (roll < 0.64) {
+    return ITEM_CATALOG.find((item) => item.id === "mana_potion")!;
   }
 
-  if (roll < 0.85) {
+  if (roll < 0.76) {
     return ITEM_CATALOG.find((item) => item.id === "wolf_fang")!;
   }
 
-  if (roll < 0.95) {
-    return ITEM_CATALOG.find((item) => item.id === "mana_potion")!;
+  if (roll < 0.88) {
+    return ITEM_CATALOG.find((item) => item.id === "goblin_ear")!;
+  }
+
+  if (roll < 0.96) {
+    return ITEM_CATALOG.find((item) => item.id === "greater_healing_potion")!;
   }
 
   return Math.random() > 0.5

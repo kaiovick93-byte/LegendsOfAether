@@ -3,6 +3,14 @@ import { PLAYER } from "../config";
 
 export type FacingDirection = "up" | "down" | "left" | "right";
 
+type EquipmentBonuses = {
+  attack?: number;
+  defense?: number;
+  hp?: number;
+  mana?: number;
+  speed?: number;
+};
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   public hp = PLAYER.maxHp;
   public maxHp = PLAYER.maxHp;
@@ -13,6 +21,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   public speed = PLAYER.speed;
   public attackDamage = 12;
+  public defense = 0;
   public attackRange = 44;
   public attackCooldownMs = 320;
 
@@ -20,6 +29,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private nextAttackAt = 0;
   private dead = false;
+
+  private baseMaxHp = PLAYER.maxHp;
+  private baseMaxMana = PLAYER.maxMana;
+  private baseSpeed = PLAYER.speed;
+  private baseAttackDamage = 12;
+
+  private equipmentBonuses: Required<EquipmentBonuses> = {
+    attack: 0,
+    defense: 0,
+    hp: 0,
+    mana: 0,
+    speed: 0
+  };
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, "player-placeholder");
@@ -104,16 +126,40 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.xp >= needed) {
       this.xp -= needed;
       this.level += 1;
-      this.maxHp += 12;
+      this.baseMaxHp += 12;
+      this.baseMaxMana += 4;
+      this.baseAttackDamage += 2;
+      this.baseSpeed += 3;
+      this.recalculateDerivedStats();
       this.hp = this.maxHp;
-      this.maxMana += 4;
       this.mana = this.maxMana;
-      this.attackDamage += 2;
-      this.speed += 3;
     }
+  }
+
+  public applyEquipmentBonuses(bonuses: EquipmentBonuses): void {
+    this.equipmentBonuses = {
+      attack: bonuses.attack ?? 0,
+      defense: bonuses.defense ?? 0,
+      hp: bonuses.hp ?? 0,
+      mana: bonuses.mana ?? 0,
+      speed: bonuses.speed ?? 0
+    };
+
+    this.recalculateDerivedStats();
   }
 
   public isDead(): boolean {
     return this.dead;
+  }
+
+  private recalculateDerivedStats(): void {
+    this.maxHp = this.baseMaxHp + this.equipmentBonuses.hp;
+    this.maxMana = this.baseMaxMana + this.equipmentBonuses.mana;
+    this.speed = this.baseSpeed + this.equipmentBonuses.speed;
+    this.attackDamage = this.baseAttackDamage + this.equipmentBonuses.attack;
+    this.defense = this.equipmentBonuses.defense;
+
+    this.hp = Math.min(this.hp, this.maxHp);
+    this.mana = Math.min(this.mana, this.maxMana);
   }
 }

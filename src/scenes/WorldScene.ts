@@ -4,6 +4,7 @@ import { Enemy } from "../entities/Enemy";
 import { Player } from "../entities/Player";
 import { Inventory } from "../inventory/Inventory";
 import { InventoryPanel } from "../ui/InventoryPanel";
+import { EquipmentManager } from "../equipment/EquipmentManager";
 import { getRandomDropDefinition, type ItemDefinition } from "../items/itemCatalog";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, WORLD } from "../config";
 
@@ -18,6 +19,7 @@ export class WorldScene extends Phaser.Scene {
   private combat!: CombatSystem;
   private inventory!: Inventory;
   private inventoryPanel!: InventoryPanel;
+  private equipment!: EquipmentManager;
 
   private enemies: Enemy[] = [];
   private lootDrops: LootDrop[] = [];
@@ -34,6 +36,7 @@ export class WorldScene extends Phaser.Scene {
   private attackKey!: Phaser.Input.Keyboard.Key;
   private interactKey!: Phaser.Input.Keyboard.Key;
   private inventoryKey!: Phaser.Input.Keyboard.Key;
+  private equipKey!: Phaser.Input.Keyboard.Key;
 
   private hpBarFill!: Phaser.GameObjects.Rectangle;
   private xpBarFill!: Phaser.GameObjects.Rectangle;
@@ -49,19 +52,18 @@ export class WorldScene extends Phaser.Scene {
 
     this.createWorld();
     this.createPlayer();
+
+    this.equipment = new EquipmentManager(this.player);
+    this.inventoryPanel = new InventoryPanel(this, this.inventory);
+    this.inventoryPanel.setVisible(false);
+
     this.createHUD();
     this.spawnEnemies();
 
     this.combat = new CombatSystem(this, (enemy, player) => {
       this.spawnLoot(enemy.x, enemy.y);
-      if (enemy.name === "Goblin") {
-        this.spawnLoot(enemy.x + 8, enemy.y + 8);
-      }
       player.gainXp(0);
     });
-
-    this.inventoryPanel = new InventoryPanel(this, this.inventory);
-    this.inventoryPanel.setVisible(false);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys("W,A,S,D") as {
@@ -73,6 +75,7 @@ export class WorldScene extends Phaser.Scene {
     this.attackKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.inventoryKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+    this.equipKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
 
     this.cameras.main.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
     this.physics.world.setBounds(0, 0, WORLD.widthTiles * TILE_SIZE, WORLD.heightTiles * TILE_SIZE);
@@ -101,6 +104,16 @@ export class WorldScene extends Phaser.Scene {
 
     if (Phaser.Input.Keyboard.JustDown(this.inventoryKey)) {
       this.inventoryPanel.toggle();
+      this.inventoryPanel.refresh();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.equipKey)) {
+      const equipped = this.equipment.autoEquipBestAvailable(this.inventory);
+      if (equipped > 0) {
+        this.showPickupText(`Equipado: ${equipped} item(ns)`);
+      } else {
+        this.showPickupText("Nada para equipar");
+      }
       this.inventoryPanel.refresh();
     }
 
@@ -225,7 +238,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private createHUD(): void {
-    this.add.rectangle(110, 42, 212, 70, 0x182033, 0.92)
+    this.add.rectangle(110, 42, 228, 86, 0x182033, 0.92)
       .setScrollFactor(0)
       .setStrokeStyle(2, 0x32405f, 1)
       .setDepth(50);
@@ -258,11 +271,16 @@ export class WorldScene extends Phaser.Scene {
       color: "#ecf0ff"
     }).setScrollFactor(0).setDepth(52);
 
-    this.hintText = this.add.text(GAME_WIDTH - 18, GAME_HEIGHT - 18, "Espaço: atacar | E: coletar | I: inventário", {
-      fontFamily: "Arial",
-      fontSize: "14px",
-      color: "#c8d1ea"
-    }).setOrigin(1, 1).setScrollFactor(0).setDepth(52);
+    this.hintText = this.add.text(
+      GAME_WIDTH - 18,
+      GAME_HEIGHT - 18,
+      "Espaço: atacar | E: coletar | I: inventário | R: equipar",
+      {
+        fontFamily: "Arial",
+        fontSize: "14px",
+        color: "#c8d1ea"
+      }
+    ).setOrigin(1, 1).setScrollFactor(0).setDepth(52);
   }
 
   private updateHUD(): void {
@@ -274,7 +292,7 @@ export class WorldScene extends Phaser.Scene {
     this.xpBarFill.width = 180 * xpRatio;
 
     this.hudText.setText(
-      `HP ${this.player.hp}/${this.player.maxHp}   Lv ${this.player.level}   XP ${this.player.xp}/${xpNeed}   Itens ${this.inventory.getUsedSlots()}/${this.inventory.maxSlots}`
+      `HP ${this.player.hp}/${this.player.maxHp} | ATK ${this.player.attackDamage} | DEF ${this.player.defense} | Lv ${this.player.level} | XP ${this.player.xp}/${xpNeed}`
     );
   }
 
@@ -296,7 +314,13 @@ export class WorldScene extends Phaser.Scene {
         continue;
       }
 
-      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, drop.sprite.x, drop.sprite.y);
+      const dist = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        drop.sprite.x,
+        drop.sprite.y
+      );
+
       const label = drop.sprite.list[1] as Phaser.GameObjects.Text | undefined;
 
       if (label) {
@@ -311,7 +335,13 @@ export class WorldScene extends Phaser.Scene {
         return false;
       }
 
-      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, drop.sprite.x, drop.sprite.y);
+      const dist = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        drop.sprite.x,
+        drop.sprite.y
+      );
+
       return dist <= 34;
     });
 
@@ -322,6 +352,7 @@ export class WorldScene extends Phaser.Scene {
     const added = this.inventory.addItem(nearest.item, 1);
 
     if (!added) {
+      this.showPickupText("Inventário cheio");
       return;
     }
 

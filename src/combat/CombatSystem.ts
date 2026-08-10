@@ -68,9 +68,11 @@ export class CombatSystem {
     }
 
     enemy.registerAttack(now);
-    player.takeDamage(enemy.attackDamage);
 
-    this.spawnFloatingText(player.x, player.y - 30, `-${enemy.attackDamage}`, "#ff6b6b");
+    const mitigated = Math.max(1, enemy.attackDamage - player.defense);
+    player.takeDamage(mitigated);
+
+    this.spawnFloatingText(player.x, player.y - 30, `-${mitigated}`, "#ff6b6b");
   }
 
   private getAttackHitBox(player: Player): Phaser.Geom.Rectangle {
