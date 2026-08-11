@@ -1,5 +1,5 @@
 // @ts-nocheck
-import {getItemDefinition} from '../items/itemCatalog.js';
+import {getItemDefinition} from '../items/itemCatalog.ts';
 export class EquipmentManager{
  constructor(player){this.player=player;this.slots={weapon:null,armor:null,trinket:null}}
  equip(itemId,inventory){const item=getItemDefinition(itemId);if(!item||!['weapon','armor','trinket'].includes(item.type)||!inventory.has(itemId))return false;const old=this.slots[item.type];this.slots[item.type]=itemId;inventory.remove(itemId,1);if(old)inventory.add(old,1);this.sync();return true}

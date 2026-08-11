@@ -1,5 +1,5 @@
 // @ts-nocheck
-import {getItemDefinition} from '../items/itemCatalog.js';
+import {getItemDefinition} from '../items/itemCatalog.ts';
 export class InventoryPanel {
   constructor(scene,inv){
     this.inv=inv;

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import {QUESTS} from './questData.js';import {getItemDefinition} from '../items/itemCatalog.js';
+import {QUESTS} from './questData.ts';import {getItemDefinition} from '../items/itemCatalog.ts';
 export class QuestManager{constructor(){this.state={}}
  get(giver){return QUESTS.find(q=>q.giver===giver)}
  accept(giver){const q=this.get(giver);if(!q)return false;this.state[q.id]??={accepted:true,completed:false};this.state[q.id].accepted=true;return true}
