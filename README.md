@@ -1,27 +1,22 @@
-# Legends of Aether 0.1.0
+# Legends of Aether 0.1.2
 
-Protótipo jogável de RPG 2D para navegador com visual de fantasia desenhada, inspirado na estrutura de exploração de RPGs clássicos e no ritmo de ARPGs.
+Versão TypeScript/Vite do protótipo consolidado.
 
-## Rodar
-
-A pasta é estática. Basta servir por HTTP:
+## Instalação
 
 ```bash
-python3 -m http.server 8080
+npm install
+npm run dev
 ```
 
-Abra `http://localhost:8080`.
+## Build
 
-## Controles
-
-WASD/setas: mover · Espaço: ataque · Q: habilidade principal · 1: habilidade secundária · 2: mobilidade · F: falar · K: skills · I: inventário · E: interagir
+```bash
+npm run build
+```
 
 ## Estrutura
 
-- `src/`: código do jogo, separado por sistemas
-- `assets/images/characters/player.png`: sprite sheet 16 frames
-- `assets/audio/`: reservado para música e efeitos
+O projeto mantém os sistemas de gameplay completos por módulos: combate, habilidades, classes, skills, equipamentos, inventário, loot, quests, NPCs, bosses, save, UI e cenas.
 
-## Observação
-
-A versão 0.1 é propositalmente autocontida em JavaScript + Phaser CDN para facilitar testes e publicação estática.
+O `player.png` está em `assets/images/characters/player.png`.

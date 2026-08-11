@@ -1,22 +1,31 @@
-# Legends of Aether 0.1.0 — estrutura consolidada
+# Estrutura do projeto — 0.1.2
 
-A pasta `src/` contém módulos reais, não apenas `main.js`.
+## Raiz
+- index.html
+- package.json
+- tsconfig.json
+- vite.config.ts
 
-Principais áreas:
+## Código
+- src/main.ts
+- src/config.ts
+- src/abilities/
+- src/audio/
+- src/character/
+- src/combat/
+- src/entities/
+- src/equipment/
+- src/inventory/
+- src/items/
+- src/loot/
+- src/npc/
+- src/quests/
+- src/save/
+- src/scenes/
+- src/shop/
+- src/skills/
+- src/ui/
+- src/world/
 
-- `src/entities/` jogador, inimigos e chefe
-- `src/scenes/` menu, escolha de classe, cidade, floresta, caverna, castelo e vitória
-- `src/combat/` combate básico
-- `src/abilities/` habilidades por classe
-- `src/skills/` pontos e melhorias
-- `src/inventory/` inventário
-- `src/items/` catálogo de itens
-- `src/loot/` drops
-- `src/save/` save local
-- `src/ui/` HUD, inventário, skills, diálogo e minimapa básico
-- `src/npc/` NPCs
-- `src/quests/` dados de quests
-- `src/world/` portais e atmosfera
-- `src/audio/` efeitos sonoros WebAudio
-
-O asset real `assets/images/characters/player.png` é a sprite sheet 384×384, 16 frames de 96×96.
+## Arte
+- assets/images/characters/player.png

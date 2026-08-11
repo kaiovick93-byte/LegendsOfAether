@@ -1,0 +1,2 @@
+// @ts-nocheck
+export class ScreenFade{constructor(scene){this.scene=scene;this.g=scene.add.rectangle(scene.scale.width/2,scene.scale.height/2,scene.scale.width,scene.scale.height,0x000000,1).setScrollFactor(0).setDepth(1000)}in(){this.g.setAlpha(1);this.scene.tweens.add({targets:this.g,alpha:0,duration:220})}out(cb){this.g.setAlpha(0);this.scene.tweens.add({targets:this.g,alpha:1,duration:220,onComplete:cb})}}
