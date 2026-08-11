@@ -1,5 +1,5 @@
 // @ts-nocheck
-import {Enemy} from './Enemy.ts';
+import {Enemy} from './Enemy';
 export class MiniBossEnemy extends Enemy {
   constructor(scene,x,y,config){
     super(scene,x,y,config.name,{...config,scale:1.35});
