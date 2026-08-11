@@ -1,0 +1,3 @@
+export const ITEMS={healing_potion:{id:'healing_potion',name:'Poção de Cura',rarity:'common',heal:30},mana_potion:{id:'mana_potion',name:'Poção de Mana',rarity:'common',mana:25},brute_armor:{id:'brute_armor',name:'Couraça do Brutamontes',rarity:'rare',defense:7},wraith_blade:{id:'wraith_blade',name:'Lâmina Espectral',rarity:'epic',attack:9},royal_mage_staff:{id:'royal_mage_staff',name:'Cajado da Coroa',rarity:'epic',attack:11,mana:20},royal_signet:{id:'royal_signet',name:'Selo Real de Aether',rarity:'legendary',attack:10,defense:10,hp:30,mana:20}};
+export function getItem(id){return ITEMS[id]}
+export const allItems=Object.values(ITEMS)
