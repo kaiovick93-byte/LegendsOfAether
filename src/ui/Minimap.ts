@@ -1,6 +1,6 @@
 // @ts-nocheck
 export class Minimap {
-  constructor(private scene:Phaser.Scene, private w=1920, private h=1152){
+  constructor(private scene:Phaser.Scene, private w=1920, private h=1152, private localName=`LOCAL: ${localName}`){
     const pad=14; const mw=156; const mh=118;
     this.bg=scene.add.rectangle(scene.scale.width-pad, pad,mw,mh,0x182033,.92).setOrigin(1,0).setScrollFactor(0).setDepth(680).setStrokeStyle(2,0x32405f,1);
     this.title=scene.add.text(scene.scale.width-pad-10,pad+8,'MAPA',{fontFamily:'Arial',fontSize:12,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(1,0).setScrollFactor(0).setDepth(681);

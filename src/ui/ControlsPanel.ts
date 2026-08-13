@@ -37,7 +37,7 @@ export class ControlsPanel {
       ['K', 'Árvore de habilidades'],
       ['R', 'Equipar melhor item'],
       ['T', 'Abrir loja'],
-      ['C', 'Abrir/fechar controles']
+      ['C', 'Abrir/fechar controles'],['P','Pausar o jogo / menu de pausa'],['Esc','Fechar janela atual']
     ];
 
     controls.forEach(([key, description], index) => {
