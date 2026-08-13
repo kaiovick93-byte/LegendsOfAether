@@ -26,8 +26,8 @@ export class WorldScene extends Phaser.Scene{
   this.equip=new EquipmentManager(this.player);this.sfx=new SfxManager(this);this.player.scene.sfx=this.sfx;
   this.loot=new LootManager(this,this.inv);this.combat=new CombatSystem(this,this.loot);this.abilities=new AbilitySystem(this,this.player);this.questManager=new QuestManager();
   this.loadGame();
-  this.physics.world.setBounds(0,0,1920,1152);this.cameras.main.setBounds(0,0,1920,1152);
-  this.cameras.main.setDeadzone(220,110);this.cameras.main.startFollow(this.player,true,0.12,0.12,0,-55);this.cameras.main.setRoundPixels(true);
+  this.physics.world.setBounds(0,0,1920,1000);this.cameras.main.setBounds(0,0,1920,1152);
+  this.cameras.main.setDeadzone(220,90);this.cameras.main.startFollow(this.player,true,0.12,0.12,0,-110);this.cameras.main.setRoundPixels(true);
   this.createWorld();this.createNpcs();this.spawnEnemies();this.setupInput();this.setupHud();this.installUnload();this.saveGame();
  }
  loadGame(){
@@ -115,10 +115,10 @@ export class WorldScene extends Phaser.Scene{
   const local=this.getLocal();
   this.hud.setLocalName(local);this.hud.update();
 
-  if(this.player.x>1690&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'GreenWoodsScene',x:90,y:560});this.scene.start('GreenWoodsScene')}
+  const nearForestPortal=this.forestPortal?.getBounds().contains(this.player.x,this.player.y)??false;if(nearForestPortal&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'GreenWoodsScene',x:90,y:560});this.scene.start('GreenWoodsScene')}
  }
  isSafeZone(){return this.player.x>=70&&this.player.x<=890&&this.player.y>=70&&this.player.y<=690}
- getLocal(){return this.isSafeZone()?'CIDADE DE AETHER':this.player.x>1690?'PORTAL DA FLORESTA':'ARREDORES DA CIDADE'}
+ getLocal(){const nearPortal=this.forestPortal?.getBounds().contains(this.player.x,this.player.y)??false;return this.isSafeZone()?'CIDADE DE AETHER':nearPortal?'PORTAL DA FLORESTA':'ARREDORES DA CIDADE'}
  move(){const dx=(this.cursors.right.isDown||this.keys.D.isDown?1:0)-(this.cursors.left.isDown||this.keys.A.isDown?1:0);const dy=(this.cursors.down.isDown||this.keys.S.isDown||this.cursors.down.isDown?1:0)-(this.cursors.up.isDown||this.keys.W.isDown?1:0);this.player.playMove(this.player.move(dx,dy))}
  updateNpcPrompts(){const list=[this.merchant,this.blacksmith,this.healer,this.tavernKeeper,this.scholar,this.questNpc,this.rightGuard,this.bottomGuard,...(this.walkers||[])].filter(Boolean);for(const n of list){const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,n.x,n.y);n.setPrompt(n===this.merchant&&d<80?'F • Conversar   T • Loja':'F • Conversar');n.setNearby(d<80)}}
  tryShop(){const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.merchant.x,this.merchant.y);if(d>80){this.showActionMessage('Aproxime-se do Mercador para abrir a loja.');return}this.shop.toggle();this.shop.refresh();this.hud.openExternalModal()}
