@@ -20,9 +20,9 @@ export class OptionsScene extends Phaser.Scene{
     'ITENS:  H poção HP • M poção Mana • I inventário • R equipar',
     'MUNDO:  E coletar • F conversar • T loja (Mercador)',
     'INTERFACE:  K skills • C controles • P pausa • Esc fechar',
-   ].join('\\n\\n'),{fontFamily:'Arial',fontSize:15,color:'#c8d1ea',align:'center',lineSpacing:4,wordWrap:{width:660}}).setOrigin(.5);
+   ].join('\n\n'),{fontFamily:'Arial',fontSize:15,color:'#c8d1ea',align:'center',lineSpacing:4,wordWrap:{width:660}}).setOrigin(.5);
   }else{
-   this.pb=this.add.text(480,255,'Legends of Aether é um RPG de ação 2D para navegador.\\n\\nExplore Aether, enfrente monstros corrompidos, escolha sua classe, encontre equipamentos e descubra o que aconteceu com o antigo reino.\\n\\nVersão 0.1.4 — Alpha',{fontFamily:'Arial',fontSize:16,color:'#c8d1ea',align:'center',lineSpacing:6,wordWrap:{width:610}}).setOrigin(.5);
+   this.pb=this.add.text(480,255,'Legends of Aether é um RPG de ação 2D para navegador.\n\nExplore Aether, enfrente monstros corrompidos, escolha sua classe, encontre equipamentos e descubra o que aconteceu com o antigo reino.\n\nVersão 0.1.4 — Alpha',{fontFamily:'Arial',fontSize:16,color:'#c8d1ea',align:'center',lineSpacing:6,wordWrap:{width:610}}).setOrigin(.5);
   }
   this.pc=this.add.text(480,440,'Esc — fechar',{fontFamily:'Arial',fontSize:13,color:'#9aa8c7',backgroundColor:'#24314d',padding:8}).setOrigin(.5).setInteractive({useHandCursor:true});this.pc.on('pointerdown',()=>this.closePanel())
  }
