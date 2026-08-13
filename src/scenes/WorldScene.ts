@@ -98,6 +98,7 @@ export class WorldScene extends Phaser.Scene{
   if(this.player.isDead()){this.handleDeath();return}
 
   this.move();
+  this.enforceCityGates();
   const safe=this.isSafeZone();
   for(let i=0;i<this.enemies.length;i++){
    const e=this.enemies[i];
@@ -115,7 +116,17 @@ export class WorldScene extends Phaser.Scene{
   const local=this.getLocal();
   this.hud.setLocalName(local);this.hud.update();
 
-  const nearForestPortal=this.forestPortal?.getBounds().contains(this.player.x,this.player.y)??false;if(nearForestPortal&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'GreenWoodsScene',x:90,y:560});this.scene.start('GreenWoodsScene')}
+  const nearForestPortal=this.forestPortal?.getBounds().contains(this.player.x,this.player.y)??false;if(nearForestPortal&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'GreenWoodsScene',x:220,y:560});this.scene.start('GreenWoodsScene')}
+ }
+ enforceCityGates(){
+  const inSafe=this.player.x>=70&&this.player.x<=890&&this.player.y>=70&&this.player.y<=690;
+  if(!inSafe)return;
+  const atEastGate=this.player.x>=835&&this.player.x<=905&&this.player.y>=300&&this.player.y<=500;
+  const atSouthGate=this.player.x>=390&&this.player.x<=510&&this.player.y>=650&&this.player.y<=725;
+  if(this.player.x>890&&!atEastGate)this.player.x=889;
+  if(this.player.y>690&&!atSouthGate)this.player.y=689;
+  if(this.player.x<70)this.player.x=71;
+  if(this.player.y<70)this.player.y=71;
  }
  isSafeZone(){return this.player.x>=70&&this.player.x<=890&&this.player.y>=70&&this.player.y<=690}
  getLocal(){const nearPortal=this.forestPortal?.getBounds().contains(this.player.x,this.player.y)??false;return this.isSafeZone()?'CIDADE DE AETHER':nearPortal?'PORTAL DA FLORESTA':'ARREDORES DA CIDADE'}
