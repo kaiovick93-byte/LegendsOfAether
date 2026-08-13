@@ -1,74 +1,10 @@
 // @ts-nocheck
 import {ScreenFade} from '../ui/ScreenFade';
-import {GAME_WIDTH,GAME_HEIGHT} from '../config';
-
-export class OptionsScene extends Phaser.Scene {
-  constructor(){super('OptionsScene')}
-
-  create(){
-    this.fade=new ScreenFade(this);
-    this.page='root';
-    this.renderRoot();
-    this.fade.in();
-  }
-
-  clearPage(){
-    if(this.pageObjects){
-      for(const o of this.pageObjects){o.destroy();}
-    }
-    this.pageObjects=[];
-  }
-
-  addText(text,x,y,style={}){
-    const t=this.add.text(x,y,text,{fontFamily:'Arial',fontSize:'18px',color:'#ecf0ff',...style}).setOrigin(.5);
-    this.pageObjects.push(t);
-    return t;
-  }
-
-  button(label,y,onClick,accent=false){
-    const b=this.add.text(GAME_WIDTH/2,y,label,{fontFamily:'Arial',fontSize:20,color:accent?'#73e6a8':'#ecf0ff',backgroundColor:'#24314d',padding:{left:22,right:22,top:11,bottom:11}}).setOrigin(.5).setInteractive({useHandCursor:true});
-    b.on('pointerover',()=>b.setStyle({color:'#ffffff',backgroundColor:'#36507c'}));
-    b.on('pointerout',()=>b.setStyle({color:accent?'#73e6a8':'#ecf0ff',backgroundColor:'#24314d'}));
-    b.on('pointerdown',onClick);
-    this.pageObjects.push(b);
-    return b;
-  }
-
-  renderRoot(){
-    this.clearPage();
-    this.add.text(GAME_WIDTH/2,80,'OPÇÕES / SOBRE',{fontFamily:'Arial',fontSize:34,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5);
-    this.pageObjects.push(this.children.list[this.children.list.length-1]);
-    this.addText('Consulte os comandos do jogo ou conheça o mundo de Aether.',GAME_WIDTH/2,128,{fontSize:15,color:'#9aa8c7'});
-    this.button('CONTROLES',220,()=>this.renderControls());
-    this.button('SOBRE',285,()=>this.renderAbout());
-    this.button('VOLTAR AO MENU',350,()=>this.returnMenu(),true);
-  }
-
-  renderControls(){
-    this.clearPage();
-    this.addText('CONTROLES',GAME_WIDTH/2,65,{fontSize:32,fontStyle:'bold'});
-    const left=[
-      ['WASD / Setas','Mover'],['Espaço','Ataque básico'],['Q','Habilidade principal'],['1','Habilidade secundária'],['2','Mobilidade'],['H','Poção de HP']
-    ];
-    const right=[
-      ['M','Poção de Mana'],['I','Inventário'],['R','Equipar'],['E','Interagir / coletar'],['F','Conversar'],['T','Loja (Mercador)'],['K','Skills'],['C','Controles'],['P','Pausa'],['Esc','Fechar janela']
-    ];
-    const startY=125;
-    left.forEach((r,i)=>this.addText(`${r[0]}  —  ${r[1]}`,255,startY+i*38,{fontSize:16,color:'#c8d1ea'}).setOrigin(.5));
-    right.forEach((r,i)=>this.addText(`${r[0]}  —  ${r[1]}`,705,startY+i*38,{fontSize:16,color:'#c8d1ea'}).setOrigin(.5));
-    this.button('VOLTAR',GAME_HEIGHT-70,()=>this.renderRoot(),true);
-  }
-
-  renderAbout(){
-    this.clearPage();
-    this.addText('SOBRE',GAME_WIDTH/2,70,{fontSize:32,fontStyle:'bold'});
-    const text='Legends of Aether é um RPG de ação 2D para navegador.\n\nExplore o reino de Aether, escolha entre Guerreiro, Mago e Caçador,\nenfrente criaturas corrompidas, encontre equipamentos, complete missões\ne descubra a origem da corrupção que tomou o castelo.\n\nEsta é uma versão Alpha em desenvolvimento, com foco em combate,\nprogressão de personagem, exploração e narrativa.';
-    this.addText(text,GAME_WIDTH/2,250,{fontSize:17,color:'#c8d1ea',align:'center',wordWrap:{width:700},lineSpacing:8});
-    this.addText('Legends of Aether • Alpha 0.1.3',GAME_WIDTH/2,460,{fontSize:14,color:'#7280a8'});
-    this.button('VOLTAR',GAME_HEIGHT-70,()=>this.renderRoot(),true);
-  }
-
-  returnMenu(){
-    this.fade.out(()=>this.scene.start('MenuScene'));
-  }
+export class OptionsScene extends Phaser.Scene{
+ constructor(){super('OptionsScene')}
+ create(){this.fade=new ScreenFade(this);this.panelOpen=false;this.esc=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);this.add.text(480,70,'OPÇÕES / SOBRE',{fontFamily:'Arial',fontSize:32,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5);this.addButton('CONTROLES',210,()=>this.showPanel('CONTROLES',`WASD / Setas — mover\nEspaço — ataque básico\nQ — habilidade principal\n1 — habilidade secundária\n2 — mobilidade\nH — poção de HP\nM — poção de Mana\nE — coletar/interagir\nF — conversar\nI — inventário\nK — skills\nR — equipar\nT — loja (Mercador)\nC — controles durante o jogo\nP — pausa\nEsc — fechar janela`));this.addButton('SOBRE',290,()=>this.showPanel('SOBRE',`Legends of Aether é um RPG de ação 2D para navegador.\n\nExplore Aether, enfrente monstros corrompidos, escolha sua classe, encontre equipamentos e descubra o que aconteceu com o antigo reino.\n\nVersão 0.1.4 — Alpha`));this.addButton('VOLTAR AO MENU',390,()=>this.fade.out(()=>this.scene.start('MenuScene')));this.fade.in()}
+ update(){if(this.panelOpen&&Phaser.Input.Keyboard.JustDown(this.esc))this.closePanel()}
+ addButton(t,y,cb){this.add.text(480,y,t,{fontFamily:'Arial',fontSize:20,color:'#ecf0ff',backgroundColor:'#24314d',padding:14}).setOrigin(.5).setInteractive({useHandCursor:true}).on('pointerdown',cb)}
+ showPanel(title,body){this.closePanel();this.panelOpen=true;this.panel=this.add.rectangle(480,300,700,360,0x101827,.99).setStrokeStyle(2,0x4b5f87,1);this.pt=this.add.text(480,160,title,{fontFamily:'Arial',fontSize:24,color:'#ffd166',fontStyle:'bold'}).setOrigin(.5);this.pb=this.add.text(480,245,body,{fontFamily:'Arial',fontSize:16,color:'#c8d1ea',align:'center',wordWrap:{width:600}}).setOrigin(.5);this.pc=this.add.text(480,445,'Esc — fechar',{fontFamily:'Arial',fontSize:13,color:'#9aa8c7',backgroundColor:'#24314d',padding:8}).setOrigin(.5).setInteractive({useHandCursor:true});this.pc.on('pointerdown',()=>this.closePanel())}
+ closePanel(){if(!this.panelOpen)return;[this.panel,this.pt,this.pb,this.pc].forEach(o=>o?.destroy());this.panelOpen=false}
 }
