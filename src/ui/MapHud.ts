@@ -1,10 +1,94 @@
 // @ts-nocheck
-import {BottomActionBar} from './BottomActionBar';import {ControlsPanel} from './ControlsPanel';import {Minimap} from './Minimap';import {PauseMenu} from './PauseMenu';import {CharacterInventoryPanel} from './CharacterInventoryPanel';import {SkillPanel} from './SkillPanel';import {useHealing,useMana} from '../items/itemUse';
+import {BottomActionBar} from './BottomActionBar';
+import {ControlsPanel} from './ControlsPanel';
+import {Minimap} from './Minimap';
+import {PauseMenu} from './PauseMenu';
+import {CharacterInventoryPanel} from './CharacterInventoryPanel';
+import {SkillPanel} from './SkillPanel';
+import {useHealing,useMana} from '../items/itemUse';
+
 export class MapHud{
- constructor(scene,opts){this.scene=scene;this.player=opts.player;this.inventory=opts.inventory;this.equipment=opts.equipment;this.abilities=opts.abilities;this.skills=opts.skills;this.save=opts.save;this.bottom=new BottomActionBar(scene,this.player,this.abilities,(id)=>this.inventory.count(id));this.minimap=new Minimap(scene,opts.worldWidth,opts.worldHeight,opts.localName);(opts.markers||[]).forEach(m=>this.minimap.addMarker(m));this.controls=new ControlsPanel(scene);this.inventoryPanel=new CharacterInventoryPanel(scene,this.player,this.inventory,this.equipment,()=>this.save());this.skillPanel=new SkillPanel(scene,this.skills);this.pause=new PauseMenu(scene,()=>this.save(),()=>this.toMenu());this.keys={c:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C),i:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I),k:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K),p:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P),esc:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC),h:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.H),m:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M),r:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R),e:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),f:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),t:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T)}}
- toMenu(){this.save();this.scene.scene.start('MenuScene')}
- handle(actions){if(Phaser.Input.Keyboard.JustDown(this.keys.esc)){this.closeAll();return true}if(Phaser.Input.Keyboard.JustDown(this.keys.c)){const open=!this.controls.isVisible();this.closeAll();this.controls.setVisible(open);this.setHudVisible(!open);return true}if(Phaser.Input.Keyboard.JustDown(this.keys.p)){const open=!this.pause.isOpen();this.closeAll();if(open)this.pause.open();else this.pause.close();this.setHudVisible(!open);return true}if(this.controls.isVisible()||this.pause.isOpen())return true;if(Phaser.Input.Keyboard.JustDown(this.keys.i)){this.skillPanel.setVisible(false);this.inventoryPanel.toggle();this.setHudVisible(!this.inventoryPanel.isVisible());return true}if(Phaser.Input.Keyboard.JustDown(this.keys.k)){this.inventoryPanel.hide();this.skillPanel.toggle();this.setHudVisible(!this.skillPanel.visible);return true}if(this.inventoryPanel.isVisible()||this.skillPanel.visible)return true;if(Phaser.Input.Keyboard.JustDown(this.keys.h)){useHealing(this.player,this.inventory);actions.afterAction?.();return true}if(Phaser.Input.Keyboard.JustDown(this.keys.m)){useMana(this.player,this.inventory);actions.afterAction?.();return true}if(Phaser.Input.Keyboard.JustDown(this.keys.r)){this.equipment.autoEquipBest(this.inventory);actions.afterAction?.();return true}if(Phaser.Input.Keyboard.JustDown(this.keys.e)){actions.collect?.();return true}if(Phaser.Input.Keyboard.JustDown(this.keys.f)){actions.talk?.();return true}if(Phaser.Input.Keyboard.JustDown(this.keys.t)){actions.shop?.();return true}return false}
- openExternalModal(){this.setHudVisible(false)}closeExternalModal(){this.setHudVisible(true)}setHudVisible(v){this.bottom.setVisible(v);this.minimap.setVisible(v)}update(){if(!this.controls.isVisible()&&!this.pause.isOpen()&&!this.inventoryPanel.isVisible()&&!this.skillPanel.visible){this.bottom.update();this.minimap.update(this.player.x,this.player.y)}}
- closeAll(){this.controls.setVisible(false);this.inventoryPanel.hide();this.skillPanel.setVisible(false);this.pause.close()}
+ constructor(scene,opts){
+  this.scene=scene;
+  this.player=opts.player;
+  this.inventory=opts.inventory;
+  this.equipment=opts.equipment;
+  this.abilities=opts.abilities;
+  this.skills=opts.skills;
+  this.save=opts.save;
+  this.bottom=new BottomActionBar(scene,this.player,this.abilities,(id)=>this.inventory.count(id));
+  this.minimap=new Minimap(scene,opts.worldWidth,opts.worldHeight,opts.localName);
+  (opts.markers||[]).forEach(m=>this.minimap.addMarker(m));
+  this.controls=new ControlsPanel(scene);
+  this.inventoryPanel=new CharacterInventoryPanel(scene,this.player,this.inventory,this.equipment,()=>this.save());
+  this.skillPanel=new SkillPanel(scene,this.skills);
+  this.pause=new PauseMenu(scene,()=>this.save(),()=>this.toMenu());
+  this.keys={
+   c:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C),
+   i:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I),
+   k:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K),
+   p:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P),
+   esc:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC),
+   h:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.H),
+   m:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M),
+   r:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R),
+   e:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
+   f:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),
+   t:scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T)
+  };
+ }
+ isInventoryVisible(){return typeof this.inventoryPanel.isVisible==='function' ? this.inventoryPanel.isVisible() : !!this.inventoryPanel.bg?.visible;}
+ handle(actions){
+  if(Phaser.Input.Keyboard.JustDown(this.keys.esc)){this.closeAll();return true;}
+  if(Phaser.Input.Keyboard.JustDown(this.keys.c)){
+   const open=!this.controls.isVisible();
+   this.closeAll();
+   this.controls.setVisible(open);
+   this.setHudVisible(!open);
+   return true;
+  }
+  if(Phaser.Input.Keyboard.JustDown(this.keys.p)){
+   const open=!this.pause.isOpen();
+   this.closeAll();
+   if(open)this.pause.open();else this.pause.close();
+   this.setHudVisible(!open);
+   return true;
+  }
+  if(this.controls.isVisible()||this.pause.isOpen())return true;
+
+  if(Phaser.Input.Keyboard.JustDown(this.keys.i)){
+   this.skillPanel.setVisible(false);
+   this.inventoryPanel.toggle();
+   this.setHudVisible(!this.isInventoryVisible());
+   return true;
+  }
+
+  if(Phaser.Input.Keyboard.JustDown(this.keys.k)){
+   this.inventoryPanel.hide();
+   this.skillPanel.toggle();
+   this.setHudVisible(!this.skillPanel.visible);
+   return true;
+  }
+
+  if(this.isInventoryVisible()||this.skillPanel.visible)return true;
+
+  if(Phaser.Input.Keyboard.JustDown(this.keys.h)){useHealing(this.player,this.inventory);actions.afterAction?.();return true;}
+  if(Phaser.Input.Keyboard.JustDown(this.keys.m)){useMana(this.player,this.inventory);actions.afterAction?.();return true;}
+  if(Phaser.Input.Keyboard.JustDown(this.keys.r)){this.equipment.autoEquipBest(this.inventory);actions.afterAction?.();return true;}
+  if(Phaser.Input.Keyboard.JustDown(this.keys.e)){actions.collect?.();return true;}
+  if(Phaser.Input.Keyboard.JustDown(this.keys.f)){actions.talk?.();return true;}
+  if(Phaser.Input.Keyboard.JustDown(this.keys.t)){actions.shop?.();return true;}
+  return false;
+ }
+ openExternalModal(){this.setHudVisible(false);}
+ closeExternalModal(){this.setHudVisible(true);}
+ setHudVisible(v){this.bottom.setVisible(v);this.minimap.setVisible(v);}
+ update(){
+  if(!this.controls.isVisible()&&!this.pause.isOpen()&&!this.isInventoryVisible()&&!this.skillPanel.visible){
+   this.bottom.update();
+   this.minimap.update(this.player.x,this.player.y);
+  }
+ }
+ closeAll(){this.controls.setVisible(false);this.inventoryPanel.hide();this.skillPanel.setVisible(false);this.pause.close();}
  destroy(){this.bottom.destroy?.();this.minimap.destroy();}
 }

@@ -7,6 +7,7 @@ export class CharacterInventoryPanel{
  this.slotDefs=[['weapon','ARMA'],['armor','ARMADURA'],['trinket','TRINKET']];this.slots=[];this.rows=[];this.refresh();}
  show(){this.setVisible(true);this.refresh()}
  hide(){this.setVisible(false)}
+ isVisible(){return this.bg.visible}
  toggle(){this.setVisible(!this.bg.visible);if(this.bg.visible)this.refresh()}
  setVisible(v){[this.bg,this.title,this.close,this.statusBg,this.classText,this.statsText,this.xpBg,this.xp,this.xpText,this.attrText,this.equipBg,this.invBg,this.equipTitle,this.invTitle,this.appearance,this.appearanceText].forEach(o=>o.setVisible(v));this.slots.forEach(s=>{s.box.setVisible(v);s.label.setVisible(v);s.value.setVisible(v)});this.rows.forEach(r=>r.setVisible(v));this.bg.setVisible(v)}
  refresh(){const names={warrior:'Guerreiro',mage:'Mago',ranger:'Caçador'};this.classText.setText(`${names[this.player.characterClass]}  •  Nível ${this.player.level}  •  Ouro ${this.player.gold}`);this.statsText.setText(`HP ${this.player.hp}/${this.player.maxHp}   •   MANA ${this.player.mana}/${this.player.maxMana}\nATQ ${this.player.attackDamage}   •   DEF ${this.player.defense}   •   SPD ${this.player.speed}`);const need=this.player.level*100;const ratio=Math.max(0,Math.min(1,this.player.xp/need));this.xp.width=300*ratio;this.xpText.setText(`XP ${this.player.xp}/${need}`);this.attrText.setText(`Pontos de atributos: ${this.player.attributePoints}     +HP +5   +MANA +3   +ATQ +1   +DEF +1`);this.createAttrButtons();this.createSlots();this.createRows()}
