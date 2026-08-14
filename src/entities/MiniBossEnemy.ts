@@ -9,7 +9,7 @@ export class MiniBossEnemy extends Enemy {
     this.specialRadius=config.specialRadius||90;
     this.specialDamage=config.specialDamage||28;
     this.enraged=false;
-    this.setTint(config.tint||0xc084fc);
+    this.originalTint=config.tint||0xc084fc;this.setTint(this.originalTint);
   }
   updateAI(p){
     super.updateAI(p);
