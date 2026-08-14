@@ -1,4 +1,4 @@
-# Legends of Aether 0.1.4 – Estabilização de Gameplay
+# Legends of Aether 0.1.5 – Estabilização de Gameplay
 
 ## Instalação
 
