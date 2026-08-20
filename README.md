@@ -1,4 +1,4 @@
-# Legends of Aether 0.1.6 – Final Stable
+# Legends of Aether 0.1.3 – Estabilização de Gameplay
 
 ## Instalação
 

@@ -5,7 +5,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite{
   this.name=name;this.maxHp=stats.hp||30;this.hp=this.maxHp;this.speed=stats.speed||70;this.attackDamage=stats.attackDamage||8;this.aggroRange=stats.aggroRange||220;this.xpReward=stats.xpReward||10;this.attackCooldown=stats.attackCooldown||900;this.nextAttack=0;this.dead=false;this.rewardGranted=false;
   this.originalTint=stats.tint||0xff6b6b;this.setTint(this.originalTint);this.setScale(stats.scale||1);this.setDepth(15);
   this.hpBg=scene.add.rectangle(0,-32,54,6,0x202838,0.95).setOrigin(0.5).setDepth(40);
-  this.hpFill=scene.add.rectangle(-27,-32,54,6,0xff4d5a,1).setOrigin(0,0.5).setDepth(41);
+  this.hpFill=scene.add.rectangle(-27,-32,54,6,0xff3b30,1).setOrigin(0,0.5).setDepth(41);
   this.nameText=scene.add.text(0,-46,name,{fontFamily:'Arial',fontSize:11,color:'#ecf0ff',backgroundColor:'#182033',padding:{left:4,right:4,top:2,bottom:2}}).setOrigin(0.5).setDepth(42);
   this.updateBars();
  }
