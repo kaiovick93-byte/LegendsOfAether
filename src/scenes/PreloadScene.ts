@@ -2,6 +2,8 @@
 export class PreloadScene extends Phaser.Scene{
   constructor(){super('PreloadScene')}
   preload(){
+    this.load.spritesheet('merchant','assets/images/characters/npcs/merchant.png',{frameWidth:128,frameHeight:160});
+    this.load.spritesheet('blacksmith','assets/images/characters/npcs/blacksmith.png',{frameWidth:128,frameHeight:160});
     this.load.spritesheet('player','assets/images/characters/player.png',{frameWidth:96,frameHeight:96});
     const g=this.add.graphics();
     g.fillStyle(0xff6b6b).fillRect(0,0,32,32);g.generateTexture('enemy',32,32);
