@@ -1,4 +1,4 @@
-# Legends of Aether 0.1.6 (Round 10) – Mercador e Ferreiro (Sprites) Implementados 
+# Legends of Aether 0.1.6 (Round 11) – Loja do Mercador Implementado
 
 ## Instalação
 
@@ -11,6 +11,11 @@ npm run dev
 ```
 
 O Phaser agora está em `dependencies`, portanto **não é necessário** rodar `npm install phaser` separadamente.
+
+## Sprites Implementados
+
+- Mercador
+- Ferreiro
 
 ## Controles
 
