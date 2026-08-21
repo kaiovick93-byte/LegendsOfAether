@@ -1,4 +1,4 @@
-# Legends of Aether 0.1.6 (Round 11) – Loja do Mercador Implementado
+# Legends of Aether 0.1.6 (Round 12) – Curandeira Implementado
 
 ## Instalação
 
@@ -13,9 +13,9 @@ npm run dev
 O Phaser agora está em `dependencies`, portanto **não é necessário** rodar `npm install phaser` separadamente.
 
 ## Sprites Implementados
-
 - Mercador
 - Ferreiro
+- Curandeira
 
 ## Controles
 
