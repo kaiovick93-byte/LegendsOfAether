@@ -8,7 +8,7 @@ import {Npc} from './Npc';
  */
 export class WanderingNpc extends Npc{
  constructor(scene,x,y,name,text,route=[],options={}){
-  super(scene,x,y,name,text,{role:options.role||'',portrait:options.portrait||'',idleProfile:options.idleProfile||'',idleFacing:options.idleFacing||null});
+  super(scene,x,y,name,text,{role:options.role||'',portrait:options.portrait||'',idleProfile:options.idleProfile||'',idleFacing:options.idleFacing||null,visualScale:options.visualScale??.46});
   this.home={x,y};
   this.route=(route&&route.length?route:[{x,y}]).map(p=>({x:p.x,y:p.y,pause:p.pause}));
   this.routeIndex=0;
@@ -32,9 +32,9 @@ export class WanderingNpc extends Npc{
 
  handleNpcUpdate(time){
   if(!this.active||!this.visible||!this.sprite)return;
-  // Enquanto caminha, a animação direcional não deve ser interrompida.
+  // A respiração sutil continua ativa, mas nenhuma ação idle pode segurar o
+  // agendamento da rota. Isso elimina as pausas que pareciam travamentos.
   if(this.routeMoving)return;
-  super.handleNpcUpdate(time);
  }
 
  // Aproximar-se não interrompe mais a rotina do NPC. A pausa ocorre somente
@@ -66,8 +66,8 @@ export class WanderingNpc extends Npc{
 
  moveToNextRoutePoint(){
   if(!this.active||!this.scene||this.route.length<2)return;
-  if(this.dialoguePaused||this.idleActionActive){
-   this.scheduleNext(this.dialoguePaused?450:280);
+  if(this.dialoguePaused){
+   this.scheduleNext(450);
    return;
   }
 
@@ -92,6 +92,7 @@ export class WanderingNpc extends Npc{
    y:target.y,
    duration,
    ease:'Linear',
+   onUpdate:()=>this.setDepth(this.scene.cityDepth?.(this.y,.04)??(5+this.y/1000+.04)),
    onComplete:()=>{
     this.routeTween=null;
     this.routeMoving=false;

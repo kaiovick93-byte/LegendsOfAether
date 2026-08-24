@@ -16,9 +16,6 @@ export class AmbientCityLife{
     this.createCat();
     this.createOldManAndBirds();
     this.createUrbanPerchedBirds();
-    this.createChimneySmoke();
-    this.createFacadeCloths();
-    this.createSweeper();
     this.createChickens();
     this.createChicks();
     this.createRats();
@@ -44,10 +41,10 @@ export class AmbientCityLife{
 
   createDog(){
     const route=[
-      {x:760,y:808,pause:1000},{x:820,y:820,pause:650},{x:890,y:826,pause:900},
-      {x:950,y:818,pause:750},{x:900,y:798,pause:850},{x:820,y:798,pause:760}
+      {x:520,y:690,pause:1000},{x:548,y:742,pause:650},{x:620,y:790,pause:900},
+      {x:690,y:808,pause:750},{x:650,y:764,pause:850},{x:570,y:718,pause:760}
     ];
-    this.dog=this.createRouteAnimal('city_dog','city-dog-walk',760,808,route,{speed:29,scale:.78,startDelay:450});
+    this.dog=this.createRouteAnimal('city_dog','city-dog-walk',520,690,route,{speed:29,scale:.78,startDelay:450});
   }
 
   createCat(){
@@ -210,34 +207,31 @@ export class AmbientCityLife{
   }
 
   createChickens(){
-    // Round 44: mantemos o terreiro do galinheiro compacto e adicionamos um
-    // pouco mais de leitura de "família" ao grupo principal. As galinhas
-    // adultas seguem como massa visual principal e deixam espaço para pintinhos
-    // circularem em rotas ainda menores ao redor do cercado.
+    // Terreiro dedicado no canto sudoeste, completamente fora das ruas.
     this.chickens=[];
 
     // Galinha branca: núcleo frontal do galinheiro.
-    this.createChicken('city_chicken_white','city-chicken-white-walk',380,882,[
-      {x:395,y:872,pause:940},{x:420,y:882,pause:760},{x:410,y:910,pause:1040},
-      {x:380,y:916,pause:900},{x:365,y:898,pause:860}
+    this.createChicken('city_chicken_white','city-chicken-white-walk',145,900,[
+      {x:165,y:892,pause:940},{x:205,y:904,pause:760},{x:198,y:942,pause:1040},
+      {x:152,y:956,pause:900},{x:128,y:928,pause:860}
     ],{speed:14,scale:.31,startDelay:700});
 
     // Galinha marrom: circula pelo lado direito, próxima à entrada do cercado.
-    this.createChicken('city_chicken_brown','city-chicken-brown-walk',470,900,[
-      {x:482,y:894,pause:780},{x:505,y:878,pause:860},{x:495,y:856,pause:720},
-      {x:472,y:862,pause:980},{x:452,y:884,pause:820}
+    this.createChicken('city_chicken_brown','city-chicken-brown-walk',235,932,[
+      {x:258,y:922,pause:780},{x:270,y:948,pause:860},{x:248,y:976,pause:720},
+      {x:212,y:970,pause:980},{x:205,y:940,pause:820}
     ],{speed:15,scale:.30,startDelay:1500});
 
     // Galinha creme: fundo do terreiro, próxima ao abrigo.
-    this.createChicken('city_chicken_cream','city-chicken-cream-walk',420,852,[
-      {x:438,y:850,pause:860},{x:458,y:860,pause:760},{x:450,y:880,pause:900},
-      {x:420,y:878,pause:1040},{x:400,y:862,pause:860}
+    this.createChicken('city_chicken_cream','city-chicken-cream-walk',190,870,[
+      {x:218,y:874,pause:860},{x:246,y:886,pause:760},{x:230,y:910,pause:900},
+      {x:188,y:908,pause:1040},{x:160,y:888,pause:860}
     ],{speed:13,scale:.29,startDelay:2350,flip:true});
 
     // Galinha menor: varia a silhueta e fecha a leitura do pequeno terreiro.
-    this.createChicken('city_chicken_brown','city-chicken-brown-walk',480,920,[
-      {x:496,y:916,pause:740},{x:502,y:930,pause:820},{x:480,y:946,pause:960},
-      {x:462,y:938,pause:760},{x:460,y:920,pause:900}
+    this.createChicken('city_chicken_brown','city-chicken-brown-walk',252,880,[
+      {x:270,y:884,pause:740},{x:276,y:906,pause:820},{x:252,y:922,pause:960},
+      {x:224,y:914,pause:760},{x:226,y:890,pause:900}
     ],{speed:15,scale:.27,startDelay:3200,flip:true});
   }
 
@@ -245,14 +239,14 @@ export class AmbientCityLife{
     // Dois pintinhos discretos perto do galinheiro. Usam o mesmo sprite-base
     // das galinhas, porém com escala e rotas reduzidas para manter o padrão
     // visual sem introduzir um asset destoante.
-    this.createChicken('city_chicken_cream','city-chicken-cream-walk',430,912,[
-      {x:438,y:908,pause:620},{x:446,y:916,pause:740},{x:440,y:926,pause:780},
-      {x:426,y:924,pause:700},{x:422,y:916,pause:660}
+    this.createChicken('city_chicken_cream','city-chicken-cream-walk',190,942,[
+      {x:200,y:938,pause:620},{x:212,y:948,pause:740},{x:206,y:960,pause:780},
+      {x:188,y:958,pause:700},{x:182,y:950,pause:660}
     ],{speed:11,scale:.17,startDelay:1200});
 
-    this.createChicken('city_chicken_white','city-chicken-white-walk',480,880,[
-      {x:488,y:878,pause:600},{x:496,y:886,pause:700},{x:492,y:896,pause:820},
-      {x:478,y:894,pause:720},{x:474,y:886,pause:660}
+    this.createChicken('city_chicken_white','city-chicken-white-walk',236,902,[
+      {x:244,y:900,pause:600},{x:254,y:910,pause:700},{x:248,y:922,pause:820},
+      {x:232,y:920,pause:720},{x:226,y:910,pause:660}
     ],{speed:12,scale:.15,startDelay:2050,flip:true});
   }
 
@@ -310,23 +304,26 @@ export class AmbientCityLife{
   }
 
   createRats(){
-    // Três ratos ambientais vivem apenas ao redor da taverna. Eles não têm
-    // collider, nome, prompt ou qualquer ligação com quests/interação.
+    // Três ratos percorrem ciclos fechados junto à taverna. Eles nunca somem
+    // no meio da corrida; cada rota retorna naturalmente ao ponto inicial.
     this.rats=[];
     this.createDartingRat('city_rat_gray','city-rat-gray-run',
-      {x:155,y:820},[
-        {x:182,y:825,pause:80},{x:215,y:832,pause:60},{x:244,y:838,pause:120,hide:true}
-      ],{speed:82,scale:.56,startDelay:700,hiddenPause:[2200,4200]});
+      {x:1235,y:410},[
+        {x:1275,y:418,pause:90},{x:1330,y:426,pause:70},{x:1392,y:416,pause:120},
+        {x:1350,y:404,pause:80},{x:1288,y:402,pause:90},{x:1235,y:410,pause:140}
+      ],{speed:82,scale:.56,startDelay:700});
 
     this.createDartingRat('city_rat_brown','city-rat-brown-run',
-      {x:345,y:800},[
-        {x:360,y:818,pause:70},{x:342,y:834,pause:60},{x:308,y:842,pause:100,hide:true}
-      ],{speed:88,scale:.54,startDelay:2800,hiddenPause:[2600,4800]});
+      {x:1400,y:436},[
+        {x:1362,y:442,pause:70},{x:1310,y:438,pause:60},{x:1252,y:430,pause:100},
+        {x:1298,y:448,pause:70},{x:1354,y:452,pause:80},{x:1400,y:436,pause:130}
+      ],{speed:88,scale:.54,startDelay:1800});
 
     this.createDartingRat('city_rat_dark','city-rat-dark-run',
-      {x:150,y:792},[
-        {x:136,y:810,pause:55},{x:158,y:830,pause:60},{x:190,y:842,pause:90,hide:true}
-      ],{speed:94,scale:.52,startDelay:5100,hiddenPause:[3000,5200]});
+      {x:1245,y:390},[
+        {x:1295,y:388,pause:55},{x:1345,y:394,pause:60},{x:1395,y:388,pause:90},
+        {x:1350,y:382,pause:60},{x:1290,y:382,pause:70},{x:1245,y:390,pause:130}
+      ],{speed:94,scale:.52,startDelay:3000});
   }
 
   createDartingRat(texture,anim,start,route,opts={}){
@@ -334,8 +331,7 @@ export class AmbientCityLife{
       .setOrigin(.5,.82).setScale(opts.scale??.7).setDepth(this.depth(start.y,.01));
     rat.setVisible(false);
     const state={
-      sprite:rat,texture,anim,start,route,index:0,speed:opts.speed??86,
-      hiddenPause:opts.hiddenPause??[2400,4600]
+      sprite:rat,texture,anim,start,route,index:0,speed:opts.speed??86
     };
     this.rats.push(state);
     this.scene.time.delayedCall(opts.startDelay??800,()=>this.startRatBurst(state));
@@ -344,12 +340,9 @@ export class AmbientCityLife{
 
   startRatBurst(state){
     const rat=state?.sprite;if(!rat?.active)return;
-    rat.setPosition(state.start.x,state.start.y).setAlpha(0).setVisible(true).setFrame(0);
+    rat.setPosition(state.start.x,state.start.y).setAlpha(1).setVisible(true).setFrame(0);
     state.index=0;
-    this.scene.tweens.add({
-      targets:rat,alpha:1,duration:120,ease:'Linear',
-      onComplete:()=>this.runRatLeg(state)
-    });
+    this.runRatLeg(state);
   }
 
   runRatLeg(state){
@@ -363,33 +356,24 @@ export class AmbientCityLife{
       onUpdate:()=>rat.setDepth(this.depth(rat.y,.01)),
       onComplete:()=>{
         rat.stop().setFrame(0);
-        if(target.hide||state.index>=state.route.length-1){
-          this.scene.tweens.add({
-            targets:rat,alpha:0,duration:110,ease:'Linear',
-            onComplete:()=>{
-              rat.setVisible(false);
-              const [lo,hi]=state.hiddenPause;
-              this.scene.time.delayedCall(Phaser.Math.Between(lo,hi),()=>this.startRatBurst(state));
-            }
-          });
-          return;
-        }
-        state.index++;
+        state.index=(state.index+1)%state.route.length;
         this.scene.time.delayedCall(target.pause??60,()=>this.runRatLeg(state));
       }
     });
   }
 
   createOldManAndBirds(){
-    // Recanto sudeste da praça. A escala de 65 px de altura coincide com os NPCs
-    // oficiais (frames de 160 px a 0.40), eliminando a diferença do Round 55.
-    this.oldManHome={x:980,y:735};this.shoulderPerch={x:991,y:691};this.shoulderGround={x:1040,y:760};
-    this.oldMan=this.scene.add.sprite(this.oldManHome.x,this.oldManHome.y,'elder_feeder',0).setOrigin(.5,1).setScale(.58).setDepth(this.depth(this.oldManHome.y,.03));
+    // Recanto sudeste da praça. Cada quadro recebe compensação vertical para
+    // manter exatamente a mesma altura aparente durante toda a animação.
+    this.oldManHome={x:965,y:755};this.shoulderPerch={x:976,y:711};this.shoulderGround={x:1025,y:780};
+    const elderScale=.64,frameHeightFactor=[1,99/86,99/97,99/101];
+    this.oldMan=this.scene.add.sprite(this.oldManHome.x,this.oldManHome.y,'elder_feeder',0).setOrigin(.5,1).setScale(elderScale).setDepth(this.depth(this.oldManHome.y,.03));
+    this.oldMan.on('animationupdate',(_anim,frame)=>{const i=Number(frame?.textureFrame??0);this.oldMan?.setScale(elderScale,elderScale*(frameHeightFactor[i]??1))});
     this.oldMan.play('elder-feed-birds');
 
     const spots=[
-      {x:1000,y:748,scale:.70,delay:0},{x:1018,y:760,scale:.66,delay:380},
-      {x:1032,y:742,scale:.62,delay:700},{x:997,y:770,scale:.58,delay:1050}
+      {x:985,y:768,scale:.70,delay:0},{x:1003,y:780,scale:.66,delay:380},
+      {x:1017,y:762,scale:.62,delay:700},{x:982,y:790,scale:.58,delay:1050}
     ];
     spots.forEach((p,i)=>{
       const b=this.scene.add.sprite(p.x,p.y,'city_bird',i%2).setOrigin(.5,1).setScale(p.scale).setDepth(this.depth(p.y,.01));
@@ -406,7 +390,7 @@ export class AmbientCityLife{
     // Migalhas discretas reforçam a leitura da animação, sem criar interação.
     this.crumbs=[];
     for(let i=0;i<7;i++){
-      const c=this.scene.add.circle(1000+(i%4)*8,758+Math.floor(i/4)*7,1.25,0xd8ad61,.75).setDepth(this.depth(758,.005));
+      const c=this.scene.add.circle(985+(i%4)*8,778+Math.floor(i/4)*7,1.25,0xd8ad61,.75).setDepth(this.depth(778,.005));
       this.crumbs.push(c);
     }
     this.scene.tweens.add({targets:this.crumbs,alpha:{from:.3,to:.85},duration:1100,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
@@ -416,13 +400,13 @@ export class AmbientCityLife{
     // Um pássaro observa o movimento do telhado da taverna, e outro repousa
     // numa pequena cerca decorativa. Ambos são puramente visuais.
     this.createPerchedBird([
-      {x:238,y:584,scale:.62,flipX:false,depth:this.depth(584,.02),pause:[2200,3600]},
-      {x:282,y:582,scale:.62,flipX:true,depth:this.depth(582,.02),pause:[1800,3200]}
+      {x:1298,y:210,scale:.62,flipX:false,depth:this.depth(210,.02),pause:[2200,3600]},
+      {x:1350,y:208,scale:.62,flipX:true,depth:this.depth(208,.02),pause:[1800,3200]}
     ],{startIndex:0,startDelay:2600});
 
     this.createPerchedBird([
-      {x:390,y:934,scale:.56,flipX:false,depth:this.depth(934,.02),pause:[2600,4200]},
-      {x:430,y:934,scale:.56,flipX:true,depth:this.depth(934,.02),pause:[2300,3800]}
+      {x:148,y:878,scale:.56,flipX:false,depth:this.depth(878,.02),pause:[2600,4200]},
+      {x:196,y:878,scale:.56,flipX:true,depth:this.depth(878,.02),pause:[2300,3800]}
     ],{startIndex:1,startDelay:4300});
   }
 

@@ -1,4 +1,4 @@
-# Legends of Aether 0.1.3 – Estabilização de Gameplay
+# Legends of Aether 0.1.7 — Round 57: Cidade, Arte e Colisões
 
 ## Instalação
 

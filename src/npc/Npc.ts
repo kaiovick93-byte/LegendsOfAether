@@ -26,6 +26,7 @@ export class Npc extends Phaser.GameObjects.Container{
   this.currentFacing=actions.idleFacing||'down';
   this.idleFacing=actions.idleFacing||null;
   this.idleProfile=actions.idleProfile||'';
+  this.visualScale=actions.visualScale??.46;
   this.nearby=false;
   this.idleBobTween=null;
   this.interactionTween=null;
@@ -189,7 +190,7 @@ export class Npc extends Phaser.GameObjects.Container{
   this.characterVisual=this.scene.add.container(0,0);
   this.addAt(this.characterVisual,0);
   this.sprite=this.scene.add.sprite(0,8,textureKey,0);
-  this.sprite.setOrigin(.5,1).setScale(.40);
+  this.sprite.setOrigin(.5,1).setScale(this.visualScale);
   this.characterVisual.add(this.sprite);
 
   this.createMoveAnimations(textureKey);
@@ -252,9 +253,8 @@ export class Npc extends Phaser.GameObjects.Container{
  }
 
  defaultIdleFacing(profile){
-  if(profile==='elder')return'left';
-  if(profile==='east_guard')return'right';
-  if(profile==='south_guard')return'down';
+  // Todo NPC fixo inicia olhando para a câmera. NPCs ambulantes alteram a
+  // direção somente enquanto percorrem suas rotas.
   return'down';
  }
 
@@ -281,56 +281,10 @@ export class Npc extends Phaser.GameObjects.Container{
 
  createIdleProp(){
   for(const go of this.idleDecor){try{go.destroy()}catch(e){}}
+  // Round 57: movimentos usam somente quadros do próprio sprite. Os antigos
+  // martelos, canecas, livros e brilhos desenhados por Graphics destoavam do
+  // pixel art e foram removidos.
   this.idleDecor=[];this.idleProp=null;
-  const s=this.scene,p=this.idleProfile;
-
-  if(p==='merchant'){
-   const c=s.add.container(11,-18).setVisible(false).setAlpha(0);
-   const coin1=s.add.circle(-3,0,2.1,0xe4bd5c,1).setStrokeStyle(1,0x8a672e,.85);
-   const coin2=s.add.circle(2,-3,1.8,0xf0cf70,1).setStrokeStyle(1,0x8a672e,.85);
-   const coin3=s.add.circle(4,2,1.6,0xd9a941,1).setStrokeStyle(1,0x8a672e,.85);
-   c.add([coin1,coin2,coin3]);this.addIdleDecor(c);this.idleProp=c;
-  }else if(p==='blacksmith'){
-   const h=s.add.container(-17,-28).setVisible(false).setAlpha(0);
-   const handle=s.add.rectangle(0,6,3,20,0x76502f,1).setStrokeStyle(1,0x3f2b1c,.65);
-   const head=s.add.rectangle(0,-5,13,6,0x676c72,1).setStrokeStyle(1,0xb2b7bc,.7);
-   h.add([handle,head]);h.setAngle(-28);this.addIdleDecor(h);this.idleProp=h;
-  }else if(p==='healer'){
-   const h=s.add.container(13,-27).setVisible(false).setAlpha(0);
-   const glow=s.add.circle(0,0,7,0x71d49a,.18).setStrokeStyle(1,0xb7f0c9,.35);
-   const l1=s.add.ellipse(-2,0,4,8,0x5e9d61,1).setAngle(-28);
-   const l2=s.add.ellipse(2,-1,4,8,0x7aba6e,1).setAngle(28);
-   h.add([glow,l1,l2]);this.addIdleDecor(h);this.idleProp=h;
-  }else if(p==='tavernkeeper'){
-   const c=s.add.container(11,-21).setVisible(false).setAlpha(0);
-   const mug=s.add.rectangle(0,0,10,9,0xa97a46,1).setStrokeStyle(1,0xe0ba76,.45);
-   const rim=s.add.rectangle(0,-4,9,2,0xd0a365,.9);
-   const handle=s.add.circle(6,0,3,0x7a542f,0).setStrokeStyle(2,0xa97a46,1);
-   const cloth=s.add.rectangle(-8,2,8,5,0xe1d8c7,.92).setAngle(-12);
-   c.add([mug,rim,handle,cloth]);this.addIdleDecor(c);this.idleProp=c;
-  }else if(p==='scholar'){
-   const b=s.add.container(0,-23).setAlpha(.96);
-   const left=s.add.rectangle(-5,0,10,8,0xe7d7ac,1).setStrokeStyle(1,0x745538,.7).setAngle(-7);
-   const right=s.add.rectangle(5,0,10,8,0xeee0bb,1).setStrokeStyle(1,0x745538,.7).setAngle(7);
-   const spine=s.add.rectangle(0,1,2,8,0x85543d,1);
-   const line1=s.add.rectangle(-5,-1,5,1,0x8f8068,.55);
-   const line2=s.add.rectangle(5,-1,5,1,0x8f8068,.55);
-   b.add([left,right,spine,line1,line2]);this.addIdleDecor(b);this.idleProp=b;
-  }else if(p==='artisan'){
-   const c=s.add.container(8,-20).setAlpha(.95);
-   const fabric=s.add.rectangle(0,1,13,9,0x3f887d,1).setStrokeStyle(1,0xd0b989,.45).setAngle(7);
-   const thread=s.add.line(0,0,2,-5,8,-10,0xd7bd8a,.9).setLineWidth(1);
-   const needle=s.add.rectangle(8,-10,1.3,8,0xcad2d6,.95).setAngle(24);
-   c.add([fabric,thread,needle]);this.addIdleDecor(c);this.idleProp=c;
-  }else if(p==='elder'){
-   const g=s.add.container(-18,-55).setVisible(false).setAlpha(0);
-   const halo=s.add.circle(0,0,8,0x66b8c9,.12).setStrokeStyle(1,0xa3deea,.45);
-   const core=s.add.circle(0,0,2.2,0x9fe6ef,.86);
-   g.add([halo,core]);this.addIdleDecor(g);this.idleProp=g;
-  }else if(p==='east_guard'||p==='south_guard'){
-   const glint=s.add.circle(p==='east_guard'?15:-16,-48,2.2,0xe8f2ff,.9).setVisible(false).setAlpha(0);
-   this.addIdleDecor(glint);this.idleProp=glint;
-  }
  }
 
  canPlayIdleAction(){return !this.routeMoving}
@@ -346,18 +300,33 @@ export class Npc extends Phaser.GameObjects.Container{
  playIdleAction(){
   if(!this.sprite||!this.characterVisual||this.idleActionActive)return;
   this.idleActionActive=true;
-  const p=this.idleProfile;
-  if(p==='merchant')return this.playMerchantIdle();
-  if(p==='blacksmith')return this.playBlacksmithIdle();
-  if(p==='healer')return this.playHealerIdle();
-  if(p==='tavernkeeper')return this.playTavernIdle();
-  if(p==='scholar')return this.playScholarIdle();
-  if(p==='artisan')return this.playArtisanIdle();
-  if(p==='elder')return this.playElderIdle();
-  if(p==='east_guard'||p==='south_guard')return this.playGuardIdle(p);
-  if(p==='resident')return this.playResidentIdle();
-  if(p==='traveler')return this.playTravelerIdle();
-  this.playBreathOnlyIdle();
+  const p=this.idleProfile||'breath';
+  const profiles={
+   merchant:{seq:[0,1,0,4,0],delay:190,x:1.2,angle:.35},
+   blacksmith:{seq:[0,3,0,4,0],delay:165,x:-1.1,angle:-.55},
+   healer:{seq:[0,1,0,2,0],delay:235,x:.7,angle:.28},
+   tavernkeeper:{seq:[0,4,0,1,0],delay:205,x:1.15,angle:.5},
+   scholar:{seq:[0,1,0,3,0],delay:260,x:-.55,angle:-.25},
+   artisan:{seq:[0,2,0,1,0],delay:180,x:.9,angle:.4},
+   elder:{seq:[0,1,0,4,0],delay:285,x:-.6,angle:-.2},
+   east_guard:{seq:[0,1,0],delay:310,x:.45,angle:.18},
+   south_guard:{seq:[0,1,0],delay:330,x:-.45,angle:-.18},
+   resident:{seq:[0,1,0],delay:255,x:.75,angle:.25},
+   traveler:{seq:[0,4,0],delay:230,x:-.8,angle:-.3},
+   breath:{seq:[0,1,0],delay:300,x:.35,angle:.15}
+  };
+  const cfg=profiles[p]||profiles.breath;
+  const base={down:0,up:5,left:10,right:15}[this.currentFacing]??0;
+  const total=cfg.delay*cfg.seq.length;
+  this.idleActionTween=this.scene.tweens.add({targets:this.characterVisual,x:cfg.x,angle:cfg.angle,duration:Math.max(240,total/2),yoyo:true,ease:'Sine.easeInOut'});
+  let i=0;
+  const advance=()=>{
+   if(!this.sprite?.active){this.finishIdleAction();return}
+   if(i>=cfg.seq.length){this.sprite.setFrame(base);this.characterVisual.setX(0).setAngle(0);this.idleFrameEvent=null;this.finishIdleAction(350);return}
+   this.sprite.setFrame(base+cfg.seq[i++]);
+   this.idleFrameEvent=this.scene.time.delayedCall(cfg.delay,advance);
+  };
+  advance();
  }
 
  finishIdleAction(extraDelay=0){
@@ -479,8 +448,9 @@ export class Npc extends Phaser.GameObjects.Container{
   try{this.scene?.events?.off('update',this.handleNpcUpdate,this)}catch(e){}
   try{this.idleBobTween?.stop()}catch(e){}
   try{this.idleActionTween?.stop()}catch(e){}
+  try{this.idleFrameEvent?.remove(false)}catch(e){}
   try{this.interactionTween?.stop()}catch(e){}
-  this.idleBobTween=null;this.idleActionTween=null;this.interactionTween=null;
+  this.idleBobTween=null;this.idleActionTween=null;this.idleFrameEvent=null;this.interactionTween=null;
   for(const go of this.idleDecor){try{go?.destroy?.()}catch(e){}}
   this.idleDecor=[];
  }

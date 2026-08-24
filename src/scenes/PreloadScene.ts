@@ -19,9 +19,10 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('residential_house_red','assets/images/environment/buildings/residential_house_red.png');
     this.load.image('residential_house_blue','assets/images/environment/buildings/residential_house_blue.png');
     this.load.image('residential_house_green','assets/images/environment/buildings/residential_house_green.png');
-    this.load.image('residential_house_orange','assets/images/environment/buildings/residential_house_orange.png');
+    this.load.image('residential_house_orange','assets/images/environment/buildings/residential_house_orange_round57.png');
     this.load.image('waystone_dormant','assets/images/environment/world/waystone_dormant.png');
-    this.load.image('city_well','assets/images/environment/city/props/city_well_round56.png');
+    this.load.image('city_fountain','assets/images/environment/city/props/city_fountain_round57.png');
+    this.load.image('city_tree','assets/images/environment/city/props/city_tree_round57.png');
     this.load.image('street_crates','assets/images/environment/city/props/street_crates.png');
     this.load.image('street_barrels','assets/images/environment/city/props/street_barrels.png');
     this.load.image('street_logs','assets/images/environment/city/props/street_logs.png');
