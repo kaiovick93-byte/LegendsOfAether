@@ -1,4 +1,4 @@
-# Legends of Aether 0.1.6 (Round 12) – Curandeira Implementado
+# Legends of Aether 0.1.3 – Estabilização de Gameplay
 
 ## Instalação
 
@@ -11,11 +11,6 @@ npm run dev
 ```
 
 O Phaser agora está em `dependencies`, portanto **não é necessário** rodar `npm install phaser` separadamente.
-
-## Sprites Implementados
-- Mercador
-- Ferreiro
-- Curandeira
 
 ## Controles
 
