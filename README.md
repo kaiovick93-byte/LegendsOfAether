@@ -1,4 +1,6 @@
-# Legends of Aether 0.1.7 — Round 57: Cidade, Arte e Colisões
+# Legends of Aether 0.1.9 — Round 59: Protótipo Isométrico
+
+O menu principal agora oferece **PROTÓTIPO ISOMÉTRICO**, uma cena separada e jogável para validar a futura conversão 2.5D sem alterar a campanha nem o save. Consulte `ROUND59_ISOMETRIC_PROTOTYPE.md` para detalhes técnicos e controles.
 
 ## Instalação
 

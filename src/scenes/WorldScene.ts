@@ -2,14 +2,14 @@
 import {Player} from '../entities/Player';import {Enemy} from '../entities/Enemy';import {Inventory} from '../inventory/Inventory';import {EquipmentManager} from '../equipment/EquipmentManager';import {AbilitySystem} from '../abilities/AbilitySystem';import {CombatSystem} from '../combat/CombatSystem';import {LootManager} from '../loot/LootManager';import {SaveManager} from '../save/SaveManager';import {ClassManager} from '../character/ClassManager';import {SkillManager} from '../skills/SkillManager';import {MapHud} from '../ui/MapHud';import {DeathOverlay} from '../ui/DeathOverlay';import {Npc} from '../npc/Npc';import {WanderingNpc} from '../npc/WanderingNpc';import {ShopPanel} from '../shop/ShopPanel';import {ChoiceDialogueBox} from '../ui/ChoiceDialogueBox';import {NpcDialoguePanel} from '../ui/NpcDialoguePanel';import {SfxManager} from '../audio/SfxManager';import {QuestManager} from '../quests/QuestManager';import {Waystone} from '../world/Waystone';import {AmbientCityLife} from '../world/AmbientCityLife';
 export class WorldScene extends Phaser.Scene{
  constructor(){super('WorldScene')}
- create(){this.switching=false;this.worldWidth=4200;this.worldHeight=2400;this.cityLayout={left:80,top:80,right:1480,bottom:1120,width:1400,height:1040,plazaX:780,plazaY:600,fountainX:780,fountainY:770,eastGateX:1480,eastGateY:500,southGateX:780,southGateY:1120,spawnX:780,spawnY:1010};this.sm=new SaveManager();this.inv=new Inventory();this.player=new Player(this,this.cityLayout.spawnX,this.cityLayout.spawnY);this.classManager=new ClassManager();this.skillManager=new SkillManager(this.player);this.player.scene.skillManager=this.skillManager;this.equip=new EquipmentManager(this.player);this.sfx=new SfxManager(this);this.player.scene.sfx=this.sfx;this.loot=new LootManager(this,this.inv);this.combat=new CombatSystem(this,this.loot);this.abilities=new AbilitySystem(this,this.player);this.questManager=new QuestManager();this.loadGame();this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);this.cameras.main.setDeadzone(220,90);this.cameras.main.startFollow(this.player,true,.12,.12,0,-135);this.cameras.main.setRoundPixels(true);this.createOutskirtsGeneratedTextures();this.createWorld();this.createNpcsRound57();this.ambientLife=new AmbientCityLife(this,this.cityLayout);this.createOutskirtsAmbientLife();this.spawnEnemies();this.setupInput();this.setupHud();this.installUnload();this.saveGame()}
- loadGame(){const save=this.sm.load(),pos=save?.scenePositions?.WorldScene,t=this.registry.get('transitionSpawn');if(save){this.player.loadState(save.player);this.inv.load(save.inventory);this.equip.load(save.equipment,this.inv);this.skillManager.load(save.skills);this.questManager.load(save.quests);this.classManager.load(this.player,save.characterClass||this.player.characterClass)}else{this.player.applyClass(this.registry.get('selectedClass')||'warrior');this.registry.remove('selectedClass');this.inv.add('healing_potion',2);this.inv.add('mana_potion',2);this.player.gold=25}if(t?.scene==='WorldScene'){this.player.setPosition(t.x,t.y);this.registry.remove('transitionSpawn')}else if(pos){const inCity=pos.x>=this.cityLayout.left&&pos.x<=this.cityLayout.right&&pos.y>=this.cityLayout.top&&pos.y<=this.cityLayout.bottom;const migrate=inCity&&!save?.worldFlags?.cityRound57Migrated;this.player.setPosition(migrate?this.cityLayout.spawnX:pos.x,migrate?this.cityLayout.spawnY:pos.y)}this.equip.sync()}
+ create(){this.switching=false;this.worldWidth=4200;this.worldHeight=2400;this.cityLayout={left:80,top:80,right:1480,bottom:1120,width:1400,height:1040,plazaX:780,plazaY:600,fountainX:780,fountainY:770,eastGateX:1480,eastGateY:500,southGateX:780,southGateY:1120,spawnX:780,spawnY:1010};this.sm=new SaveManager();this.inv=new Inventory();this.player=new Player(this,this.cityLayout.spawnX,this.cityLayout.spawnY);this.classManager=new ClassManager();this.skillManager=new SkillManager(this.player);this.player.scene.skillManager=this.skillManager;this.equip=new EquipmentManager(this.player);this.sfx=new SfxManager(this);this.player.scene.sfx=this.sfx;this.loot=new LootManager(this,this.inv);this.combat=new CombatSystem(this,this.loot);this.abilities=new AbilitySystem(this,this.player);this.questManager=new QuestManager();this.loadGame();this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);this.cameras.main.setDeadzone(220,90);this.cameras.main.startFollow(this.player,true,.12,.12,0,-135);this.cameras.main.setRoundPixels(true);this.createOutskirtsGeneratedTextures();this.createWorld();this.createNpcsRound58();this.ambientLife=new AmbientCityLife(this,this.cityLayout);this.createOutskirtsAmbientLife();this.spawnEnemies();this.setupInput();this.setupHud();this.installUnload();this.saveGame()}
+ loadGame(){const save=this.sm.load(),pos=save?.scenePositions?.WorldScene,t=this.registry.get('transitionSpawn');if(save){this.player.loadState(save.player);this.inv.load(save.inventory);this.equip.load(save.equipment,this.inv);this.skillManager.load(save.skills);this.questManager.load(save.quests);this.classManager.load(this.player,save.characterClass||this.player.characterClass)}else{this.player.applyClass(this.registry.get('selectedClass')||'warrior');this.registry.remove('selectedClass');this.inv.add('healing_potion',2);this.inv.add('mana_potion',2);this.player.gold=25}if(t?.scene==='WorldScene'){this.player.setPosition(t.x,t.y);this.registry.remove('transitionSpawn')}else if(pos){const inCity=pos.x>=this.cityLayout.left&&pos.x<=this.cityLayout.right&&pos.y>=this.cityLayout.top&&pos.y<=this.cityLayout.bottom;const migrate=inCity&&!save?.worldFlags?.cityRound58Migrated;this.player.setPosition(migrate?this.cityLayout.spawnX:pos.x,migrate?this.cityLayout.spawnY:pos.y)}this.equip.sync()}
  createWorld(){
   // O primeiro quadro do atlas urbano é grama pixel art; ele substitui o
   // quadrado verde provisório que destoava dos demais assets.
   this.add.tileSprite(0,0,this.worldWidth,this.worldHeight,'city_ground',0).setOrigin(0);
   this.add.rectangle(0,0,this.worldWidth,this.worldHeight,0x16301f,.06).setOrigin(0);
-  const c=this.cityLayout;this.safeRect={x:c.left,y:c.top,width:c.width,height:c.height};this.drawCityGroundRound57();this.cityWalls=[];const makeWall=(x,y,w,h)=>{if(w<=0||h<=0)return null;const wall=this.add.rectangle(x,y,w,h,0x000000,0).setOrigin(.5);this.physics.add.existing(wall,true);this.cityWalls.push(wall);this.physics.add.collider(this.player,wall);return wall};const eastGap=128,southGap=128;makeWall((c.left+c.right)/2,c.top,c.width,22);makeWall(c.left,(c.top+c.bottom)/2,22,c.height);makeWall(c.right,(c.top+c.eastGateY-eastGap)/2,22,c.eastGateY-eastGap-c.top);makeWall(c.right,(c.eastGateY+eastGap+c.bottom)/2,22,c.bottom-c.eastGateY-eastGap);makeWall((c.left+c.southGateX-southGap)/2,c.bottom,c.southGateX-southGap-c.left,22);makeWall((c.southGateX+southGap+c.right)/2,c.bottom,c.right-c.southGateX-southGap,22);this.drawCityStructuresRound57();this.drawPlazaRound57();this.drawCityDetailsRound57();this.auditCityRound57();
+  const c=this.cityLayout;this.safeRect={x:c.left,y:c.top,width:c.width,height:c.height};this.drawCityGroundRound58();this.cityWalls=[];const makeWall=(x,y,w,h)=>{if(w<=0||h<=0)return null;const wall=this.add.rectangle(x,y,w,h,0x000000,0).setOrigin(.5);this.physics.add.existing(wall,true);this.cityWalls.push(wall);this.physics.add.collider(this.player,wall);return wall};const eastGap=128,southGap=128,wallInset=18,wallThickness=36;makeWall((c.left+c.right)/2,c.top+wallInset,c.width,wallThickness);makeWall(c.left+wallInset,(c.top+c.bottom)/2,wallThickness,c.height);makeWall(c.right-wallInset,(c.top+c.eastGateY-eastGap)/2,wallThickness,c.eastGateY-eastGap-c.top);makeWall(c.right-wallInset,(c.eastGateY+eastGap+c.bottom)/2,wallThickness,c.bottom-c.eastGateY-eastGap);makeWall((c.left+c.southGateX-southGap)/2,c.bottom-wallInset,c.southGateX-southGap-c.left,wallThickness);makeWall((c.southGateX+southGap+c.right)/2,c.bottom-wallInset,c.right-c.southGateX-southGap,wallThickness);this.drawCityStructuresRound58();this.drawPlazaRound58();this.drawCityDetailsRound58();this.auditCityRound58();
   this.add.rectangle(c.left,c.top,c.width,c.height,0x24314d,.025).setOrigin(0).setDepth(1);
   this.rightGate=this.add.zone(c.eastGateX,c.eastGateY,78,72);this.bottomGate=this.add.zone(c.southGateX,c.southGateY,88,78);
   this.createOutskirtsLayout();
@@ -231,66 +231,49 @@ export class WorldScene extends Phaser.Scene{
 
  cityDepth(y,offset=0){return 5+y/1000+offset}
 
- addCitySolidRound57(x,y,w,h,label='obstáculo'){
+ addCitySolidRound58(x,y,w,h,label='obstáculo'){
   const block=this.add.rectangle(x,y,w,h,0x000000,0).setDepth(0);
   this.physics.add.existing(block,true);this.physics.add.collider(this.player,block);
   (this.cityWalls??=[]).push(block);(this.cityObstacles??=[]).push({label,rect:new Phaser.Geom.Rectangle(x-w/2,y-h/2,w,h)});
   return block;
  }
 
- drawCityGroundRound57(){
-  if(!this.textures.exists('city_ground'))return;
-  const c=this.cityLayout,tile=32;
-  const hash=(gx,gy,mod)=>Math.abs((gx*19+gy*37+gx*gy*5)%mod);
-  const put=(x,y,frame,depth=.18)=>this.add.image(x,y,'city_ground',frame).setOrigin(0).setDepth(depth);
-  for(let y=c.top;y<c.bottom;y+=tile){
-   for(let x=c.left;x<c.right;x+=tile){
-    put(x,y,hash(Math.floor(x/tile),Math.floor(y/tile),10),.15);
-   }
-  }
-  const paintRect=(x1,y1,x2,y2,base=20)=>{
-   for(let y=Math.floor(y1/tile)*tile;y<=y2;y+=tile){
-    for(let x=Math.floor(x1/tile)*tile;x<=x2;x+=tile){
-     if(x<c.left||x>=c.right||y<c.top||y>=c.bottom)continue;
-     put(x,y,base+hash(Math.floor(x/tile),Math.floor(y/tile),10),.22);
-    }
-   }
-  };
-  // Uma malha urbana legível: toda fachada desemboca numa rua e todas as
-  // ruas se conectam à praça ou a um dos dois portões.
-  paintRect(118,360,1445,455,20);                       // rua do comércio
-  paintRect(c.left+24,438,c.right-4,558,20);            // avenida do Portão Leste
-  paintRect(330,420,430,920,20);                        // rua lateral oeste
-  paintRect(1130,420,1230,920,20);                      // rua lateral leste
-  paintRect(115,750,500,850,20);                        // frente da Erudita
-  paintRect(1060,750,1445,850,20);                      // frente da Artesã
-  paintRect(310,875,700,1068,20);                       // bairro residencial oeste
-  paintRect(860,875,1445,1068,20);                      // bairro residencial leste
-  paintRect(700,560,860,c.bottom-4,20);                 // eixo Portão Sul–praça
-  // Praça de pedra construída diretamente com tiles, sem elipses vetoriais.
-  for(let y=380;y<=820;y+=tile){
-   for(let x=450;x<=1110;x+=tile){
-    const dx=(x+16-c.plazaX)/325,dy=(y+16-c.plazaY)/205;
-    if(dx*dx+dy*dy<=1.04)put(x,y,24+hash(x/tile,y/tile,6),.24);
-   }
-  }
- }
+ drawCityGroundRound58(){
+  if(!this.textures.exists('city_pavement')||!this.textures.exists('city_grass'))return;
+  const c=this.cityLayout;
+  // Uma única textura percorre toda a cidade. Assim, as juntas de pedra não
+  // reiniciam em cada rua nem formam os antigos carimbos de 32 px.
+  this.cityPavement=this.add.image(c.left,c.top,'city_pavement').setOrigin(0).setDepth(.15);
+  this.cityGrass=this.add.image(c.left,c.top,'city_grass').setOrigin(0).setDepth(.18);
+  const grassMask=this.make.graphics({x:0,y:0,add:false});
+  grassMask.fillStyle(0xffffff,1);
+  grassMask.fillRoundedRect(110,110,1340,225,18);         // jardins do comércio
+  grassMask.fillRoundedRect(105,555,315,190,18);          // jardim da Erudita
+  grassMask.fillRoundedRect(1140,555,310,190,18);         // jardim da Artesã
+  grassMask.fillRoundedRect(100,815,235,220,18);          // terreiro do galinheiro
+  grassMask.fillRoundedRect(335,790,415,88,16);           // jardins residenciais oeste
+  grassMask.fillRoundedRect(850,790,600,88,16);           // jardins residenciais leste
+  this.cityGrassMask=grassMask.createGeometryMask();
+  this.cityGrass.setMask(this.cityGrassMask);
+}
 
- addCityBuildingRound57(key,x,y,targetHeight,footW,footH,label){
+ addCityBuildingRound58(key,x,y,targetHeight,footW,footH,label){
   if(!this.textures.exists(key))return null;
   const source=this.textures.get(key).getSourceImage(),scale=targetHeight/source.height;
   const image=this.add.image(x,y,key).setOrigin(.5,1).setScale(scale).setDepth(this.cityDepth(y));
   // O collider cobre somente a base apoiada no chão, nunca telhado/fachada.
-  this.addCitySolidRound57(x,y-footH/2-3,footW,footH,label);
+  this.addCitySolidRound58(x,y-footH/2-3,footW,footH,label);
   const visualW=image.displayWidth*.88,visualH=image.displayHeight*.90;
   const entry={key,label,image,scale,targetHeight,baseRect:new Phaser.Geom.Rectangle(x-footW/2,y-footH-3,footW,footH),visualRect:new Phaser.Geom.Rectangle(x-visualW/2,y-visualH,visualW,visualH)};
   (this.cityBuildings??=[]).push(entry);return image;
  }
 
- drawCityStructuresRound57(){
+ drawCityStructuresRound58(){
   const c=this.cityLayout;this.cityBuildings=[];this.cityObstacles=[];
-  const tileH=(x1,x2,y)=>{const len=x2-x1,count=Math.max(1,Math.ceil(len/124)),step=len/count;this.add.rectangle((x1+x2)/2,y,len,48,0x353b3e,1).setDepth(this.cityDepth(y,-.08));for(let i=0;i<count;i++)this.add.image(x1+step*(i+.5),y,'city_wall_h').setDisplaySize(step+4,64).setDepth(this.cityDepth(y))};
-  const tileV=(y1,y2,x)=>{const len=y2-y1,count=Math.max(1,Math.ceil(len/124)),step=len/count;this.add.rectangle(x,(y1+y2)/2,48,len,0x353b3e,1).setDepth(this.cityDepth(y2,-.08));for(let i=0;i<count;i++)this.add.image(x,y1+step*(i+.5),'city_wall_v').setDisplaySize(64,step+4).setDepth(this.cityDepth(y1+step*(i+1)))};
+  // Os próprios módulos de pedra se sobrepõem. A antiga placa cinza opaca
+  // atrás dos muros laterais foi removida, pois aparecia como um retângulo.
+  const tileH=(x1,x2,y)=>{const len=x2-x1,count=Math.max(1,Math.ceil(len/124)),step=len/count;for(let i=0;i<count;i++)this.add.image(x1+step*(i+.5),y,'city_wall_h').setDisplaySize(step+4,64).setDepth(this.cityDepth(y))};
+  const tileV=(y1,y2,x)=>{const len=y2-y1,count=Math.max(1,Math.ceil(len/124)),step=len/count;for(let i=0;i<count;i++)this.add.image(x,y1+step*(i+.5),'city_wall_v').setDisplaySize(64,step+4).setDepth(this.cityDepth(y1+step*(i+1)))};
   tileH(c.left,c.right,c.top);tileV(c.top,c.bottom,c.left);
   tileV(c.top,c.eastGateY-128,c.right);tileV(c.eastGateY+128,c.bottom,c.right);
   tileH(c.left,c.southGateX-128,c.bottom);tileH(c.southGateX+128,c.right,c.bottom);
@@ -300,29 +283,29 @@ export class WorldScene extends Phaser.Scene{
   // As torres dos portões possuem colisões próprias; só a abertura desenhada
   // permanece atravessável.
   this.cityGateColliders=[
-   this.addCitySolidRound57(c.right-4,c.eastGateY-84,96,88,'Torre norte do Portão Leste'),
-   this.addCitySolidRound57(c.right-4,c.eastGateY+84,96,88,'Torre sul do Portão Leste'),
-   this.addCitySolidRound57(c.southGateX-84,c.bottom-4,88,96,'Torre oeste do Portão Sul'),
-   this.addCitySolidRound57(c.southGateX+84,c.bottom-4,88,96,'Torre leste do Portão Sul')
+   this.addCitySolidRound58(c.right-4,c.eastGateY-84,96,88,'Torre norte do Portão Leste'),
+   this.addCitySolidRound58(c.right-4,c.eastGateY+84,96,88,'Torre sul do Portão Leste'),
+   this.addCitySolidRound58(c.southGateX-84,c.bottom-4,88,96,'Torre oeste do Portão Sul'),
+   this.addCitySolidRound58(c.southGateX+84,c.bottom-4,88,96,'Torre leste do Portão Sul')
   ];
 
   // Rua do comércio: estabelecimento, responsável e via frontal em sequência.
-  this.merchantShop=this.addCityBuildingRound57('merchant_shop',220,335,190,144,36,'Loja de Aldren');
-  this.blacksmithShop=this.addCityBuildingRound57('blacksmith_shop',500,335,185,142,38,'Ferraria de Borin');
-  this.healerHouse=this.addCityBuildingRound57('healer_house',1060,335,190,150,38,'Botica de Elara');
-  this.tavernHouse=this.addCityBuildingRound57('tavern_house',1330,335,190,160,40,'Taverna de Garrick');
+  this.merchantShop=this.addCityBuildingRound58('merchant_shop',220,335,190,144,36,'Loja de Aldren');
+  this.blacksmithShop=this.addCityBuildingRound58('blacksmith_shop',500,335,185,142,38,'Ferraria de Borin');
+  this.healerHouse=this.addCityBuildingRound58('healer_house',1060,335,190,150,38,'Botica de Elara');
+  this.tavernHouse=this.addCityBuildingRound58('tavern_house',1330,335,190,160,40,'Taverna de Garrick');
   // Dois estabelecimentos laterais ligados ao anel da praça.
-  this.scholarHouse=this.addCityBuildingRound57('scholar_house',250,745,200,150,44,'Casa de Lysandra');
-  this.artisanHouse=this.addCityBuildingRound57('artisan_house',1310,745,195,148,40,'Oficina de Maelis');
+  this.scholarHouse=this.addCityBuildingRound58('scholar_house',250,745,200,150,44,'Casa de Lysandra');
+  this.artisanHouse=this.addCityBuildingRound58('artisan_house',1310,745,195,148,40,'Oficina de Maelis');
   // Bairro residencial: quatro casas lado a lado, todas com altura visual igual.
-  this.residentialHouseRed=this.addCityBuildingRound57('residential_house_red',430,970,190,120,34,'Casa vermelha');
-  this.residentialHouseGreen=this.addCityBuildingRound57('residential_house_green',610,970,190,100,34,'Casa verde');
-  this.residentialHouseBlue=this.addCityBuildingRound57('residential_house_blue',1030,970,190,135,35,'Casa azul');
-  this.residentialHouseOrange=this.addCityBuildingRound57('residential_house_orange',1270,970,190,145,36,'Casa laranja');
+  this.residentialHouseRed=this.addCityBuildingRound58('residential_house_red',430,970,190,120,34,'Casa vermelha');
+  this.residentialHouseGreen=this.addCityBuildingRound58('residential_house_green',610,970,190,112,34,'Casa verde');
+  this.residentialHouseBlue=this.addCityBuildingRound58('residential_house_blue',1030,970,190,135,35,'Casa azul');
+  this.residentialHouseOrange=this.addCityBuildingRound58('residential_house_orange',1270,970,190,145,36,'Casa laranja');
  }
 
- drawPlazaRound57(){
-  const c=this.cityLayout,solid=(x,y,w,h,label)=>this.addCitySolidRound57(x,y,w,h,label);
+ drawPlazaRound58(){
+  const c=this.cityLayout,solid=(x,y,w,h,label)=>this.addCitySolidRound58(x,y,w,h,label);
   // O Marco de Senda é criado exatamente em plazaX/plazaY no setupHud.
   // A fonte ocupa o setor sul sem disputar o centro do monumento.
   if(this.textures.exists('city_fountain')){
@@ -335,8 +318,8 @@ export class WorldScene extends Phaser.Scene{
   flower(500,650);flower(1060,650);
  }
 
- drawCityDetailsRound57(){
-  const solid=(x,y,w,h,label)=>this.addCitySolidRound57(x,y,w,h,label);
+ drawCityDetailsRound58(){
+  const solid=(x,y,w,h,label)=>this.addCitySolidRound58(x,y,w,h,label);
   const prop=(key,x,y,scale=.45,block=null)=>{if(!this.textures.exists(key))return null;const go=this.add.image(x,y,key).setOrigin(.5,1).setScale(scale).setDepth(this.cityDepth(y));if(block)solid(x,y-block.offsetY,block.w,block.h,block.label||key);return go};
   // Sem placas escritas no chão: cada estabelecimento é reconhecido pela arte e
   // pelo NPC posicionado em frente à fachada.
@@ -348,11 +331,20 @@ export class WorldScene extends Phaser.Scene{
   prop('street_logs',1410,785,.38,{w:24,h:12,offsetY:5,label:'Materiais da oficina'});
   prop('street_flower_fence',520,980,.34,null);prop('street_flower_fence',1150,980,.34,null);
 
-  // Galinheiro em terreno próprio, cercado com o mesmo asset rústico usado nos Arredores.
-  this.cityChickenYard=new Phaser.Geom.Rectangle(105,840,190,175);
-  prop('chicken_coop',155,882,.30,{w:48,h:18,offsetY:7,label:'Base do galinheiro'});
-  const fenceLine=(x1,y1,x2,y2)=>{const cx=(x1+x2)/2,cy=(y1+y2)/2,len=Phaser.Math.Distance.Between(x1,y1,x2,y2),angle=Phaser.Math.Angle.Between(x1,y1,x2,y2);const f=this.add.image(cx,cy,'outskirts_fence_segment').setOrigin(.5,.67).setRotation(angle).setDisplaySize(len+4,28).setDepth(this.cityDepth(cy));if(Math.abs(x2-x1)>=Math.abs(y2-y1))solid(cx,cy,Math.max(4,len),6,'Cerca do galinheiro');else solid(cx,cy,6,Math.max(4,len),'Cerca do galinheiro');return f};
-  fenceLine(105,840,295,840);fenceLine(105,840,105,1015);fenceLine(295,840,295,1015);fenceLine(105,1015,150,1015);fenceLine(250,1015,295,1015);
+  // Galinheiro ampliado em terreno próprio. A cerca urbana usa módulos
+  // detalhados de madeira e pedra em vez do segmento simples dos Arredores.
+  this.cityChickenYard=new Phaser.Geom.Rectangle(100,815,235,220);
+  prop('chicken_coop',175,885,.52,{w:90,h:24,offsetY:8,label:'Base do galinheiro'});
+  const fenceLine=(x1,y1,x2,y2)=>{
+   const len=Phaser.Math.Distance.Between(x1,y1,x2,y2),angle=Phaser.Math.Angle.Between(x1,y1,x2,y2),count=Math.max(1,Math.ceil(len/106)),step=len/count;
+   for(let i=0;i<count;i++){
+    const t=(i+.5)/count,x=Phaser.Math.Linear(x1,x2,t),y=Phaser.Math.Linear(y1,y2,t);
+    this.add.image(x,y,'city_chicken_fence').setOrigin(.5,.72).setDisplaySize(step+5,34).setRotation(angle).setDepth(this.cityDepth(y,.015));
+   }
+   const cx=(x1+x2)/2,cy=(y1+y2)/2;
+   if(Math.abs(x2-x1)>=Math.abs(y2-y1))solid(cx,cy,Math.max(4,len),8,'Cerca do galinheiro');else solid(cx,cy,8,Math.max(4,len),'Cerca do galinheiro');
+  };
+  fenceLine(100,815,335,815);fenceLine(100,815,100,1035);fenceLine(335,815,335,1035);fenceLine(100,1035,175,1035);fenceLine(260,1035,335,1035);
 
   const tree=(x,y,scale=.44,flip=false)=>{if(!this.textures.exists('city_tree'))return null;const t=this.add.image(x,y,'city_tree').setOrigin(.5,.94).setScale(scale).setFlipX(flip).setDepth(this.cityDepth(y));solid(x,y-5,24,16,'Base de árvore');return t};
   tree(135,245,.46);tree(1425,245,.46,true);tree(125,660,.43,true);tree(1435,665,.43);tree(325,1060,.40);tree(1430,1020,.40,true);
@@ -361,7 +353,7 @@ export class WorldScene extends Phaser.Scene{
   [[355,450],[760,450],[920,450],[1195,450],[390,620],[390,880],[1170,620],[1170,880],[520,900],[1080,900]].forEach(p=>prop('street_lamppost',p[0],p[1],.58,{w:9,h:9,offsetY:4,label:'Base de poste'}));
  }
 
- auditCityRound57(){
+ auditCityRound58(){
   const c=this.cityLayout,issues=[];
   for(const b of this.cityBuildings||[]){
    if(b.baseRect.left<c.left+24||b.baseRect.right>c.right-24||b.baseRect.top<c.top+24||b.baseRect.bottom>c.bottom-24)issues.push(`${b.label}: footprint fora das muralhas`);
@@ -371,7 +363,7 @@ export class WorldScene extends Phaser.Scene{
   }
   const eastPassage=new Phaser.Geom.Rectangle(c.right-52,c.eastGateY-38,104,76),southPassage=new Phaser.Geom.Rectangle(c.southGateX-44,c.bottom-52,88,104);
   for(const o of this.cityObstacles||[]){if(o.label?.includes('Torre'))continue;if(Phaser.Geom.Intersects.RectangleToRectangle(o.rect,eastPassage)||Phaser.Geom.Intersects.RectangleToRectangle(o.rect,southPassage))issues.push(`${o.label}: invade passagem de portão`)}
-  this.cityLayoutAudit={ok:issues.length===0,issues};if(issues.length)console.warn('[Cidade de Aether — auditoria Round 57]',issues);
+  this.cityLayoutAudit={ok:issues.length===0,issues};if(issues.length)console.warn('[Cidade de Aether — auditoria Round 58]',issues);
  }
 
  drawCityGroundLegacyRound55(){
@@ -832,7 +824,7 @@ export class WorldScene extends Phaser.Scene{
   this.residentialHouseGreen=addResidentialHouse('residential_house_green',996,622,0.72,92,92,48);
   this.residentialHouseBlue=addResidentialHouse('residential_house_blue',886,764,0.72,148,98,50);
  }
- createNpcsRound57(){
+ createNpcsRound58(){
   this.merchant=new Npc(this,220,398,'Aldren Voss',['Tenho suprimentos para quem pretende atravessar os arredores.'],{shop:true,role:'Mercador',portrait:'portrait_aldren',idleProfile:'merchant',idleFacing:'down',visualScale:.47});this.merchant.setRealSprite?.('merchant');
   this.blacksmith=new Npc(this,500,398,'Borin Ferramão',['Minha ferraria ainda está sendo reconstruída. Minhas ferramentas desapareceram durante a invasão.','Quando eu recuperar minhas ferramentas, poderei trabalhar novamente.'],{role:'Ferreiro',portrait:'portrait_borin',idleProfile:'blacksmith',idleFacing:'down',visualScale:.46});this.blacksmith.setRealSprite?.('blacksmith');
   this.healer=new Npc(this,1060,398,'Elara Veyn',['Perdi minha fé depois dos acontecimentos sombrios. Não consigo invocar minha bênção agora.','Talvez, quando minha fé retornar, eu possa ajudar os feridos novamente.'],{role:'Curandeira',portrait:'portrait_elara',idleProfile:'healer',idleFacing:'down',visualScale:.46});this.healer.setRealSprite?.('healer');
@@ -865,13 +857,13 @@ export class WorldScene extends Phaser.Scene{
   this.fixedNpcColliders=[];
   const addFixedNpcCollider=(npc,w=18,h=12)=>{if(!npc)return;const block=this.add.rectangle(npc.x,npc.y,w,h,0x000000,0).setDepth(0);this.physics.add.existing(block,true);this.physics.add.collider(this.player,block);this.fixedNpcColliders.push(block)};
   for(const npc of [this.merchant,this.blacksmith,this.healer,this.tavernKeeper,this.scholar,this.artisan,this.questNpc,this.rightGuard,this.bottomGuard])addFixedNpcCollider(npc);
-  this.auditCityActorsRound57();
+  this.auditCityActorsRound58();
  }
 
- auditCityActorsRound57(){
+ auditCityActorsRound58(){
   const actors=[this.merchant,this.blacksmith,this.healer,this.tavernKeeper,this.scholar,this.artisan,this.questNpc,this.rightGuard,this.bottomGuard,...(this.walkers||[])].filter(Boolean),issues=[];
   for(const actor of actors){for(const building of this.cityBuildings||[]){const r=building.baseRect,expanded=new Phaser.Geom.Rectangle(r.x-10,r.y-10,r.width+20,r.height+20);if(expanded.contains(actor.x,actor.y))issues.push(`${actor.npcName} dentro de ${building.label}`)}}
-  this.cityActorAudit={ok:issues.length===0,issues};if(issues.length)console.warn('[Cidade de Aether — atores Round 57]',issues);
+  this.cityActorAudit={ok:issues.length===0,issues};if(issues.length)console.warn('[Cidade de Aether — atores Round 58]',issues);
  }
 
  createNpcsLegacyRound55(){
@@ -926,14 +918,14 @@ export class WorldScene extends Phaser.Scene{
  setupInput(){this.cursors=this.input.keyboard.createCursorKeys();this.keys=this.input.keyboard.addKeys('W,A,S,D');this.attackKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);this.q=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);this.one=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);this.two=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);this.eKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);this.fKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);this.tKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T);this.escKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);this.shopOne=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);this.shopTwo=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);this.shopThree=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);this.shopClose=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T)}
  setupHud(){this.hud=new MapHud(this,{player:this.player,inventory:this.inv,equipment:this.equip,abilities:this.abilities,skills:this.skillManager,save:()=>this.saveGame(),onMenu:()=>this.goMenu(),worldWidth:this.worldWidth,worldHeight:this.worldHeight,localName:'CIDADE DE AETHER',markers:[{x:1600,y:1370,color:0xf4d06f,label:'Fazenda'},{x:2290,y:1460,color:0x8ad2e6,label:'Lago'},{x:3400,y:1724,color:0xd7dbe6,label:'Caverna'},{x:3920,y:650,color:0x73e6a8,label:'Floresta'}]});this.shop=new ShopPanel(this,this.player,this.inv,this.equip,()=>this.saveGame());this.dialogue=new ChoiceDialogueBox(this);this.npcDialogue=new NpcDialoguePanel(this);this.dialogueOpen=false;this.shop.visible=false;this.death=new DeathOverlay(this);this.waystone=new Waystone(this,this.cityLayout.plazaX,this.cityLayout.plazaY,'CIDADE DE AETHER');this.waystone.setDepth(this.cityDepth(this.cityLayout.plazaY,.04))}
 
- updateCityDepthsRound57(){
+ updateCityDepthsRound58(){
   const cityActors=[this.merchant,this.blacksmith,this.healer,this.tavernKeeper,this.scholar,this.artisan,this.questNpc,this.rightGuard,this.bottomGuard,...(this.walkers||[])].filter(Boolean);
   for(const actor of cityActors)actor.setDepth(this.cityDepth(actor.y,.04));
   if(this.isSafeZone())this.player.setDepth(this.cityDepth(this.player.y,.05));else this.player.setDepth(20);
  }
  update(){
   this.updateNpcPrompts();
-  this.updateCityDepthsRound57();
+  this.updateCityDepthsRound58();
   if(this.dialogueOpen){
    this.player.move(0,0);
    if(this.npcDialogue?.isOpen?.()){
@@ -949,7 +941,7 @@ export class WorldScene extends Phaser.Scene{
   if(this.shop.visible){this.player.move(0,0);this.handleShop();return}
   if(this.hud.handle({collect:()=>this.collectLoot(),talk:()=>this.tryTalkOrOutskirts(),shop:()=>this.tryShop(),afterAction:()=>this.saveGame()})){this.hud.update();return}
   if(this.player.isDead()){this.handleDeath();return}
-  const px=this.player.x,py=this.player.y;this.move();this.enforceCityBoundary(px,py);this.updateCityDepthsRound57();const safe=this.isSafeZone();
+  const px=this.player.x,py=this.player.y;this.move();this.enforceCityBoundary(px,py);this.updateCityDepthsRound58();const safe=this.isSafeZone();
   for(let i=0;i<this.enemies.length;i++){const e=this.enemies[i];if(e.dead){if(!e.respawnTimer)e.respawnTimer=this.time.delayedCall(9000,()=>this.respawnOne(i));continue}if(safe){e.body.setVelocity(0,0);continue}e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}
   this.loot.update(this.player.x,this.player.y);if(Phaser.Input.Keyboard.JustDown(this.attackKey))this.combat.playerAttack(this.player,this.enemies);if(Phaser.Input.Keyboard.JustDown(this.q))this.abilities.use('primary',this.enemies);if(Phaser.Input.Keyboard.JustDown(this.one))this.abilities.use('secondary',this.enemies);if(Phaser.Input.Keyboard.JustDown(this.two))this.abilities.use('mobility',this.enemies);this.waystone.updatePrompt(this.player.x,this.player.y);this.updateOutskirtsPrompt?.();this.hud.setLocalName(this.getLocal());this.hud.update();if(this.forestPortal.getBounds().contains(this.player.x,this.player.y)&&this.player.x>3840&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'GreenWoodsScene',x:220,y:780});this.scene.start('GreenWoodsScene')}
  }
@@ -995,7 +987,7 @@ export class WorldScene extends Phaser.Scene{
  collectLoot(){const d=this.loot.collectNear(this.player.x,this.player.y);if(d){this.sfx.pickup();this.saveGame();this.hud.bottom.update()}}
  respawnOne(i){const p=this.spawnPoints[i];if(p)this.enemies[i]=new Enemy(this,p.x,p.y,p.name,p.stats)}
  handleDeath(){if(this.respawnTimer)return;this.hud.openExternalModal();this.death.show('Respawn em 2 segundos');this.respawnTimer=this.time.delayedCall(2000,()=>{this.player.respawn(this.cityLayout.spawnX,this.cityLayout.spawnY);this.hud.closeExternalModal();this.death.hide();this.respawnTimer=null;this.saveGame()})}
- saveGame(){const old=this.sm.load();this.sm.save({version:1,savedAt:Date.now(),lastScene:this.scene.key,player:this.player.serialize(),characterClass:this.player.characterClass,skills:this.skillManager.serialize(),inventory:this.inv.serialize(),equipment:this.equip.serialize(),quests:this.questManager.serialize?.()||[],worldFlags:{...(old?.worldFlags||{}),cityRound56Migrated:true,cityRound57Migrated:true},scenePositions:{...(old?.scenePositions||{}),[this.scene.key]:{x:this.player.x,y:this.player.y}}})}
+ saveGame(){const old=this.sm.load();this.sm.save({version:1,savedAt:Date.now(),lastScene:this.scene.key,player:this.player.serialize(),characterClass:this.player.characterClass,skills:this.skillManager.serialize(),inventory:this.inv.serialize(),equipment:this.equip.serialize(),quests:this.questManager.serialize?.()||[],worldFlags:{...(old?.worldFlags||{}),cityRound56Migrated:true,cityRound57Migrated:true,cityRound58Migrated:true},scenePositions:{...(old?.scenePositions||{}),[this.scene.key]:{x:this.player.x,y:this.player.y}}})}
  goMenu(){this.saveGame();this.scene.start('MenuScene')}
  installUnload(){this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>this.saveGame());window.addEventListener('beforeunload',this._unload=()=>this.saveGame())}
  isNearWaystone(){return this.waystone&&Phaser.Math.Distance.Between(this.player.x,this.player.y,this.waystone.x,this.waystone.y)<=85}

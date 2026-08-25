@@ -48,11 +48,13 @@ export class AmbientCityLife{
   }
 
   createCat(){
+    // O sprite do gato possui leitura lateral; por isso ele percorre agora
+    // somente um eixo horizontal, longe do muro oeste.
     const route=[
-      {x:125,y:500,pause:1200},{x:155,y:535,pause:500},{x:150,y:610,pause:950},
-      {x:130,y:680,pause:1150},{x:112,y:585,pause:700}
+      {x:180,y:470,pause:1200},{x:230,y:470,pause:650},{x:290,y:470,pause:850},
+      {x:360,y:470,pause:1100},{x:300,y:470,pause:720},{x:235,y:470,pause:800}
     ];
-    this.cat=this.createRouteAnimal('city_cat','city-cat-walk',125,500,route,{speed:24,scale:.76,startDelay:1300});
+    this.cat=this.createRouteAnimal('city_cat','city-cat-walk',180,470,route,{speed:24,scale:.76,startDelay:1300});
   }
 
   createRouteAnimal(texture,anim,x,y,route,opts={}){
@@ -211,27 +213,27 @@ export class AmbientCityLife{
     this.chickens=[];
 
     // Galinha branca: núcleo frontal do galinheiro.
-    this.createChicken('city_chicken_white','city-chicken-white-walk',145,900,[
-      {x:165,y:892,pause:940},{x:205,y:904,pause:760},{x:198,y:942,pause:1040},
-      {x:152,y:956,pause:900},{x:128,y:928,pause:860}
+    this.createChicken('city_chicken_white','city-chicken-white-walk',225,915,[
+      {x:245,y:910,pause:940},{x:285,y:920,pause:760},{x:280,y:955,pause:1040},
+      {x:230,y:970,pause:900},{x:205,y:945,pause:860}
     ],{speed:14,scale:.31,startDelay:700});
 
     // Galinha marrom: circula pelo lado direito, próxima à entrada do cercado.
-    this.createChicken('city_chicken_brown','city-chicken-brown-walk',235,932,[
-      {x:258,y:922,pause:780},{x:270,y:948,pause:860},{x:248,y:976,pause:720},
-      {x:212,y:970,pause:980},{x:205,y:940,pause:820}
+    this.createChicken('city_chicken_brown','city-chicken-brown-walk',290,955,[
+      {x:305,y:940,pause:780},{x:310,y:980,pause:860},{x:280,y:1000,pause:720},
+      {x:245,y:990,pause:980},{x:250,y:960,pause:820}
     ],{speed:15,scale:.30,startDelay:1500});
 
     // Galinha creme: fundo do terreiro, próxima ao abrigo.
-    this.createChicken('city_chicken_cream','city-chicken-cream-walk',190,870,[
-      {x:218,y:874,pause:860},{x:246,y:886,pause:760},{x:230,y:910,pause:900},
-      {x:188,y:908,pause:1040},{x:160,y:888,pause:860}
+    this.createChicken('city_chicken_cream','city-chicken-cream-walk',270,860,[
+      {x:285,y:870,pause:860},{x:305,y:890,pause:760},{x:290,y:910,pause:900},
+      {x:260,y:900,pause:1040},{x:255,y:875,pause:860}
     ],{speed:13,scale:.29,startDelay:2350,flip:true});
 
     // Galinha menor: varia a silhueta e fecha a leitura do pequeno terreiro.
-    this.createChicken('city_chicken_brown','city-chicken-brown-walk',252,880,[
-      {x:270,y:884,pause:740},{x:276,y:906,pause:820},{x:252,y:922,pause:960},
-      {x:224,y:914,pause:760},{x:226,y:890,pause:900}
+    this.createChicken('city_chicken_brown','city-chicken-brown-walk',300,885,[
+      {x:315,y:890,pause:740},{x:315,y:915,pause:820},{x:295,y:930,pause:960},
+      {x:270,y:920,pause:760},{x:275,y:895,pause:900}
     ],{speed:15,scale:.27,startDelay:3200,flip:true});
   }
 
@@ -239,14 +241,14 @@ export class AmbientCityLife{
     // Dois pintinhos discretos perto do galinheiro. Usam o mesmo sprite-base
     // das galinhas, porém com escala e rotas reduzidas para manter o padrão
     // visual sem introduzir um asset destoante.
-    this.createChicken('city_chicken_cream','city-chicken-cream-walk',190,942,[
-      {x:200,y:938,pause:620},{x:212,y:948,pause:740},{x:206,y:960,pause:780},
-      {x:188,y:958,pause:700},{x:182,y:950,pause:660}
+    this.createChicken('city_chicken_cream','city-chicken-cream-walk',220,970,[
+      {x:230,y:966,pause:620},{x:242,y:976,pause:740},{x:236,y:990,pause:780},
+      {x:218,y:988,pause:700},{x:210,y:978,pause:660}
     ],{speed:11,scale:.17,startDelay:1200});
 
-    this.createChicken('city_chicken_white','city-chicken-white-walk',236,902,[
-      {x:244,y:900,pause:600},{x:254,y:910,pause:700},{x:248,y:922,pause:820},
-      {x:232,y:920,pause:720},{x:226,y:910,pause:660}
+    this.createChicken('city_chicken_white','city-chicken-white-walk',275,955,[
+      {x:283,y:952,pause:600},{x:295,y:962,pause:700},{x:290,y:975,pause:820},
+      {x:274,y:975,pause:720},{x:266,y:964,pause:660}
     ],{speed:12,scale:.15,startDelay:2050,flip:true});
   }
 
@@ -363,12 +365,13 @@ export class AmbientCityLife{
   }
 
   createOldManAndBirds(){
-    // Recanto sudeste da praça. Cada quadro recebe compensação vertical para
-    // manter exatamente a mesma altura aparente durante toda a animação.
+    // Recanto sudeste da praça. Todos os quadros preservam a mesma escala; a
+    // correção ocorre apenas pela linha dos pés, permitindo que o agachamento
+    // aconteça para baixo sem puxar o personagem para cima.
     this.oldManHome={x:965,y:755};this.shoulderPerch={x:976,y:711};this.shoulderGround={x:1025,y:780};
-    const elderScale=.64,frameHeightFactor=[1,99/86,99/97,99/101];
+    const elderScale=.64,frameBottom=[109,109,107,109],baseBottom=109;
     this.oldMan=this.scene.add.sprite(this.oldManHome.x,this.oldManHome.y,'elder_feeder',0).setOrigin(.5,1).setScale(elderScale).setDepth(this.depth(this.oldManHome.y,.03));
-    this.oldMan.on('animationupdate',(_anim,frame)=>{const i=Number(frame?.textureFrame??0);this.oldMan?.setScale(elderScale,elderScale*(frameHeightFactor[i]??1))});
+    this.oldMan.on('animationupdate',(_anim,frame)=>{const i=Number(frame?.textureFrame??0);this.oldMan?.setScale(elderScale).setY(this.oldManHome.y+(baseBottom-(frameBottom[i]??baseBottom))*elderScale)});
     this.oldMan.play('elder-feed-birds');
 
     const spots=[
@@ -405,8 +408,8 @@ export class AmbientCityLife{
     ],{startIndex:0,startDelay:2600});
 
     this.createPerchedBird([
-      {x:148,y:878,scale:.56,flipX:false,depth:this.depth(878,.02),pause:[2600,4200]},
-      {x:196,y:878,scale:.56,flipX:true,depth:this.depth(878,.02),pause:[2300,3800]}
+      {x:122,y:812,scale:.56,flipX:false,depth:this.depth(812,.02),pause:[2600,4200]},
+      {x:312,y:812,scale:.56,flipX:true,depth:this.depth(812,.02),pause:[2300,3800]}
     ],{startIndex:1,startDelay:4300});
   }
 
