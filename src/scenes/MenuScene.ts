@@ -30,7 +30,7 @@ export class MenuScene extends Phaser.Scene{
   let target=save.lastScene||'AetherCityScene';
   const pos=save.scenePositions?.WorldScene;
   const inOldCity=!pos||(pos.x>=80&&pos.x<=1480&&pos.y>=80&&pos.y<=1120);
-  if(target==='WorldScene'&&inOldCity&&!save.worldFlags?.cityRound61Migrated)target='AetherCityScene';
+  if(target==='WorldScene'&&inOldCity&&!save.worldFlags?.cityRound62Migrated)target='AetherCityScene';
   this.fade.out(()=>this.scene.start(target));
  }
 }
