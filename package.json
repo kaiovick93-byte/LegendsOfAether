@@ -1,0 +1,22 @@
+{
+  "name": "legends-of-aether",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit",
+    "validate:city": "node validate-city-round58.mjs",
+    "validate:isometric": "node validate-isometric-round59.mjs",
+    "validate:isometric-city": "node validate-isometric-city-round60.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^7.0.6"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  }
+}
