@@ -1,6 +1,6 @@
-# Legends of Aether 0.2.1 — Round 61: Planta e Circulação Isométrica
+# Legends of Aether 0.2.2 — Round 62: Profundidade, Colisão e NPCs 2,5D
 
-A Cidade de Aether mantém a conversão isométrica aprovada e recebe uma planta urbana refinada: fachadas livres, NPCs exatamente diante de seus estabelecimentos, residências agrupadas, fonte central, Marco de Senda em jardim próprio e retorno confiável pelos portões. Os Arredores, a Fazenda de Rowan, a Floresta, a Caverna e o Castelo continuam preservados. Consulte `ROUND61_ISOMETRIC_CITY_LAYOUT_FIX.md` para os detalhes.
+A Cidade de Aether mantém a conversão isométrica aprovada e recebe colisões baseadas na opacidade real das bases dos edifícios, árvore com tronco sólido e contorno de oclusão, retorno direcional pelos portões, rato intermitente junto à taverna e nove NPCs fixos convertidos para três quartos 2,5D. Os Arredores, a Fazenda de Rowan, a Floresta, a Caverna e o Castelo continuam preservados. Consulte `ROUND62_ISOMETRIC_DEPTH_COLLISION_PASS.md` para os detalhes.
 
 ## Instalação
 
