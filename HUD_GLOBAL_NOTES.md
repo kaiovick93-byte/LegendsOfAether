@@ -1,0 +1,1 @@
+HUD global patch: BottomActionBar and Minimap are screen-fixed; ControlsPanel uses depth 950; modal dialogue panels were moved above the hotbar. GreenWoodsScene, CaveScene and CastleScene now instantiate MapHud, so C, hotbar and minimap work there as well.
