@@ -1,6 +1,6 @@
-# Legends of Aether 0.2.0 — Round 60: Conversão Isométrica da Cidade
+# Legends of Aether 0.2.1 — Round 61: Planta e Circulação Isométrica
 
-A Cidade de Aether da campanha agora usa a projeção isométrica 2.5D aprovada no protótipo. O herói, NPCs, fauna, colisões, praça, estabelecimentos e os portões Leste/Sul foram migrados para uma grade lógica própria. Os Arredores, a Fazenda de Rowan, a Floresta, a Caverna e o Castelo continuam preservados. Consulte `ROUND60_ISOMETRIC_CITY_CONVERSION.md` para os detalhes.
+A Cidade de Aether mantém a conversão isométrica aprovada e recebe uma planta urbana refinada: fachadas livres, NPCs exatamente diante de seus estabelecimentos, residências agrupadas, fonte central, Marco de Senda em jardim próprio e retorno confiável pelos portões. Os Arredores, a Fazenda de Rowan, a Floresta, a Caverna e o Castelo continuam preservados. Consulte `ROUND61_ISOMETRIC_CITY_LAYOUT_FIX.md` para os detalhes.
 
 ## Instalação
 

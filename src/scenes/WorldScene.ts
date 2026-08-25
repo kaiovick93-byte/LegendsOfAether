@@ -954,7 +954,31 @@ export class WorldScene extends Phaser.Scene{
   for(let i=0;i<this.enemies.length;i++){const e=this.enemies[i];if(e.dead){if(!e.respawnTimer)e.respawnTimer=this.time.delayedCall(9000,()=>this.respawnOne(i));continue}if(safe){e.body.setVelocity(0,0);continue}e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}
   this.loot.update(this.player.x,this.player.y);if(Phaser.Input.Keyboard.JustDown(this.attackKey))this.combat.playerAttack(this.player,this.enemies);if(Phaser.Input.Keyboard.JustDown(this.q))this.abilities.use('primary',this.enemies);if(Phaser.Input.Keyboard.JustDown(this.one))this.abilities.use('secondary',this.enemies);if(Phaser.Input.Keyboard.JustDown(this.two))this.abilities.use('mobility',this.enemies);this.waystone?.updatePrompt(this.player.x,this.player.y);this.updateOutskirtsPrompt?.();this.hud.setLocalName(this.getLocal());this.hud.update();if(this.forestPortal.getBounds().contains(this.player.x,this.player.y)&&this.player.x>3840&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'GreenWoodsScene',x:220,y:780});this.scene.start('GreenWoodsScene')}
  }
- enforceCityBoundary(px,py){const x=this.player.x,y=this.player.y,c=this.cityLayout,safe={left:c.left,right:c.right,top:c.top,bottom:c.bottom};const eastGate=this.rightGate.getBounds(),southGate=this.bottomGate.getBounds();const wasInside=px>=safe.left&&px<=safe.right&&py>=safe.top&&py<=safe.bottom,isInside=x>=safe.left&&x<=safe.right&&y>=safe.top&&y<=safe.bottom;if(wasInside!==isInside){const crossedEast=(px<safe.right&&x>=safe.right)||(px>safe.right&&x<=safe.right),crossedSouth=(py<safe.bottom&&y>=safe.bottom)||(py>safe.bottom&&y<=safe.bottom);const throughEast=crossedEast&&(eastGate.contains(px,py)||eastGate.contains(x,y)),throughSouth=crossedSouth&&(southGate.contains(px,py)||southGate.contains(x,y)),allowed=throughEast||throughSouth;if(this.cityConverted&&!wasInside&&isInside&&allowed){this.enterConvertedCity(throughEast?'east':'south');return}if(!allowed)this.player.setPosition(px,py)}if(this.player.x<safe.left&&wasInside)this.player.x=safe.left;if(this.player.y<safe.top&&wasInside)this.player.y=safe.top;this.player.y=Math.min(this.player.y,this.worldHeight-120)}
+ enforceCityBoundary(px,py){
+  const x=this.player.x,y=this.player.y,c=this.cityLayout,safe={left:c.left,right:c.right,top:c.top,bottom:c.bottom};
+
+  // Retorno robusto do Round 61: a zona fica dos dois lados da fachada do
+  // portão e não depende do único quadro em que a coordenada cruza a borda.
+  if(this.cityConverted&&!this.switching){
+   const nearEast=x>=c.right-30&&x<=c.right+58&&Math.abs(y-c.eastGateY)<=76;
+   const nearSouth=y>=c.bottom-30&&y<=c.bottom+58&&Math.abs(x-c.southGateX)<=82;
+   if(nearEast){this.enterConvertedCity('east');return}
+   if(nearSouth){this.enterConvertedCity('south');return}
+  }
+
+  const eastGate=this.rightGate.getBounds(),southGate=this.bottomGate.getBounds();
+  const wasInside=px>=safe.left&&px<=safe.right&&py>=safe.top&&py<=safe.bottom;
+  const isInside=x>=safe.left&&x<=safe.right&&y>=safe.top&&y<=safe.bottom;
+  if(wasInside!==isInside){
+   const crossedEast=(px<safe.right&&x>=safe.right)||(px>safe.right&&x<=safe.right);
+   const crossedSouth=(py<safe.bottom&&y>=safe.bottom)||(py>safe.bottom&&y<=safe.bottom);
+   const allowed=(crossedEast&&(eastGate.contains(px,py)||eastGate.contains(x,y)))||(crossedSouth&&(southGate.contains(px,py)||southGate.contains(x,y)));
+   if(!allowed)this.player.setPosition(px,py);
+  }
+  if(this.player.x<safe.left&&wasInside)this.player.x=safe.left;
+  if(this.player.y<safe.top&&wasInside)this.player.y=safe.top;
+  this.player.y=Math.min(this.player.y,this.worldHeight-120);
+ }
  enterConvertedCity(gate){if(this.switching)return;this.switching=true;this.player.setPosition(gate==='east'?1588:780,gate==='east'?500:1228);this.saveGame();this.registry.set('aetherCityEntrance',gate);this.cameras.main.fadeOut(180,7,13,16,(_camera,progress)=>{if(progress===1)this.scene.start('AetherCityScene')})}
  isSafeZone(){const c=this.cityLayout;return this.player.x>=c.left&&this.player.x<=c.right&&this.player.y>=c.top&&this.player.y<=c.bottom}
  getLocal(){if(this.isSafeZone())return'CIDADE DE AETHER';const p={x:this.player.x,y:this.player.y};if(Phaser.Geom.Rectangle.ContainsPoint(this.outskirtsRegions?.farm,p))return'FAZENDA DOS ARREDORES';if(Phaser.Geom.Rectangle.ContainsPoint(this.outskirtsRegions?.totems,p))return'TOTENS MUSGOSOS';if(Phaser.Geom.Rectangle.ContainsPoint(this.outskirtsRegions?.ruins,p))return'RUÍNAS ANTIGAS';if(Phaser.Geom.Rectangle.ContainsPoint(this.outskirtsRegions?.lake,p))return'LAGO DO SALGUEIRO';if(this.caveEntrance?.getBounds?.().contains(this.player.x,this.player.y))return'BOCA DA CAVERNA';if(this.forestPortal?.getBounds?.().contains(this.player.x,this.player.y))return'PORTAL DA FLORESTA';return'ARREDORES DA CIDADE'}
@@ -997,7 +1021,7 @@ export class WorldScene extends Phaser.Scene{
  collectLoot(){const d=this.loot.collectNear(this.player.x,this.player.y);if(d){this.sfx.pickup();this.saveGame();this.hud.bottom.update()}}
  respawnOne(i){const p=this.spawnPoints[i];if(p)this.enemies[i]=new Enemy(this,p.x,p.y,p.name,p.stats)}
  handleDeath(){if(this.respawnTimer)return;this.hud.openExternalModal();this.death.show('Respawn em 2 segundos');this.respawnTimer=this.time.delayedCall(2000,()=>{this.player.respawn(780,1228);this.hud.closeExternalModal();this.death.hide();this.respawnTimer=null;this.saveGame();this.registry.set('aetherCityEntrance','south');this.scene.start('AetherCityScene')})}
- saveGame(){const old=this.sm.load();this.sm.save({version:1,savedAt:Date.now(),lastScene:this.scene.key,player:this.player.serialize(),characterClass:this.player.characterClass,skills:this.skillManager.serialize(),inventory:this.inv.serialize(),equipment:this.equip.serialize(),quests:this.questManager.serialize?.()||[],worldFlags:{...(old?.worldFlags||{}),cityRound56Migrated:true,cityRound57Migrated:true,cityRound58Migrated:true,cityRound60Migrated:true},scenePositions:{...(old?.scenePositions||{}),[this.scene.key]:{x:this.player.x,y:this.player.y}}})}
+ saveGame(){const old=this.sm.load();this.sm.save({version:1,savedAt:Date.now(),lastScene:this.scene.key,player:this.player.serialize(),characterClass:this.player.characterClass,skills:this.skillManager.serialize(),inventory:this.inv.serialize(),equipment:this.equip.serialize(),quests:this.questManager.serialize?.()||[],worldFlags:{...(old?.worldFlags||{}),cityRound56Migrated:true,cityRound57Migrated:true,cityRound58Migrated:true,cityRound60Migrated:true,cityRound61Migrated:true},scenePositions:{...(old?.scenePositions||{}),[this.scene.key]:{x:this.player.x,y:this.player.y}}})}
  goMenu(){this.saveGame();this.scene.start('MenuScene')}
  installUnload(){this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>this.saveGame());window.addEventListener('beforeunload',this._unload=()=>this.saveGame())}
  isNearWaystone(){return this.waystone&&Phaser.Math.Distance.Between(this.player.x,this.player.y,this.waystone.x,this.waystone.y)<=85}

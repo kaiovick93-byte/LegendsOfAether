@@ -16,7 +16,7 @@ const html = read('index.html');
 const vite = read('vite.config.ts');
 const pkg = JSON.parse(read('package.json'));
 
-expect(['0.1.9', '0.2.0'].includes(pkg.version), 'versão do pacote não preserva o protótipo isométrico');
+expect(['0.1.9', '0.2.0', '0.2.1'].includes(pkg.version), 'versão do pacote não preserva o protótipo isométrico');
 expect(pkg.scripts?.['validate:isometric'] === 'node validate-isometric-round59.mjs', 'script de auditoria isométrica ausente');
 expect(menu.includes("scene.start('IsometricPrototypeScene')"), 'protótipo não está acessível pelo menu');
 expect(main.includes("import {IsometricPrototypeScene}"), 'cena isométrica não foi importada');
