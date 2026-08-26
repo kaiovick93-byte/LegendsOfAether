@@ -35,7 +35,11 @@ export class Npc extends Phaser.GameObjects.Container{
   this.idleDecor=[];
   this.idleProp=null;
   this.isIsometricStatic=false;
+  this.isIsometricWalker=false;
   this.isoBaseTexture=null;
+  this.isoActionTexture=null;
+  this.isoActionAnimation=null;
+  this.isoWalkAnimation=null;
   this.isoDisplayScale=1;
   this.isoActionProp=null;
   this.isoEffects=[];
@@ -198,7 +202,9 @@ export class Npc extends Phaser.GameObjects.Container{
   this.sprite.setOrigin(.5,1).setScale(this.visualScale);
   this.characterVisual.add(this.sprite);
   this.isIsometricStatic=false;
+  this.isIsometricWalker=false;
   this.isoBaseTexture=null;
+  this.isoActionTexture=null;
 
   this.createMoveAnimations(textureKey);
   this.idleProfile=this.idleProfile||this.resolveIdleProfile();
@@ -219,7 +225,7 @@ export class Npc extends Phaser.GameObjects.Container{
 
   this.characterVisual=this.scene.add.container(0,0);
   this.addAt(this.characterVisual,0);
-  this.sprite=this.scene.add.image(0,8,textureKey).setOrigin(.5,1);
+  this.sprite=this.scene.add.sprite(0,8,textureKey,0).setOrigin(.5,1);
   const source=this.scene.textures.get(textureKey).getSourceImage();
   const targetHeight=options.height??108;
   this.isoDisplayScale=targetHeight/source.height;
@@ -227,12 +233,62 @@ export class Npc extends Phaser.GameObjects.Container{
   this.characterVisual.add(this.sprite);
 
   this.isIsometricStatic=true;
+  this.isIsometricWalker=false;
   this.isoBaseTexture=textureKey;
+  this.isoActionTexture=options.actionTexture&&this.scene.textures.exists(options.actionTexture)?options.actionTexture:null;
+  this.isoActionAnimation=this.isoActionTexture?`npc-${this.isoActionTexture}-action`:null;
+  if(this.isoActionTexture&&!this.scene.anims.exists(this.isoActionAnimation)){
+   this.scene.anims.create({
+    key:this.isoActionAnimation,
+    frames:this.scene.anims.generateFrameNumbers(this.isoActionTexture,{start:0,end:3}),
+    frameRate:4.5,
+    repeat:0
+   });
+  }
   this.idleProfile=this.idleProfile||this.resolveIdleProfile();
   this.currentFacing=options.facing||this.idleFacing||this.defaultIdleFacing(this.idleProfile);
-  this.startIdleBreathing();
+  try{this.idleBobTween?.stop()}catch(e){}
+  this.idleBobTween=null;
+  this.characterVisual.setPosition(0,0).setScale(1,1).setAngle(0);
   this.createIdleProp();
   this.nextIdleAction=this.scene.time.now+Phaser.Math.Between(1300,2800);
+  return true;
+ }
+
+ setIsometricWalkSprite(textureKey:string,options={}){
+  if(!this.scene.textures.exists(textureKey))return false;
+  this.textureKey=textureKey;
+  if(this.placeholderParts){for(const part of this.placeholderParts){part.destroy()}this.placeholderParts=[]}
+  if(this.characterVisual){this.characterVisual.destroy(true);this.characterVisual=null;this.sprite=null}
+  else if(this.sprite){try{this.sprite.destroy()}catch(e){}this.sprite=null}
+
+  this.characterVisual=this.scene.add.container(0,0);
+  this.addAt(this.characterVisual,0);
+  this.sprite=this.scene.add.sprite(0,8,textureKey,0).setOrigin(.5,1);
+  const frame=this.scene.textures.get(textureKey).get(0);
+  const targetHeight=options.height??110;
+  this.isoDisplayScale=targetHeight/(frame?.height||224);
+  this.sprite.setScale(this.isoDisplayScale);
+  this.characterVisual.add(this.sprite);
+
+  this.isIsometricStatic=false;
+  this.isIsometricWalker=true;
+  this.isoBaseTexture=textureKey;
+  this.isoActionTexture=null;
+  this.isoWalkAnimation=`npc-${textureKey}-walk`;
+  if(!this.scene.anims.exists(this.isoWalkAnimation)){
+   this.scene.anims.create({
+    key:this.isoWalkAnimation,
+    frames:this.scene.anims.generateFrameNumbers(textureKey,{start:0,end:3}),
+    frameRate:7,
+    repeat:-1
+   });
+  }
+  try{this.idleBobTween?.stop()}catch(e){}
+  this.idleBobTween=null;
+  this.characterVisual.setPosition(0,0).setScale(1,1).setAngle(0);
+  this.currentFacing=options.facing||'right';
+  this.sprite.setFlipX(this.currentFacing==='left');
   return true;
  }
 
@@ -248,6 +304,13 @@ export class Npc extends Phaser.GameObjects.Container{
 
  setFacing(dir){
   if(!this.sprite) return;
+  if(this.isIsometricWalker){
+   this.currentFacing=dir;
+   this.sprite.stop().setFrame(0);
+   if(dir==='left')this.sprite.setFlipX(true);
+   else if(dir==='right')this.sprite.setFlipX(false);
+   return;
+  }
   if(this.isIsometricStatic){this.currentFacing=dir;return}
   const frameMap={down:0,up:5,left:10,right:15};
   const frame=frameMap[dir] ?? 0;
@@ -364,26 +427,21 @@ export class Npc extends Phaser.GameObjects.Container{
  }
 
  playIsometricIdleAction(profile){
-  if(profile==='blacksmith'){this.playIsometricBlacksmithIdle();return}
-  const configs={
-   merchant:{x:-2.2,y:2.4,angle:-1.15,duration:260,repeat:2,effect:[0xf4c45e,14,-45,3]},
-   healer:{x:-1.2,y:-4.0,angle:1.55,duration:420,repeat:1,effect:[0x67e6d2,-34,-84,4]},
-   tavernkeeper:{x:3.0,y:-5.2,angle:4.2,duration:300,repeat:1,effect:[0xf1c27a,-26,-53,2]},
-   scholar:{x:-2.0,y:2.0,angle:-1.7,duration:360,repeat:2,effect:[0xd8c88f,12,-48,3]},
-   artisan:{x:2.4,y:-1.0,angle:2.35,duration:235,repeat:3,effect:[0x67d8cf,29,-37,3]},
-   elder:{x:-1.2,y:-3.0,angle:-.85,duration:540,repeat:1,effect:[0x73d8ff,-36,-86,4]},
-   east_guard:{x:-1.4,y:-1.0,angle:-.8,duration:390,repeat:1,effect:[0xdbe8ff,-24,-78,2]},
-   south_guard:{x:1.4,y:-1.0,angle:.8,duration:410,repeat:1,effect:[0xa8ead6,-28,-78,2]},
-   breath:{x:.8,y:-1.2,angle:.4,duration:420,repeat:1}
-  };
-  const cfg=configs[profile]||configs.breath;
-  this.sprite.setPosition(0,8).setAngle(0);
-  if(cfg.effect)this.spawnIsoSparkles(...cfg.effect);
-  this.idleActionTween=this.scene.tweens.add({
-   targets:this.sprite,x:cfg.x,y:8+cfg.y,angle:cfg.angle,
-   duration:cfg.duration,yoyo:true,repeat:cfg.repeat,ease:'Sine.easeInOut',
-   onComplete:()=>{this.resetIsometricPose();this.finishIdleAction(500)}
-  });
+  if(this.isoActionTexture&&this.isoActionAnimation&&this.scene.textures.exists(this.isoActionTexture)){
+   this.sprite.setPosition(0,8).setAngle(0).setTexture(this.isoActionTexture,0);
+   this.isoActionComplete=()=>{
+    if(!this.sprite?.active)return;
+    this.sprite.setTexture(this.isoBaseTexture,0).setPosition(0,8).setAngle(0);
+    this.isoActionComplete=null;
+    this.finishIdleAction(700);
+   };
+   this.sprite.once('animationcomplete',this.isoActionComplete);
+   this.sprite.play(this.isoActionAnimation,true);
+   return;
+  }
+  // NPCs isométricos sem uma folha de ação própria permanecem estáveis.
+  // O corpo inteiro nunca é transladado para simular um gesto.
+  this.finishIdleAction(2200);
  }
 
  playIsometricBlacksmithIdle(){
@@ -548,11 +606,13 @@ export class Npc extends Phaser.GameObjects.Container{
   try{this.idleActionTween?.stop()}catch(e){}
   try{this.idleFrameEvent?.remove(false)}catch(e){}
   try{this.interactionTween?.stop()}catch(e){}
+  try{if(this.isoActionComplete)this.sprite?.off('animationcomplete',this.isoActionComplete)}catch(e){}
   this.idleBobTween=null;this.idleActionTween=null;this.idleFrameEvent=null;this.interactionTween=null;
   for(const go of this.idleDecor){try{go?.destroy?.()}catch(e){}}
   try{this.isoActionProp?.destroy?.()}catch(e){}
   for(const go of this.isoEffects){try{go?.destroy?.()}catch(e){}}
   this.isoActionProp=null;this.isoEffects=[];
+  this.isoActionComplete=null;
   this.idleDecor=[];
  }
 }

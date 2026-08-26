@@ -29,11 +29,11 @@ export class AmbientCityLife{
     if(!a.exists('city-cat-walk')) a.create({key:'city-cat-walk',frames:a.generateFrameNumbers('city_cat',{start:0,end:3}),frameRate:7,repeat:-1});
     if(!a.exists('elder-feed-birds')) a.create({key:'elder-feed-birds',frames:a.generateFrameNumbers('elder_feeder',{start:0,end:3}),frameRate:2.4,repeat:-1});
     // Novo pássaro no mesmo padrão visual de ratos/galinhas: 0=idle, 1=step, 2=wing-lift, 3=peck.
-    if(!a.exists('city-bird-peck')) a.create({key:'city-bird-peck',frames:a.generateFrameNumbers('city_bird',{frames:[0,1,0,3,0]}),frameRate:4,repeat:-1});
-    if(!a.exists('city-bird-flap')) a.create({key:'city-bird-flap',frames:a.generateFrameNumbers('city_bird',{frames:[1,2,1,0]}),frameRate:7,repeat:-1});
-    if(!a.exists('city-rat-gray-run')) a.create({key:'city-rat-gray-run',frames:a.generateFrameNumbers('city_rat_gray',{start:0,end:1}),frameRate:10,repeat:-1});
-    if(!a.exists('city-rat-brown-run')) a.create({key:'city-rat-brown-run',frames:a.generateFrameNumbers('city_rat_brown',{start:0,end:1}),frameRate:11,repeat:-1});
-    if(!a.exists('city-rat-dark-run')) a.create({key:'city-rat-dark-run',frames:a.generateFrameNumbers('city_rat_dark',{start:0,end:1}),frameRate:12,repeat:-1});
+    if(!a.exists('city-bird-peck')) a.create({key:'city-bird-peck',frames:a.generateFrameNumbers('city_bird',{frames:[0,1,2,3]}),frameRate:4,repeat:-1});
+    if(!a.exists('city-bird-flap')) a.create({key:'city-bird-flap',frames:a.generateFrameNumbers('city_bird',{frames:[0,1,2,3]}),frameRate:5,repeat:-1});
+    if(!a.exists('city-rat-gray-run')) a.create({key:'city-rat-gray-run',frames:a.generateFrameNumbers('city_rat_gray',{start:0,end:3}),frameRate:10,repeat:-1});
+    if(!a.exists('city-rat-brown-run')) a.create({key:'city-rat-brown-run',frames:a.generateFrameNumbers('city_rat_brown',{start:0,end:3}),frameRate:11,repeat:-1});
+    if(!a.exists('city-rat-dark-run')) a.create({key:'city-rat-dark-run',frames:a.generateFrameNumbers('city_rat_dark',{start:0,end:3}),frameRate:12,repeat:-1});
     if(!a.exists('city-chicken-white-walk')) a.create({key:'city-chicken-white-walk',frames:a.generateFrameNumbers('city_chicken_white',{frames:[0,1,2,1]}),frameRate:6,repeat:-1});
     if(!a.exists('city-chicken-brown-walk')) a.create({key:'city-chicken-brown-walk',frames:a.generateFrameNumbers('city_chicken_brown',{frames:[0,1,2,1]}),frameRate:6,repeat:-1});
     if(!a.exists('city-chicken-cream-walk')) a.create({key:'city-chicken-cream-walk',frames:a.generateFrameNumbers('city_chicken_cream',{frames:[0,1,2,1]}),frameRate:6,repeat:-1});

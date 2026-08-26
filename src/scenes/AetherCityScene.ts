@@ -20,7 +20,7 @@ import {SfxManager} from '../audio/SfxManager';
 import {Waystone} from '../world/Waystone';
 
 /**
- * Round 62 — Cidade de Aether oficial em 2.5D isométrico.
+ * Round 65 — ferraria de Borin reconstruída com arquitetura isométrica 2.5D.
  *
  * A cidade virou uma cena própria. Isso permite uma grade lógica real sem
  * alterar a física cartesiana dos Arredores, Fazenda, Floresta, Caverna e
@@ -48,7 +48,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.blockedRects = [];
     this.blockedCircles = [];
     this.blockedBuildingMasks = [];
-    this.occludingTrees = [];
+    this.occluders = [];
     this.fixedNpcLogical = [];
     this.cityActors = [];
     this.ambientActors = [];
@@ -122,7 +122,7 @@ export class AetherCityScene extends Phaser.Scene {
     } else if (entrance === 'south') {
       this.logicalPlayer = {u: 14, v: 21.40, radius: .27};
       this.entryFacing = 'up';
-    } else if (save?.worldFlags?.cityRound62Migrated && Number.isFinite(savedPos?.u) && Number.isFinite(savedPos?.v)) {
+    } else if ((save?.worldFlags?.cityRound64Migrated || save?.worldFlags?.cityRound63Migrated) && Number.isFinite(savedPos?.u) && Number.isFinite(savedPos?.v)) {
       this.logicalPlayer.u = Phaser.Math.Clamp(savedPos.u, 2.7, 25.3);
       this.logicalPlayer.v = Phaser.Math.Clamp(savedPos.v, 2.7, 25.3);
     }
@@ -152,18 +152,12 @@ export class AetherCityScene extends Phaser.Scene {
 
   createPlayerOcclusionOutline(texture, frame) {
     if (!this.playerOutline?.active) {
-      this.playerOutline = this.add.sprite(this.player.x, this.player.y, texture, frame)
+      const outlineTexture = this.textures.exists('player_outline_gold') ? 'player_outline_gold' : texture;
+      this.playerOutline = this.add.sprite(this.player.x, this.player.y, outlineTexture, frame)
         .setOrigin(this.player.originX, this.player.originY).setScale(this.player.scaleX, this.player.scaleY)
         .setVisible(false).setAlpha(0);
-      try {
-        this.playerOutline.preFX?.addGlow(0xffd166, 4.5, 0, true, .12, 7);
-        this.playerOutlineUsesGlow = !!this.playerOutline.preFX;
-      } catch (_error) {
-        this.playerOutlineUsesGlow = false;
-        this.playerOutline.setTintFill(0xffd166);
-      }
     } else {
-      this.playerOutline.setTexture(texture, frame);
+      this.playerOutline.setTexture(this.textures.exists('player_outline_gold') ? 'player_outline_gold' : texture, frame);
     }
   }
 
@@ -187,12 +181,12 @@ export class AetherCityScene extends Phaser.Scene {
     // Uma única planta alimenta arte, gramado, colisão e posição dos NPCs.
     // O ponto do NPC fica sempre além da borda frontal do próprio footprint.
     return [
-      {id:'merchant', key:'merchant_shop', label:'Loja de Aldren', u:6.60, v:13.35, height:238, rect:[4.95,11.85,3.25,2.90], npc:[8.75,15.35], collisionBand:.62},
-      {id:'scholar', key:'scholar_house', label:'Casa de Estudos de Lysandra', u:6.40, v:8.35, height:232, rect:[4.75,6.85,3.25,2.90], npc:[8.55,10.35], collisionBand:.64},
-      {id:'blacksmith', key:'blacksmith_shop', label:'Ferraria de Borin', u:10.00, v:6.30, height:225, rect:[8.30,4.80,3.40,2.90], npc:[12.25,8.35], collisionBand:.62},
-      {id:'healer', key:'healer_house', label:'Botica de Elara', u:14.85, v:6.30, height:232, rect:[13.10,4.80,3.50,2.90], npc:[17.20,8.35], collisionBand:.64},
-      {id:'tavern', key:'tavern_house', label:'Taverna de Garrick', u:19.55, v:6.65, height:238, rect:[17.70,5.10,3.70,3.00], npc:[21.95,8.75], collisionBand:.62},
-      {id:'artisan', key:'artisan_house', label:'Oficina de Maelis', u:17.80, v:11.20, height:230, rect:[16.10,9.65,3.40,3.00], npc:[20.10,13.25], collisionBand:.64},
+      {id:'merchant', key:'merchant_shop', label:'Mercado de Aldren', u:6.60, v:13.35, height:238, rect:[4.95,11.85,3.25,2.90], npc:[8.45,15.02], collisionBand:.62},
+      {id:'scholar', key:'scholar_house', label:'Arquivo de Lysandra', u:6.40, v:8.35, height:232, rect:[4.75,6.85,3.25,2.90], npc:[8.25,10.02], collisionBand:.64},
+      {id:'blacksmith', key:'blacksmith_shop', label:'Ferraria de Borin', u:10.00, v:6.30, height:225, rect:[8.30,4.80,3.40,2.90], npc:[11.95,7.98], collisionBand:.62},
+      {id:'healer', key:'healer_house', label:'Botica e Estufa de Elara', u:14.85, v:6.30, height:232, rect:[13.10,4.80,3.50,2.90], npc:[16.85,7.98], collisionBand:.64},
+      {id:'tavern', key:'tavern_house', label:'Grande Taverna de Garrick', u:19.55, v:6.65, height:238, rect:[17.70,5.10,3.70,3.00], npc:[21.65,8.38], collisionBand:.62},
+      {id:'artisan', key:'artisan_house', label:'Ateliê de Maelis', u:17.80, v:11.20, height:230, rect:[16.10,9.65,3.40,3.00], npc:[19.75,12.93], collisionBand:.64},
       // Distrito residencial único, em dois alinhamentos contíguos.
       {id:'house_red', key:'residential_house_red', label:'Casa vermelha', u:4.60, v:19.00, height:218, rect:[3.20,17.45,2.80,2.70], collisionBand:.60},
       {id:'house_green', key:'residential_house_green', label:'Casa verde', u:7.80, v:19.00, height:218, rect:[6.40,17.45,2.80,2.70], collisionBand:.60},
@@ -217,9 +211,9 @@ export class AetherCityScene extends Phaser.Scene {
     this.add.image(C.ORIGIN_X, centerY, 'iso_city_grass').setOrigin(.5).setDepth(2);
     this.add.image(C.ORIGIN_X, centerY, 'iso_city_pavement').setOrigin(.5).setDepth(3);
 
-    // Cada construção recebe apenas um lote de grama do tamanho de sua base.
-    // Assim que a base termina, o pavimento contínuo reaparece e vira rua.
-    for (const building of this.getBuildingPlan()) {
+    // Somente o distrito residencial conserva pequenos quintais. Os seis
+    // estabelecimentos nascem diretamente do pavimento diante de seus NPCs.
+    for (const building of this.getBuildingPlan().filter(item => item.id.startsWith('house_'))) {
       const [u, v, width, height] = building.rect;
       this.addGrassLot(u + width / 2, v + height / 2, Math.max(width, height) + .42);
     }
@@ -290,11 +284,13 @@ export class AetherCityScene extends Phaser.Scene {
     this.eastGateSprite = this.add.image(east.x + 12, east.y + 86, 'iso_city_gate_east')
       .setOrigin(.5, 1).setDisplaySize(400, 362)
       .setDepth(this.depthAt(26, 14, .15));
+    this.registerOccluder(this.eastGateSprite, 'iso_city_gate_east', east.y + 8);
 
     const south = this.project(14.0, 26.03);
     this.southGateSprite = this.add.image(south.x, south.y + 70, 'iso_city_gate')
       .setOrigin(.5, 1).setDisplaySize(366, 255).setFlipX(true)
       .setDepth(this.depthAt(14, 26, .15));
+    this.registerOccluder(this.southGateSprite, 'iso_city_gate', south.y + 8);
   }
 
   addWallRun(fixedAxis, fixed, start, end, flip) {
@@ -311,6 +307,7 @@ export class AetherCityScene extends Phaser.Scene {
         .setDisplaySize(logicalLength * 56 + 42, logicalLength * 30 + 126)
         .setDepth(this.depthAt(u, v, .08));
       this.wallSprites.push(image);
+      this.registerOccluder(image, 'iso_city_wall', p.y + 5);
     }
   }
 
@@ -322,6 +319,7 @@ export class AetherCityScene extends Phaser.Scene {
       const entry = {...building, image};
       this.cityBuildings.push(entry);
       this.blockedBuildingMasks.push(entry);
+      this.registerOccluder(image, building.key, image.y - 2);
     }
   }
 
@@ -329,10 +327,12 @@ export class AetherCityScene extends Phaser.Scene {
     // A fonte ocupa o centro exato da praça. O pavimento base já forma uma
     // malha contínua até todas as fachadas, sem postes, cercas ou caixotes.
     this.fountain = this.addIsoImage('city_fountain', 14, 14, 176, .03);
+    this.registerOccluder(this.fountain, 'city_fountain', this.fountain.y - 3);
 
     const u = 20.60, v = 19.40;
     const tree = this.addIsoImage('city_tree', u, v, 184, .02);
-    this.occludingTrees.push({u, v, image: tree});
+    this.cityTree = tree;
+    this.registerOccluder(tree, 'city_tree', tree.y - 4);
   }
 
   addIsoImage(key, u, v, targetHeight, depthOffset = 0) {
@@ -342,15 +342,29 @@ export class AetherCityScene extends Phaser.Scene {
     return this.add.image(p.x, p.y, key).setOrigin(.5, 1).setScale(scale).setDepth(this.depthAt(u, v, depthOffset));
   }
 
+  registerOccluder(image, key, baseY, options = {}) {
+    if (!image || !key) return null;
+    const entry = {
+      image, key, baseY,
+      worldX: options.worldX,
+      worldY: options.worldY,
+      originX: options.originX,
+      originY: options.originY,
+      alphaThreshold: options.alphaThreshold ?? 24
+    };
+    this.occluders.push(entry);
+    return entry;
+  }
+
   createNpcs() {
     const fronts = Object.fromEntries(this.getBuildingPlan().filter(b => b.npc).map(b => [b.id, b.npc]));
     const specs = [
-      ['merchant', 'Aldren Voss', 'Mercador', ...fronts.merchant, ['Tenho suprimentos para quem pretende atravessar os arredores.'], {shop: true, portrait: 'portrait_aldren', idleProfile: 'merchant', iso: 'merchant_iso', height: 112}],
-      ['blacksmith', 'Borin Ferramão', 'Ferreiro', ...fronts.blacksmith, ['Minha ferraria ainda está sendo reconstruída. Minhas ferramentas desapareceram durante a invasão.', 'Quando eu recuperar minhas ferramentas, poderei trabalhar novamente.'], {portrait: 'portrait_borin', idleProfile: 'blacksmith', iso: 'blacksmith_iso', height: 114}],
-      ['healer', 'Elara Veyn', 'Curandeira', ...fronts.healer, ['Perdi minha fé depois dos acontecimentos sombrios. Não consigo invocar minha bênção agora.', 'Talvez, quando minha fé retornar, eu possa ajudar os feridos novamente.'], {portrait: 'portrait_elara', idleProfile: 'healer', iso: 'healer_iso', height: 112}],
-      ['tavernkeeper', 'Garrick Brenn', 'Taverneiro', ...fronts.tavern, ['A taverna ainda não abriu. Faltam alimentos e insumos para as bebidas.', 'Quando conseguirmos os suprimentos, espero abrir as portas novamente.'], {portrait: 'portrait_garrick', idleProfile: 'tavernkeeper', iso: 'tavernkeeper_iso', height: 114}],
-      ['scholar', 'Lysandra Vael', 'Erudita', ...fronts.scholar, ['O mundo perdeu o sentido depois dos acontecimentos sombrios...', 'Talvez um dia eu volte a estudar os antigos encantamentos.'], {portrait: 'portrait_lysandra', idleProfile: 'scholar', iso: 'scholar_iso', height: 110}],
-      ['artisan', 'Maelis Tessara', 'Artesã', ...fronts.artisan, ['Minha oficina ainda é simples, mas já consigo consertar panos e costuras.', 'Quando os caminhos estiverem seguros, vou transformá-la em uma verdadeira oficina encantada.'], {portrait: 'portrait_maelis', idleProfile: 'artisan', iso: 'artisan_iso', height: 112}],
+      ['merchant', 'Aldren Voss', 'Mercador', ...fronts.merchant, ['Tenho suprimentos para quem pretende atravessar os arredores.'], {shop: true, portrait: 'portrait_aldren', idleProfile: 'merchant', iso: 'merchant_iso', action: 'merchant_iso_action', height: 112}],
+      ['blacksmith', 'Borin Ferramão', 'Ferreiro', ...fronts.blacksmith, ['Minha ferraria ainda está sendo reconstruída. Minhas ferramentas desapareceram durante a invasão.', 'Quando eu recuperar minhas ferramentas, poderei trabalhar novamente.'], {portrait: 'portrait_borin', idleProfile: 'blacksmith', iso: 'blacksmith_iso', action: 'blacksmith_iso_action', height: 114}],
+      ['healer', 'Elara Veyn', 'Curandeira', ...fronts.healer, ['Perdi minha fé depois dos acontecimentos sombrios. Não consigo invocar minha bênção agora.', 'Talvez, quando minha fé retornar, eu possa ajudar os feridos novamente.'], {portrait: 'portrait_elara', idleProfile: 'healer', iso: 'healer_iso', action: 'healer_iso_action', height: 112}],
+      ['tavernkeeper', 'Garrick Brenn', 'Taverneiro', ...fronts.tavern, ['A taverna ainda não abriu. Faltam alimentos e insumos para as bebidas.', 'Quando conseguirmos os suprimentos, espero abrir as portas novamente.'], {portrait: 'portrait_garrick', idleProfile: 'tavernkeeper', iso: 'tavernkeeper_iso', action: 'tavernkeeper_iso_action', height: 114}],
+      ['scholar', 'Lysandra Vael', 'Erudita', ...fronts.scholar, ['O mundo perdeu o sentido depois dos acontecimentos sombrios...', 'Talvez um dia eu volte a estudar os antigos encantamentos.'], {portrait: 'portrait_lysandra', idleProfile: 'scholar', iso: 'scholar_iso', action: 'scholar_iso_action', height: 110}],
+      ['artisan', 'Maelis Tessara', 'Artesã', ...fronts.artisan, ['Minha oficina ainda é simples, mas já consigo consertar panos e costuras.', 'Quando os caminhos estiverem seguros, vou transformá-la em uma verdadeira oficina encantada.'], {portrait: 'portrait_maelis', idleProfile: 'artisan', iso: 'artisan_iso', action: 'artisan_iso_action', height: 112}],
       ['elder_mira', 'Mira Edevane', 'Anciã de Aether', 12.0, 17.05, ['A floresta ficou perigosa. Se trouxer provas dos monstros, conversaremos sobre o assunto.'], {portrait: 'portrait_mira', idleProfile: 'elder', iso: 'elder_mira_iso', height: 112}],
       ['guard', 'Kael Dorn', 'Guarda do Portão Leste', 22.80, 17.10, ['Estamos protegendo a saída leste. Tenha cuidado ao deixar os muros.'], {portrait: 'portrait_kael', idleProfile: 'east_guard', iso: 'guard_iso', height: 116, gateGuard: true}],
       ['south_guard', 'Bren Harrow', 'Guarda do Sul', 17.80, 23.40, ['Mantemos esta passagem protegida. Lá fora, os monstros não respeitam ninguém.'], {portrait: 'portrait_bren', idleProfile: 'south_guard', iso: 'south_guard_iso', height: 116, gateGuard: true}]
@@ -362,7 +376,9 @@ export class AetherCityScene extends Phaser.Scene {
         shop: !!options.shop, role, portrait: options.portrait, idleProfile: options.idleProfile,
         idleFacing: 'down', visualScale: options.scale ?? .60
       });
-      const converted = options.iso && npc.setIsometricSprite?.(options.iso, {height: options.height, facing: 'down'});
+      const converted = options.iso && npc.setIsometricSprite?.(options.iso, {
+        height: options.height, facing: 'down', actionTexture: options.action
+      });
       if (!converted) npc.setRealSprite?.(texture);
       npc.isoLogical = {u, v};
       npc.isGateGuard = !!options.gateGuard;
@@ -385,22 +401,23 @@ export class AetherCityScene extends Phaser.Scene {
     const residentRoute = [[9.8,15.8],[10.2,17.2],[11.2,18.6],[13.2,19.6],[15.2,20.2],[16.2,19.2],[16.0,17.2],[15.0,16.2],[13.4,16.4],[11.3,15.8]];
     const travelerRoute = [[9.8,11.5],[10.0,10.0],[11.8,9.0],[13.5,9.2],[15.0,9.0],[15.4,10.2],[15.0,11.4],[14.0,12.0],[12.4,11.8],[11.0,11.4]];
     this.walkers = [
-      this.createWalker('resident', 'Tomas Belmon', 'Morador de Aether', ['A praça ainda é o lugar mais seguro de Aether.'], residentRoute, .60, 44, 700, 'portrait_tomas'),
-      this.createWalker('traveler', 'Darian Kestrel', 'Viajante', ['Ouvi rumores sobre o castelo.'], travelerRoute, .61, 50, 1100, 'portrait_darian')
+      this.createWalker('resident', 'resident_iso_walk', 'Tomas Belmon', 'Morador de Aether', ['A praça ainda é o lugar mais seguro de Aether.'], residentRoute, 110, 44, 700, 'portrait_tomas'),
+      this.createWalker('traveler', 'traveler_iso_walk', 'Darian Kestrel', 'Viajante', ['Ouvi rumores sobre o castelo.'], travelerRoute, 112, 50, 1100, 'portrait_darian')
     ];
     this.cityActors.push(...this.walkers);
   }
 
-  createWalker(texture, name, role, pages, logicalRoute, scale, speed, delay, portrait) {
+  createWalker(texture, isoTexture, name, role, pages, logicalRoute, targetHeight, speed, delay, portrait) {
     const route = logicalRoute.map(([u, v], index) => {
       const p = this.project(u, v);
       return {x: p.x, y: p.y, pause: 650 + (index % 3) * 130};
     });
     const first = route[0];
     const npc = new WanderingNpc(this, first.x, first.y, name, pages, route, {
-      speed, startDelay: delay, role, portrait, idleProfile: texture, visualScale: scale
+      speed, startDelay: delay, role, portrait, idleProfile: texture, visualScale: .60
     });
-    npc.setRealSprite?.(texture);
+    const converted = npc.setIsometricWalkSprite?.(isoTexture, {height: targetHeight, facing: 'right'});
+    if (!converted) npc.setRealSprite?.(texture);
     return npc;
   }
 
@@ -423,19 +440,27 @@ export class AetherCityScene extends Phaser.Scene {
     };
     ensure('city-dog-walk', 'city_dog', [0,1,2,3], 6);
     ensure('city-cat-walk', 'city_cat', [0,1,2,3], 7);
-    ensure('elder-feed-birds', 'elder_feeder', [0,1,2,3], 2.4);
-    ensure('city-bird-peck', 'city_bird', [0,1,0,3,0], 4);
-    ensure('city-rat-gray-run', 'city_rat_gray', [0,1], 10);
-    ensure('city-rat-brown-run', 'city_rat_brown', [0,1], 11);
-    ensure('city-rat-dark-run', 'city_rat_dark', [0,1], 11);
+    ensure('elder-feed-birds', 'elder_feeder_iso', [0,1,2,3], 2.4);
+    ensure('city-bird-peck', 'city_bird', [0,1,2,3], 4);
+    ensure('city-rat-gray-run', 'city_rat_gray', [0,1,2,3], 10);
+    ensure('city-rat-brown-run', 'city_rat_brown', [0,1,2,3], 11);
+    ensure('city-rat-dark-run', 'city_rat_dark', [0,1,2,3], 11);
   }
 
   createTavernRatCycle() {
-    const start = this.project(20.80, 10.65);
-    const end = this.project(21.67, 9.78);
-    this.tavernRatRoute = {start, end};
+    const tavern = this.cityBuildings.find(item => item.id === 'tavern');
+    if (!tavern?.image) return;
+    const image = tavern.image;
+    this.tavernRatRoute = {
+      leftHidden: {x:image.x - image.displayWidth * .33, y:image.y - image.displayHeight * .17},
+      leftReveal: {x:image.x - image.displayWidth * .48, y:image.y - 4},
+      rightReveal: {x:image.x + image.displayWidth * .48, y:image.y - 4},
+      rightHidden: {x:image.x + image.displayWidth * .33, y:image.y - image.displayHeight * .17},
+      tavern
+    };
+    const start = this.tavernRatRoute.leftHidden;
     this.tavernRat = this.add.sprite(start.x, start.y, 'city_rat_gray', 0)
-      .setOrigin(.5, .86).setScale(.58).setVisible(false).setAlpha(0);
+      .setOrigin(.5, .86).setScale(.58).setVisible(false).setAlpha(1);
     this.ambientActors.push(this.tavernRat);
     this.scheduleTavernRat(1100);
   }
@@ -455,20 +480,33 @@ export class AetherCityScene extends Phaser.Scene {
     ];
     const [texture, animation] = variants[Phaser.Math.Between(0, variants.length - 1)];
     const reverse = Phaser.Math.Between(0, 1) === 1;
-    const from = reverse ? this.tavernRatRoute.end : this.tavernRatRoute.start;
-    const to = reverse ? this.tavernRatRoute.start : this.tavernRatRoute.end;
-    rat.setTexture(texture, 0).setPosition(from.x, from.y).setFlipX(to.x < from.x)
-      .setVisible(true).setAlpha(0).play(animation, true);
+    const route = reverse
+      ? [this.tavernRatRoute.rightHidden, this.tavernRatRoute.rightReveal, this.tavernRatRoute.leftReveal, this.tavernRatRoute.leftHidden]
+      : [this.tavernRatRoute.leftHidden, this.tavernRatRoute.leftReveal, this.tavernRatRoute.rightReveal, this.tavernRatRoute.rightHidden];
+    const tavernDepth = this.tavernRatRoute.tavern.image.depth;
+    rat.setTexture(texture, 0).setPosition(route[0].x, route[0].y).setFlipX(route[3].x < route[0].x)
+      .setVisible(true).setAlpha(1).play(animation, true);
+    rat.ambientDepthOverride = tavernDepth - .025;
+
     this.tweens.add({
-      targets: rat, x: to.x, y: to.y, duration: Phaser.Math.Between(820, 1040), ease: 'Linear',
-      onUpdate: tween => {
-        const progress = tween.progress;
-        const fade = progress < .16 ? progress / .16 : progress > .78 ? (1 - progress) / .22 : 1;
-        rat.setAlpha(Phaser.Math.Clamp(fade, 0, 1)).setDepth(this.cityDepth(rat.y, .03));
-      },
+      targets: rat, x: route[1].x, y: route[1].y, duration: 280, ease: 'Linear',
       onComplete: () => {
-        rat.stop().setVisible(false).setAlpha(0);
-        this.scheduleTavernRat();
+        rat.ambientDepthOverride = this.cityDepth(rat.y, .035);
+        this.tweens.add({
+          targets: rat, x: route[2].x, y: route[2].y, duration: Phaser.Math.Between(860, 1080), ease: 'Linear',
+          onUpdate: () => { rat.ambientDepthOverride = this.cityDepth(rat.y, .035); },
+          onComplete: () => {
+            rat.ambientDepthOverride = tavernDepth - .025;
+            this.tweens.add({
+              targets: rat, x: route[3].x, y: route[3].y, duration: 280, ease: 'Linear',
+              onComplete: () => {
+                rat.stop().setVisible(false).setAlpha(1);
+                rat.ambientDepthOverride = null;
+                this.scheduleTavernRat();
+              }
+            });
+          }
+        });
       }
     });
   }
@@ -504,18 +542,10 @@ export class AetherCityScene extends Phaser.Scene {
     // O velhinho agora participa da praça e permanece próximo à fonte.
     const homeLogical = {u: 15.50, v: 15.30};
     const home = this.project(homeLogical.u, homeLogical.v);
-    // O último quadro contém sementes abaixo dos pés. Medir o alpha inteiro
-    // fazia o corpo subir; estes pontos usam apenas a base real dos sapatos.
-    const elderScale = .70;
-    const frameFootX = [46.5,48.0,47.5,50.0], frameFootY = [109,109,107,94];
-    const baseFootX = 47.5, baseFootY = 109;
-    this.oldMan = this.add.sprite(home.x, home.y, 'elder_feeder', 0).setOrigin(.5, 1).setScale(elderScale).setDepth(this.cityDepth(home.y, .05));
-    this.oldMan.on('animationupdate', (_anim, frame) => {
-      const i = Number(frame?.textureFrame ?? 0);
-      this.oldMan?.setScale(elderScale)
-        .setX(home.x + (baseFootX - (frameFootX[i] ?? baseFootX)) * elderScale)
-        .setY(home.y + (baseFootY - (frameFootY[i] ?? baseFootY)) * elderScale);
-    });
+    // Os quatro quadros usam célula, escala corporal e linha dos pés idênticas.
+    const elderScale = 116 / 224;
+    this.oldMan = this.add.sprite(home.x, home.y, 'elder_feeder_iso', 0)
+      .setOrigin(.5, 1).setScale(elderScale).setDepth(this.cityDepth(home.y, .05));
     this.oldMan.play('elder-feed-birds');
     this.ambientActors.push(this.oldMan);
 
@@ -557,10 +587,16 @@ export class AetherCityScene extends Phaser.Scene {
     this.waystone = new Waystone(this, center.x, center.y, 'CIDADE DE AETHER');
     this.waystone.setDepth(this.cityDepth(center.y, .07));
     this.waystone.sprite?.setDisplaySize(150, 150);
+    if (this.waystone.sprite) {
+      this.registerOccluder(this.waystone.sprite, 'waystone_dormant', center.y - 2, {
+        worldX: center.x, worldY: center.y,
+        originX: this.waystone.sprite.originX, originY: this.waystone.sprite.originY
+      });
+    }
   }
 
   createCityBanner() {
-    this.cityBanner = this.add.text(22, 18, 'CIDADE DE AETHER  •  PROFUNDIDADE ISOMÉTRICA', {
+    this.cityBanner = this.add.text(22, 18, 'CIDADE DE AETHER  •  OCLUSÃO ISOMÉTRICA', {
       fontFamily: 'Georgia, serif', fontSize: 14, color: '#f0d392', fontStyle: 'bold',
       backgroundColor: '#101821dd', padding: {left: 11, right: 11, top: 7, bottom: 7},
       stroke: '#090d12', strokeThickness: 2
@@ -676,20 +712,21 @@ export class AetherCityScene extends Phaser.Scene {
     const p = this.project(this.logicalPlayer.u, this.logicalPlayer.v);
     this.player.setPosition(Math.round(p.x), Math.round(p.y));
     this.player.body?.setVelocity(0, 0);
-    this.player.setDepth(this.cityDepth(p.y, .10));
+    this.playerNaturalDepth = this.cityDepth(p.y, .015);
+    this.player.setDepth(this.playerNaturalDepth);
     this.player.setVisible(true).setAlpha(1);
-    this.playerShadow?.setPosition(Math.round(p.x), Math.round(p.y + 4)).setDepth(this.cityDepth(p.y, .07));
+    this.playerShadow?.setPosition(Math.round(p.x), Math.round(p.y + 4)).setDepth(this.cityDepth(p.y, .005)).setAlpha(.28);
     this.syncPlayerOcclusionOutline();
-    this.updateTreeOcclusion();
+    this.updateUniversalOcclusion();
   }
 
   syncPlayerOcclusionOutline() {
     const outline = this.playerOutline;
     if (!outline?.active || !this.player?.frame) return;
-    const textureKey = this.player.texture?.key;
     const frameName = this.player.frame?.name;
-    if (textureKey && (outline.texture?.key !== textureKey || outline.frame?.name !== frameName)) {
-      outline.setTexture(textureKey, frameName);
+    const outlineKey = this.textures.exists('player_outline_gold') ? 'player_outline_gold' : null;
+    if (outlineKey && (outline.texture?.key !== outlineKey || outline.frame?.name !== frameName)) {
+      outline.setTexture(outlineKey, frameName);
     }
     outline.setPosition(this.player.x, this.player.y)
       .setOrigin(this.player.originX, this.player.originY)
@@ -697,34 +734,73 @@ export class AetherCityScene extends Phaser.Scene {
       .setFlipX(this.player.flipX).setFlipY(this.player.flipY);
   }
 
-  updateTreeOcclusion() {
+  updateUniversalOcclusion() {
     const outline = this.playerOutline;
-    if (!outline?.active || !this.occludingTrees?.length) return;
-    let strength = 0, outlineDepth = this.player.depth + .01;
-    for (const tree of this.occludingTrees) {
-      const image = tree.image;
-      if (!image?.active || this.player.y >= image.y - 6) continue;
-      const centerX = image.x;
-      const centerY = image.y - image.displayHeight * .43;
-      const radiusX = image.displayWidth * .43;
-      const radiusY = image.displayHeight * .43;
-      const dx = (this.player.x - centerX) / radiusX;
-      const dy = (this.player.y - centerY) / radiusY;
-      const metric = dx * dx + dy * dy;
-      if (metric >= 1) continue;
-      strength = Math.max(strength, Phaser.Math.Clamp((1 - metric) * 1.45, 0, .9));
-      outlineDepth = Math.max(outlineDepth, image.depth + .30);
+    if (!outline?.active || !this.occluders?.length || !this.textures.exists('player_outline_gold')) return;
+    const playerWidth = this.player.displayWidth;
+    const playerHeight = this.player.displayHeight;
+    const samples = [];
+    for (const yFactor of [-.72,-.56,-.40,-.24,-.09]) {
+      for (const xFactor of [-.22,0,.22]) {
+        samples.push({x:this.player.x + playerWidth * xFactor, y:this.player.y + playerHeight * yFactor});
+      }
     }
-    if (strength > .025) {
-      outline.setVisible(true).setAlpha(this.playerOutlineUsesGlow ? strength : strength * .48).setDepth(outlineDepth);
+
+    let totalHits = 0;
+    let highestOccluderDepth = -Infinity;
+    let lowestOccluderDepth = Infinity;
+    for (const occluder of this.occluders) {
+      const image = occluder.image;
+      if (!image?.active || this.player.y > occluder.baseY + 8) continue;
+      const texture = this.textures.get(occluder.key);
+      const source = texture?.getSourceImage?.();
+      if (!source) continue;
+      const width = Math.abs(image.displayWidth || source.width);
+      const height = Math.abs(image.displayHeight || source.height);
+      const worldX = occluder.worldX ?? image.x;
+      const worldY = occluder.worldY ?? image.y;
+      const originX = occluder.originX ?? image.originX ?? .5;
+      const originY = occluder.originY ?? image.originY ?? .5;
+      const left = worldX - width * originX;
+      const top = worldY - height * originY;
+      const right = left + width;
+      const bottom = top + height;
+      if (this.player.x + playerWidth * .30 < left || this.player.x - playerWidth * .30 > right ||
+          this.player.y < top || this.player.y - playerHeight * .78 > bottom) continue;
+
+      let objectHits = 0;
+      for (const point of samples) {
+        if (point.x < left || point.x >= right || point.y < top || point.y >= bottom) continue;
+        let sourceX = Math.floor((point.x - left) / width * source.width);
+        const sourceY = Math.floor((point.y - top) / height * source.height);
+        if (image.flipX) sourceX = source.width - 1 - sourceX;
+        const alpha = this.textures.getPixelAlpha(sourceX, sourceY, occluder.key);
+        if (alpha !== null && alpha >= occluder.alphaThreshold) objectHits++;
+      }
+      if (objectHits < 2) continue;
+      totalHits += objectHits;
+      highestOccluderDepth = Math.max(highestOccluderDepth, image.parentContainer?.depth ?? image.depth ?? 0);
+      lowestOccluderDepth = Math.min(lowestOccluderDepth, image.parentContainer?.depth ?? image.depth ?? 0);
+    }
+
+    if (totalHits >= 2) {
+      // O sprite real permanece abaixo do objeto e é recortado pela própria
+      // transparência dele; acima aparece somente a silhueta vazada dourada.
+      this.player.setDepth(Math.min(this.playerNaturalDepth, lowestOccluderDepth - .02));
+      this.playerShadow?.setDepth(this.player.depth - .01);
+      outline.setVisible(true)
+        .setAlpha(Phaser.Math.Clamp(.58 + totalHits / 18, .58, 1))
+        .setDepth(highestOccluderDepth + .32);
     } else {
+      this.player.setDepth(this.playerNaturalDepth);
+      this.playerShadow?.setDepth(this.cityDepth(this.player.y, .005));
       outline.setVisible(false).setAlpha(0);
     }
   }
 
   updateActorDepths() {
     for (const actor of this.cityActors) actor?.setDepth(this.cityDepth(actor.y, actor.isGateGuard ? .34 : .06));
-    for (const actor of this.ambientActors) actor?.setDepth(this.cityDepth(actor.y, .03));
+    for (const actor of this.ambientActors) actor?.setDepth(actor.ambientDepthOverride ?? this.cityDepth(actor.y, .03));
     if (this.oldMan) this.oldMan.setDepth(this.cityDepth(this.oldMan.y, .05));
   }
 
@@ -842,7 +918,7 @@ export class AetherCityScene extends Phaser.Scene {
       player: this.player.serialize(), characterClass: this.player.characterClass,
       skills: this.skillManager.serialize(), inventory: this.inv.serialize(), equipment: this.equip.serialize(),
       quests: this.questManager.serialize?.() || old?.quests || [],
-      worldFlags: {...(old?.worldFlags || {}), cityRound60Migrated: true, cityRound61Migrated: true, cityRound62Migrated: true},
+      worldFlags: {...(old?.worldFlags || {}), cityRound60Migrated: true, cityRound61Migrated: true, cityRound62Migrated: true, cityRound63Migrated: true, cityRound64Migrated: true},
       scenePositions: {...(old?.scenePositions || {}), [this.scene.key]: {x: this.player.x, y: this.player.y, u: this.logicalPlayer.u, v: this.logicalPlayer.v}}
     });
   }

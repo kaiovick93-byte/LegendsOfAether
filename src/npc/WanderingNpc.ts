@@ -50,6 +50,12 @@ export class WanderingNpc extends Npc{
  playWalk(dir){
   this.currentFacing=dir;
   this.currentRouteDir=dir;
+  if(this.isIsometricWalker&&this.sprite&&this.isoWalkAnimation){
+   if(dir==='left')this.sprite.setFlipX(true);
+   else if(dir==='right')this.sprite.setFlipX(false);
+   this.sprite.play(this.isoWalkAnimation,true);
+   return;
+  }
   if(this.sprite&&this.textureKey){
    try{this.sprite.play(`npc-${this.textureKey}-${dir}`,true)}catch(e){}
   }
@@ -81,6 +87,7 @@ export class WanderingNpc extends Npc{
   }
 
   const dir=this.getDirectionTo(target.x,target.y);
+  if(this.isIsometricWalker&&Math.abs(target.x-this.x)>1)this.sprite?.setFlipX(target.x<this.x);
   this.currentTarget=target;
   this.routeMoving=true;
   this.playWalk(dir);
