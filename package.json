@@ -1,6 +1,6 @@
 {
   "name": "legends-of-aether",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "check": "tsc --noEmit",
     "validate:city": "node validate-city-round58.mjs",
     "validate:isometric": "node validate-isometric-round59.mjs",
-    "validate:isometric-city": "node validate-isometric-city-round65.mjs"
+    "validate:isometric-city": "node validate-isometric-city-round66.mjs"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

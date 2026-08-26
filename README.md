@@ -1,6 +1,6 @@
-# Legends of Aether 0.2.5 — Round 65: Ferraria 2,5D de Borin
+# Legends of Aether 0.2.6 — Round 66: Contato e Profundidade da Cidade
 
-A Cidade de Aether mantém todos os sistemas e assets aprovados no Round 64. A ferraria de Borin foi reconstruída em perspectiva 2,5D real, com duas fachadas visíveis, telhados diagonais em profundidade, oficina lateral, chaminé alta e forja aberta. Planta, posição do NPC, interação, colisão por transparência, rotas e transições não foram alteradas. Consulte `ROUND65_BLACKSMITH_IDENTITY_PASS.md` para os detalhes.
+A Cidade de Aether preserva a conversão 2,5D e a identidade visual dos estabelecimentos. Este passe sela toda a base das muralhas, uniformiza suas emendas, restringe o contorno dourado aos momentos em que o jogador está realmente atrás de um objeto, aproxima os seis NPCs profissionais de suas fachadas e transfere o ateliê de Maelis para um lote próprio. As seis ações profissionais também foram normalizadas em escala e linha dos pés. Consulte `ROUND66_CITY_CONTACT_DEPTH_PASS.md` para os detalhes e `ROUND66_CITY_VISUAL_QA.png` para a auditoria da planta.
 
 ## Instalação
 

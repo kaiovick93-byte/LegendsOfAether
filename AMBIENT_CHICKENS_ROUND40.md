@@ -1,4 +1,4 @@
-# Round 40 — Ambient Chickens Integrated
+ # Round 40 — Ambient Chickens Integrated
 
 ## Objetivo
 Substituir as galinhas ambientais provisórias por sprites derivados da folha aprovada pelo usuário, mantendo o padrão estético do restante da fauna urbana de Aether.
