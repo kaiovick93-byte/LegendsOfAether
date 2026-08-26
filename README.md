@@ -1,6 +1,6 @@
-# Legends of Aether 0.2.2 — Round 62: Profundidade, Colisão e NPCs 2,5D
+# Legends of Aether 0.2.5 — Round 65: Ferraria 2,5D de Borin
 
-A Cidade de Aether mantém a conversão isométrica aprovada e recebe colisões baseadas na opacidade real das bases dos edifícios, árvore com tronco sólido e contorno de oclusão, retorno direcional pelos portões, rato intermitente junto à taverna e nove NPCs fixos convertidos para três quartos 2,5D. Os Arredores, a Fazenda de Rowan, a Floresta, a Caverna e o Castelo continuam preservados. Consulte `ROUND62_ISOMETRIC_DEPTH_COLLISION_PASS.md` para os detalhes.
+A Cidade de Aether mantém todos os sistemas e assets aprovados no Round 64. A ferraria de Borin foi reconstruída em perspectiva 2,5D real, com duas fachadas visíveis, telhados diagonais em profundidade, oficina lateral, chaminé alta e forja aberta. Planta, posição do NPC, interação, colisão por transparência, rotas e transições não foram alteradas. Consulte `ROUND65_BLACKSMITH_IDENTITY_PASS.md` para os detalhes.
 
 ## Instalação
 
