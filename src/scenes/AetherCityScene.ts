@@ -20,7 +20,7 @@ import {SfxManager} from '../audio/SfxManager';
 import {Waystone} from '../world/Waystone';
 
 /**
- * Round 65 — ferraria de Borin reconstruída com arquitetura isométrica 2.5D.
+ * Round 66 — contato, profundidade e continuidade urbana isométrica.
  *
  * A cidade virou uma cena própria. Isso permite uma grade lógica real sem
  * alterar a física cartesiana dos Arredores, Fazenda, Floresta, Caverna e
@@ -123,8 +123,9 @@ export class AetherCityScene extends Phaser.Scene {
       this.logicalPlayer = {u: 14, v: 21.40, radius: .27};
       this.entryFacing = 'up';
     } else if ((save?.worldFlags?.cityRound64Migrated || save?.worldFlags?.cityRound63Migrated) && Number.isFinite(savedPos?.u) && Number.isFinite(savedPos?.v)) {
-      this.logicalPlayer.u = Phaser.Math.Clamp(savedPos.u, 2.7, 25.3);
-      this.logicalPlayer.v = Phaser.Math.Clamp(savedPos.v, 2.7, 25.3);
+      const safeInset = save?.worldFlags?.cityRound66Migrated ? 2.82 : 2.86;
+      this.logicalPlayer.u = Phaser.Math.Clamp(savedPos.u, safeInset, 28 - safeInset);
+      this.logicalPlayer.v = Phaser.Math.Clamp(savedPos.v, safeInset, 28 - safeInset);
     }
     this.registry.remove('aetherCityEntrance');
     this.equip.sync();
@@ -179,14 +180,17 @@ export class AetherCityScene extends Phaser.Scene {
 
   getBuildingPlan() {
     // Uma única planta alimenta arte, gramado, colisão e posição dos NPCs.
-    // O ponto do NPC fica sempre além da borda frontal do próprio footprint.
+    // Cada NPC usa a soleira visível de sua fachada, não o antigo retângulo
+    // técnico do lote. Assim o personagem fica a poucos pixels do edifício.
     return [
-      {id:'merchant', key:'merchant_shop', label:'Mercado de Aldren', u:6.60, v:13.35, height:238, rect:[4.95,11.85,3.25,2.90], npc:[8.45,15.02], collisionBand:.62},
-      {id:'scholar', key:'scholar_house', label:'Arquivo de Lysandra', u:6.40, v:8.35, height:232, rect:[4.75,6.85,3.25,2.90], npc:[8.25,10.02], collisionBand:.64},
-      {id:'blacksmith', key:'blacksmith_shop', label:'Ferraria de Borin', u:10.00, v:6.30, height:225, rect:[8.30,4.80,3.40,2.90], npc:[11.95,7.98], collisionBand:.62},
-      {id:'healer', key:'healer_house', label:'Botica e Estufa de Elara', u:14.85, v:6.30, height:232, rect:[13.10,4.80,3.50,2.90], npc:[16.85,7.98], collisionBand:.64},
-      {id:'tavern', key:'tavern_house', label:'Grande Taverna de Garrick', u:19.55, v:6.65, height:238, rect:[17.70,5.10,3.70,3.00], npc:[21.65,8.38], collisionBand:.62},
-      {id:'artisan', key:'artisan_house', label:'Ateliê de Maelis', u:17.80, v:11.20, height:230, rect:[16.10,9.65,3.40,3.00], npc:[19.75,12.93], collisionBand:.64},
+      {id:'merchant', key:'merchant_shop', label:'Mercado de Aldren', u:6.60, v:13.35, height:238, rect:[4.95,11.85,3.25,2.90], npc:[6.58,13.87], collisionBand:.62},
+      {id:'scholar', key:'scholar_house', label:'Arquivo de Lysandra', u:6.40, v:8.35, height:232, rect:[4.75,6.85,3.25,2.90], npc:[6.81,8.44], collisionBand:.64},
+      {id:'blacksmith', key:'blacksmith_shop', label:'Ferraria de Borin', u:10.00, v:6.30, height:225, rect:[8.30,4.80,3.40,2.90], npc:[10.71,6.09], collisionBand:.62},
+      {id:'healer', key:'healer_house', label:'Botica e Estufa de Elara', u:14.85, v:6.30, height:232, rect:[13.10,4.80,3.50,2.90], npc:[14.52,7.13], collisionBand:.64},
+      {id:'tavern', key:'tavern_house', label:'Grande Taverna de Garrick', u:19.55, v:6.65, height:238, rect:[17.70,5.10,3.70,3.00], npc:[19.80,6.90], collisionBand:.62},
+      // O ateliê ganhou um lote próprio a sudoeste da praça; não encobre mais
+      // a taverna nem a botica na projeção isométrica.
+      {id:'artisan', key:'artisan_house', label:'Ateliê de Maelis', u:13.40, v:18.40, height:230, rect:[11.70,16.85,3.40,3.00], npc:[13.48,18.91], collisionBand:.64},
       // Distrito residencial único, em dois alinhamentos contíguos.
       {id:'house_red', key:'residential_house_red', label:'Casa vermelha', u:4.60, v:19.00, height:218, rect:[3.20,17.45,2.80,2.70], collisionBand:.60},
       {id:'house_green', key:'residential_house_green', label:'Casa verde', u:7.80, v:19.00, height:218, rect:[6.40,17.45,2.80,2.70], collisionBand:.60},
@@ -232,23 +236,27 @@ export class AetherCityScene extends Phaser.Scene {
 
   createCollisionPlan() {
     const C = AetherCityScene;
-    const wall = .48;
+    const wall = 1.10;
+    const wallStart = C.CITY_MIN - wall / 2;
+    const wallEnd = C.CITY_MAX + wall / 2;
 
-    // Muralhas traseiras inteiras.
-    this.addBlockedRect(C.CITY_MIN - wall / 2, C.CITY_MIN - wall / 2, wall, 24 + wall, 'muralha noroeste');
-    this.addBlockedRect(C.CITY_MIN - wall / 2, C.CITY_MIN - wall / 2, 24 + wall, wall, 'muralha nordeste');
+    // A faixa coincide com toda a base visível da muralha. A versão anterior
+    // bloqueava só o eixo central (.48), deixando uma faixa caminhável dentro
+    // da própria pedra.
+    this.addBlockedRect(wallStart, wallStart, wall, wallEnd - wallStart, 'muralha noroeste');
+    this.addBlockedRect(wallStart, wallStart, wallEnd - wallStart, wall, 'muralha nordeste');
 
     // Lateral leste (u=26) com vão central.
-    this.addBlockedRect(25.76, 1.76, wall, 10.15, 'muralha leste norte');
-    this.addBlockedRect(25.76, 16.10, wall, 10.14, 'muralha leste sul');
-    this.addBlockedRect(25.30, 11.72, 1.25, 1.20, 'torre norte do Portão Leste');
-    this.addBlockedRect(25.30, 15.08, 1.25, 1.20, 'torre sul do Portão Leste');
+    this.addBlockedRect(C.CITY_MAX - wall / 2, wallStart, wall, 12.02 - wallStart, 'muralha leste norte');
+    this.addBlockedRect(C.CITY_MAX - wall / 2, 15.98, wall, wallEnd - 15.98, 'muralha leste sul');
+    this.addBlockedRect(25.20, 11.62, 1.45, 1.30, 'torre norte do Portão Leste');
+    this.addBlockedRect(25.20, 15.08, 1.45, 1.30, 'torre sul do Portão Leste');
 
     // Lateral sul (v=26) com vão central.
-    this.addBlockedRect(1.76, 25.76, 10.15, wall, 'muralha sul oeste');
-    this.addBlockedRect(16.10, 25.76, 10.14, wall, 'muralha sul leste');
-    this.addBlockedRect(11.72, 25.30, 1.20, 1.25, 'torre oeste do Portão Sul');
-    this.addBlockedRect(15.08, 25.30, 1.20, 1.25, 'torre leste do Portão Sul');
+    this.addBlockedRect(wallStart, C.CITY_MAX - wall / 2, 12.02 - wallStart, wall, 'muralha sul oeste');
+    this.addBlockedRect(15.98, C.CITY_MAX - wall / 2, wallEnd - 15.98, wall, 'muralha sul leste');
+    this.addBlockedRect(11.62, 25.20, 1.30, 1.45, 'torre oeste do Portão Sul');
+    this.addBlockedRect(15.08, 25.20, 1.30, 1.45, 'torre leste do Portão Sul');
 
     // Os edifícios não recebem retângulos genéricos. A colisão é lida da
     // opacidade real da faixa inferior de cada imagem em isBlocked().
@@ -294,20 +302,25 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   addWallRun(fixedAxis, fixed, start, end, flip) {
-    const span = 3.30;
-    for (let cursor = start; cursor < end - .04; cursor += span) {
-      const next = Math.min(cursor + span + .12, end);
+    // Divide cada trecho em módulos de comprimento idêntico. Antes, o último
+    // módulo era menor e portanto também mais baixo, criando um degrau visível
+    // sempre que duas imagens do muro se encontravam.
+    const count = Math.max(1, Math.round((end - start) / 3));
+    const step = (end - start) / count;
+    const visualLength = step + .24;
+    for (let index = 0; index < count; index++) {
+      const cursor = start + index * step;
+      const next = start + (index + 1) * step;
       const middle = (cursor + next) / 2;
       const u = fixedAxis === 'u' ? fixed : middle;
       const v = fixedAxis === 'v' ? fixed : middle;
       const p = this.project(u, v);
-      const logicalLength = next - cursor;
-      const image = this.add.image(p.x, p.y + 52, 'iso_city_wall')
+      const image = this.add.image(Math.round(p.x), Math.round(p.y + 52), 'iso_city_wall')
         .setOrigin(.5, .79).setFlipX(flip)
-        .setDisplaySize(logicalLength * 56 + 42, logicalLength * 30 + 126)
+        .setDisplaySize(Math.round(visualLength * 56 + 42), Math.round(visualLength * 30 + 126))
         .setDepth(this.depthAt(u, v, .08));
       this.wallSprites.push(image);
-      this.registerOccluder(image, 'iso_city_wall', p.y + 5);
+      this.registerOccluder(image, 'iso_city_wall', p.y + 5, {behindMargin: 8});
     }
   }
 
@@ -319,7 +332,7 @@ export class AetherCityScene extends Phaser.Scene {
       const entry = {...building, image};
       this.cityBuildings.push(entry);
       this.blockedBuildingMasks.push(entry);
-      this.registerOccluder(image, building.key, image.y - 2);
+      this.registerOccluder(image, building.key, image.y - 2, {behindMargin: 10});
     }
   }
 
@@ -350,7 +363,8 @@ export class AetherCityScene extends Phaser.Scene {
       worldY: options.worldY,
       originX: options.originX,
       originY: options.originY,
-      alphaThreshold: options.alphaThreshold ?? 24
+      alphaThreshold: options.alphaThreshold ?? 24,
+      behindMargin: options.behindMargin ?? 7
     };
     this.occluders.push(entry);
     return entry;
@@ -365,7 +379,7 @@ export class AetherCityScene extends Phaser.Scene {
       ['tavernkeeper', 'Garrick Brenn', 'Taverneiro', ...fronts.tavern, ['A taverna ainda não abriu. Faltam alimentos e insumos para as bebidas.', 'Quando conseguirmos os suprimentos, espero abrir as portas novamente.'], {portrait: 'portrait_garrick', idleProfile: 'tavernkeeper', iso: 'tavernkeeper_iso', action: 'tavernkeeper_iso_action', height: 114}],
       ['scholar', 'Lysandra Vael', 'Erudita', ...fronts.scholar, ['O mundo perdeu o sentido depois dos acontecimentos sombrios...', 'Talvez um dia eu volte a estudar os antigos encantamentos.'], {portrait: 'portrait_lysandra', idleProfile: 'scholar', iso: 'scholar_iso', action: 'scholar_iso_action', height: 110}],
       ['artisan', 'Maelis Tessara', 'Artesã', ...fronts.artisan, ['Minha oficina ainda é simples, mas já consigo consertar panos e costuras.', 'Quando os caminhos estiverem seguros, vou transformá-la em uma verdadeira oficina encantada.'], {portrait: 'portrait_maelis', idleProfile: 'artisan', iso: 'artisan_iso', action: 'artisan_iso_action', height: 112}],
-      ['elder_mira', 'Mira Edevane', 'Anciã de Aether', 12.0, 17.05, ['A floresta ficou perigosa. Se trouxer provas dos monstros, conversaremos sobre o assunto.'], {portrait: 'portrait_mira', idleProfile: 'elder', iso: 'elder_mira_iso', height: 112}],
+      ['elder_mira', 'Mira Edevane', 'Anciã de Aether', 16.90, 13.05, ['A floresta ficou perigosa. Se trouxer provas dos monstros, conversaremos sobre o assunto.'], {portrait: 'portrait_mira', idleProfile: 'elder', iso: 'elder_mira_iso', height: 112}],
       ['guard', 'Kael Dorn', 'Guarda do Portão Leste', 22.80, 17.10, ['Estamos protegendo a saída leste. Tenha cuidado ao deixar os muros.'], {portrait: 'portrait_kael', idleProfile: 'east_guard', iso: 'guard_iso', height: 116, gateGuard: true}],
       ['south_guard', 'Bren Harrow', 'Guarda do Sul', 17.80, 23.40, ['Mantemos esta passagem protegida. Lá fora, os monstros não respeitam ninguém.'], {portrait: 'portrait_bren', idleProfile: 'south_guard', iso: 'south_guard_iso', height: 116, gateGuard: true}]
     ];
@@ -398,7 +412,7 @@ export class AetherCityScene extends Phaser.Scene {
 
     // Circuitos próprios e livres de footprints: nenhum andarilho depende de
     // colisor móvel, portanto não fica travado ao cruzar outra pessoa.
-    const residentRoute = [[9.8,15.8],[10.2,17.2],[11.2,18.6],[13.2,19.6],[15.2,20.2],[16.2,19.2],[16.0,17.2],[15.0,16.2],[13.4,16.4],[11.3,15.8]];
+    const residentRoute = [[9.8,15.8],[10.2,17.2],[10.4,19.6],[11.0,20.5],[13.0,21.2],[15.6,21.1],[16.2,20.4],[16.5,18.8],[16.2,17.0],[15.8,15.8],[13.8,15.6],[11.4,15.6]];
     const travelerRoute = [[9.8,11.5],[10.0,10.0],[11.8,9.0],[13.5,9.2],[15.0,9.0],[15.4,10.2],[15.0,11.4],[14.0,12.0],[12.4,11.8],[11.0,11.4]];
     this.walkers = [
       this.createWalker('resident', 'resident_iso_walk', 'Tomas Belmon', 'Morador de Aether', ['A praça ainda é o lugar mais seguro de Aether.'], residentRoute, 110, 44, 700, 'portrait_tomas'),
@@ -424,9 +438,9 @@ export class AetherCityScene extends Phaser.Scene {
   createAmbientLife() {
     this.installAmbientAnimations();
 
-    this.routeAmbient('city_dog', 'city-dog-walk', [[10.2,13.8],[10.7,12.2],[12.2,10.8],[14.0,10.6],[15.3,11.0],[15.3,11.8],[15.4,13.4],[16.5,14.4],[17.8,15.7],[16.5,16.4],[15.2,17.0],[13.5,16.8],[11.8,16.0]], .82, 34, 450);
+    this.routeAmbient('city_dog', 'city-dog-walk', [[10.2,13.8],[10.7,12.2],[12.2,10.8],[14.0,10.6],[15.3,11.0],[15.3,11.8],[15.4,13.4],[16.5,14.4],[17.8,15.7],[16.7,15.6],[15.2,15.5],[13.5,15.5],[11.8,16.0]], .82, 34, 450);
     // Soma u+v constante: o gato se move horizontalmente na tela.
-    this.routeAmbient('city_cat', 'city-cat-walk', [[10,22],[12,20],[14,18],[16,16],[14,18],[12,20]], .82, 31, 1200);
+    this.routeAmbient('city_cat', 'city-cat-walk', [[16,14],[18,12],[20,10],[22,8],[20,10],[18,12]], .82, 31, 1200);
 
     this.createTavernRatCycle();
 
@@ -666,9 +680,28 @@ export class AetherCityScene extends Phaser.Scene {
     }
   }
 
+  isOutsideCityWallEnvelope(u, v, radius) {
+    const C = AetherCityScene;
+    const innerMin = C.CITY_MIN + .55;
+    const innerMax = C.CITY_MAX - .55;
+    const gateMin = 12.92;
+    const gateMax = 15.08;
+    const insideEastGate = v - radius > gateMin && v + radius < gateMax;
+    const insideSouthGate = u - radius > gateMin && u + radius < gateMax;
+
+    // Os portões são as únicas exceções à face interna contínua do muro.
+    // A checagem do envelope também elimina qualquer fresta matemática entre
+    // dois retângulos de colisão adjacentes.
+    if (u - radius < innerMin || v - radius < innerMin) return true;
+    if (u + radius > innerMax && !insideEastGate) return true;
+    if (v + radius > innerMax && !insideSouthGate) return true;
+    return false;
+  }
+
   isBlocked(u, v, radius) {
     const C = AetherCityScene;
     if (u < .68 + radius || v < .68 + radius || u > C.MAP_SIZE - .68 - radius || v > C.MAP_SIZE - .68 - radius) return true;
+    if (this.isOutsideCityWallEnvelope(u, v, radius)) return true;
     for (const rect of this.blockedRects) {
       const nearestU = Phaser.Math.Clamp(u, rect.u1, rect.u2);
       const nearestV = Phaser.Math.Clamp(v, rect.v1, rect.v2);
@@ -751,7 +784,10 @@ export class AetherCityScene extends Phaser.Scene {
     let lowestOccluderDepth = Infinity;
     for (const occluder of this.occluders) {
       const image = occluder.image;
-      if (!image?.active || this.player.y > occluder.baseY + 8) continue;
+      // Sobreposição de pixels não basta: o pé do jogador precisa estar
+      // realmente atrás da linha de apoio do objeto. Isso impede o contorno
+      // dourado ao tocar uma fachada pela frente.
+      if (!image?.active || this.player.y >= occluder.baseY - occluder.behindMargin) continue;
       const texture = this.textures.get(occluder.key);
       const source = texture?.getSourceImage?.();
       if (!source) continue;
@@ -918,7 +954,7 @@ export class AetherCityScene extends Phaser.Scene {
       player: this.player.serialize(), characterClass: this.player.characterClass,
       skills: this.skillManager.serialize(), inventory: this.inv.serialize(), equipment: this.equip.serialize(),
       quests: this.questManager.serialize?.() || old?.quests || [],
-      worldFlags: {...(old?.worldFlags || {}), cityRound60Migrated: true, cityRound61Migrated: true, cityRound62Migrated: true, cityRound63Migrated: true, cityRound64Migrated: true},
+      worldFlags: {...(old?.worldFlags || {}), cityRound60Migrated: true, cityRound61Migrated: true, cityRound62Migrated: true, cityRound63Migrated: true, cityRound64Migrated: true, cityRound66Migrated: true},
       scenePositions: {...(old?.scenePositions || {}), [this.scene.key]: {x: this.player.x, y: this.player.y, u: this.logicalPlayer.u, v: this.logicalPlayer.v}}
     });
   }

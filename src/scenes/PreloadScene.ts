@@ -15,12 +15,14 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('elder_mira_iso','assets/images/characters/npcs/isometric/elder_mira_iso.png');
     this.load.image('guard_iso','assets/images/characters/npcs/isometric/guard_iso.png');
     this.load.image('south_guard_iso','assets/images/characters/npcs/isometric/south_guard_iso.png');
-    this.load.spritesheet('merchant_iso_action','assets/images/characters/npcs/isometric/merchant_iso_action.png',{frameWidth:208,frameHeight:224});
-    this.load.spritesheet('blacksmith_iso_action','assets/images/characters/npcs/isometric/blacksmith_iso_action.png',{frameWidth:208,frameHeight:224});
-    this.load.spritesheet('healer_iso_action','assets/images/characters/npcs/isometric/healer_iso_action.png',{frameWidth:208,frameHeight:224});
-    this.load.spritesheet('tavernkeeper_iso_action','assets/images/characters/npcs/isometric/tavernkeeper_iso_action.png',{frameWidth:208,frameHeight:224});
-    this.load.spritesheet('scholar_iso_action','assets/images/characters/npcs/isometric/scholar_iso_action.png',{frameWidth:208,frameHeight:224});
-    this.load.spritesheet('artisan_iso_action','assets/images/characters/npcs/isometric/artisan_iso_action.png',{frameWidth:208,frameHeight:224});
+    // Round 66: as ações usam células maiores para manter a mesma escala do
+    // repouso, a mesma linha dos pés e espaço para gestos altos sem recorte.
+    this.load.spritesheet('merchant_iso_action','assets/images/characters/npcs/isometric/merchant_iso_action.png',{frameWidth:256,frameHeight:256});
+    this.load.spritesheet('blacksmith_iso_action','assets/images/characters/npcs/isometric/blacksmith_iso_action.png',{frameWidth:256,frameHeight:256});
+    this.load.spritesheet('healer_iso_action','assets/images/characters/npcs/isometric/healer_iso_action.png',{frameWidth:256,frameHeight:256});
+    this.load.spritesheet('tavernkeeper_iso_action','assets/images/characters/npcs/isometric/tavernkeeper_iso_action.png',{frameWidth:256,frameHeight:256});
+    this.load.spritesheet('scholar_iso_action','assets/images/characters/npcs/isometric/scholar_iso_action.png',{frameWidth:256,frameHeight:256});
+    this.load.spritesheet('artisan_iso_action','assets/images/characters/npcs/isometric/artisan_iso_action.png',{frameWidth:256,frameHeight:256});
     this.load.spritesheet('resident_iso_walk','assets/images/characters/npcs/isometric/resident_iso_walk.png',{frameWidth:208,frameHeight:224});
     this.load.spritesheet('traveler_iso_walk','assets/images/characters/npcs/isometric/traveler_iso_walk.png',{frameWidth:208,frameHeight:224});
     this.load.spritesheet('city_ground','assets/images/environment/city/city_ground.png',{frameWidth:32,frameHeight:32});
