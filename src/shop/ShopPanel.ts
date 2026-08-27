@@ -14,6 +14,8 @@ export class ShopPanel {
       { id: 'healing_potion', price: 20 },
       { id: 'mana_potion', price: 25 },
       { id: 'iron_sword', price: 70 },
+      { id: 'apprentice_staff', price: 75 },
+      { id: 'hunter_bow', price: 75 },
       { id: 'forest_cloak', price: 150 },
       { id: 'elder_talisman', price: 90 },
     ];

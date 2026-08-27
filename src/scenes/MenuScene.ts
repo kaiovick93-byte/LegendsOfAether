@@ -10,12 +10,11 @@ export class MenuScene extends Phaser.Scene{
   const save=this.sm.load();
   const continueBtn=this.addButton('CONTINUAR',220,()=>this.startExisting(save),!!save);
   this.addButton('NOVO JOGO',285,()=>{this.sm.clear();this.fade.out(()=>this.scene.start('PrologueScene'))},true);
-  this.addButton('PROTÓTIPO ISOMÉTRICO (R59)',350,()=>this.fade.out(()=>this.scene.start('IsometricPrototypeScene')),true);
-  this.addButton('OPÇÕES / SOBRE',415,()=>this.fade.out(()=>this.scene.start('OptionsScene')),true);
+  this.addButton('OPÇÕES / SOBRE',350,()=>this.fade.out(()=>this.scene.start('OptionsScene')),true);
   if(save){
-    this.add.text(480,480,`Save encontrado • Nível ${save.player.level} • ${save.lastScene||'WorldScene'}`,{fontFamily:'Arial',fontSize:12,color:'#9aa8c7'}).setOrigin(.5)
+    this.add.text(480,430,`Save encontrado • Nível ${save.player.level} • ${save.lastScene||'WorldScene'}`,{fontFamily:'Arial',fontSize:12,color:'#9aa8c7'}).setOrigin(.5)
   }else{
-    this.add.text(480,480,'Nenhum save encontrado. CONTINUAR está desabilitado.',{fontFamily:'Arial',fontSize:12,color:'#7280a8'}).setOrigin(.5)
+    this.add.text(480,430,'Nenhum save encontrado. CONTINUAR está desabilitado.',{fontFamily:'Arial',fontSize:12,color:'#7280a8'}).setOrigin(.5)
   }
   this.fade.in()
  }
@@ -30,7 +29,7 @@ export class MenuScene extends Phaser.Scene{
   let target=save.lastScene||'AetherCityScene';
   const pos=save.scenePositions?.WorldScene;
   const inOldCity=!pos||(pos.x>=80&&pos.x<=1480&&pos.y>=80&&pos.y<=1120);
-  if(target==='WorldScene'&&inOldCity&&!save.worldFlags?.cityRound66Migrated)target='AetherCityScene';
+  if(target==='WorldScene'&&inOldCity&&!save.worldFlags?.cityRound67Migrated)target='AetherCityScene';
   this.fade.out(()=>this.scene.start(target));
  }
 }

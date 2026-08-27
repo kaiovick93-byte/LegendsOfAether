@@ -1008,6 +1008,7 @@ export class WorldScene extends Phaser.Scene{
  // NPCs ambulantes continuam suas rotas normalmente ao simples aproximar.
  // A rota só é pausada quando o diálogo realmente é aberto.
  near.pauseRoute?.();
+ near.showConversationIcon?.();
  const secondaryAction=near===this.merchant?{key:'T',label:'Loja',type:'shop'}:null;
  this.npcDialogue.open({
   name:near.npcName,role:near.npcRole||'',pages:near.text,portraitKey:near.npcPortrait,spriteKey:near.textureKey,
@@ -1017,11 +1018,11 @@ export class WorldScene extends Phaser.Scene{
   onClose:()=>this.closeDialogue()
  });
 }
- closeDialogue(){const npc=this.activeDialogueNpc;this.dialogue.close();this.npcDialogue?.close?.();this.dialogueOpen=false;this.activeDialogueNpc=null;this.hud.closeExternalModal();this.dialogueF?.destroy();this.dialogueF=null;npc?.resumeRoute?.()}
+ closeDialogue(){const npc=this.activeDialogueNpc;this.dialogue.close();this.npcDialogue?.close?.();this.dialogueOpen=false;this.activeDialogueNpc=null;this.hud.closeExternalModal();this.dialogueF?.destroy();this.dialogueF=null;npc?.hideConversationIcon?.();npc?.resumeRoute?.()}
  collectLoot(){const d=this.loot.collectNear(this.player.x,this.player.y);if(d){this.sfx.pickup();this.saveGame();this.hud.bottom.update()}}
  respawnOne(i){const p=this.spawnPoints[i];if(p)this.enemies[i]=new Enemy(this,p.x,p.y,p.name,p.stats)}
  handleDeath(){if(this.respawnTimer)return;this.hud.openExternalModal();this.death.show('Respawn em 2 segundos');this.respawnTimer=this.time.delayedCall(2000,()=>{this.player.respawn(780,1228);this.hud.closeExternalModal();this.death.hide();this.respawnTimer=null;this.saveGame();this.registry.set('aetherCityEntrance','south');this.scene.start('AetherCityScene')})}
- saveGame(){const old=this.sm.load();this.sm.save({version:1,savedAt:Date.now(),lastScene:this.scene.key,player:this.player.serialize(),characterClass:this.player.characterClass,skills:this.skillManager.serialize(),inventory:this.inv.serialize(),equipment:this.equip.serialize(),quests:this.questManager.serialize?.()||[],worldFlags:{...(old?.worldFlags||{}),cityRound56Migrated:true,cityRound57Migrated:true,cityRound58Migrated:true,cityRound60Migrated:true,cityRound61Migrated:true,cityRound62Migrated:true,cityRound63Migrated:true,cityRound64Migrated:true,cityRound66Migrated:true},scenePositions:{...(old?.scenePositions||{}),[this.scene.key]:{x:this.player.x,y:this.player.y}}})}
+ saveGame(){const old=this.sm.load();this.sm.save({version:1,savedAt:Date.now(),lastScene:this.scene.key,player:this.player.serialize(),characterClass:this.player.characterClass,skills:this.skillManager.serialize(),inventory:this.inv.serialize(),equipment:this.equip.serialize(),quests:this.questManager.serialize?.()||[],worldFlags:{...(old?.worldFlags||{}),cityRound56Migrated:true,cityRound57Migrated:true,cityRound58Migrated:true,cityRound60Migrated:true,cityRound61Migrated:true,cityRound62Migrated:true,cityRound63Migrated:true,cityRound64Migrated:true,cityRound66Migrated:true,cityRound67Migrated:true},scenePositions:{...(old?.scenePositions||{}),[this.scene.key]:{x:this.player.x,y:this.player.y}}})}
  goMenu(){this.saveGame();this.scene.start('MenuScene')}
  installUnload(){this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>this.saveGame());window.addEventListener('beforeunload',this._unload=()=>this.saveGame())}
  isNearWaystone(){return this.waystone&&Phaser.Math.Distance.Between(this.player.x,this.player.y,this.waystone.x,this.waystone.y)<=85}

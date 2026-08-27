@@ -43,17 +43,17 @@ export class WanderingNpc extends Npc{
 
  getDirectionTo(tx,ty){
   const dx=tx-this.x,dy=ty-this.y;
-  if(Math.abs(dx)>Math.abs(dy))return dx<0?'left':'right';
-  return dy<0?'up':'down';
+  const angle=(Math.atan2(dy,dx)*180/Math.PI+360)%360;
+  const directions=['east','southEast','south','southWest','west','northWest','north','northEast'];
+  return directions[Math.round(angle/45)%8];
  }
 
  playWalk(dir){
   this.currentFacing=dir;
   this.currentRouteDir=dir;
-  if(this.isIsometricWalker&&this.sprite&&this.isoWalkAnimation){
-   if(dir==='left')this.sprite.setFlipX(true);
-   else if(dir==='right')this.sprite.setFlipX(false);
-   this.sprite.play(this.isoWalkAnimation,true);
+  if(this.isIsometricWalker&&this.sprite&&this.isoWalkAnimations){
+   const animation=this.isoWalkAnimations[dir]||this.isoWalkAnimations.south;
+   this.sprite.setFlipX(false).play(animation,true);
    return;
   }
   if(this.sprite&&this.textureKey){
@@ -87,7 +87,6 @@ export class WanderingNpc extends Npc{
   }
 
   const dir=this.getDirectionTo(target.x,target.y);
-  if(this.isIsometricWalker&&Math.abs(target.x-this.x)>1)this.sprite?.setFlipX(target.x<this.x);
   this.currentTarget=target;
   this.routeMoving=true;
   this.playWalk(dir);

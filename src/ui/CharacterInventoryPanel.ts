@@ -1,5 +1,6 @@
 // @ts-nocheck
 import {getItemDefinition,rarityColor} from '../items/itemCatalog';
+import {appearanceFor} from '../character/PlayerAppearance';
 
 export class CharacterInventoryPanel{
   constructor(scene,player,inventory,equipment,save){
@@ -24,7 +25,7 @@ export class CharacterInventoryPanel{
     this.equipBg=scene.add.rectangle(225,350,350,320,0x182033,.98).setScrollFactor(0).setDepth(951).setStrokeStyle(1,0x32405f,1).setVisible(false);
     this.equipTitle=scene.add.text(225,205,'EQUIPAMENTOS / APARÊNCIA',{fontFamily:'Arial',fontSize:15,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5).setScrollFactor(0).setDepth(952).setVisible(false);
     this.appearanceBg=scene.add.rectangle(125,365,130,215,0x111827,1).setScrollFactor(0).setDepth(952).setStrokeStyle(1,0x3f5072,1).setVisible(false);
-    this.appearance=scene.add.image(125,350,'player',1).setScale(.58).setScrollFactor(0).setDepth(954).setVisible(false);
+    this.appearance=scene.add.image(125,350,player.getTextureKey(),player.getIdleFrame()).setScale(1.18).setScrollFactor(0).setDepth(954).setVisible(false);
     this.appearanceText=scene.add.text(125,495,'APARÊNCIA',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7'}).setOrigin(.5).setScrollFactor(0).setDepth(955).setVisible(false);
 
     this.slotArea=[];this.buildSlots();
@@ -65,7 +66,9 @@ export class CharacterInventoryPanel{
   }
   refresh(){
     const names={warrior:'Guerreiro',mage:'Mago',ranger:'Caçador'};
-    this.classText.setText(`${names[this.player.characterClass]||'Aventureiro'}  •  Nível ${this.player.level}  •  Ouro ${this.player.gold}`);
+    const appearance=appearanceFor(this.player.appearanceId);
+    this.classText.setText(`${names[this.player.characterClass]||'Aventureiro'} • ${appearance.genderLabel} • ${appearance.heritage}  •  Nível ${this.player.level}  •  Ouro ${this.player.gold}`);
+    this.appearance.setTexture(this.player.getTextureKey(),this.player.getIdleFrame());
     this.statsText.setText(`HP ${this.player.hp}/${this.player.maxHp}   MANA ${this.player.mana}/${this.player.maxMana}\nATQ ${this.player.attackDamage}   DEF ${this.player.defense}   SPD ${this.player.speed}`);
     const need=Math.max(1,this.player.level*100),ratio=Phaser.Math.Clamp(this.player.xp/need,0,1);
     this.xpFill.width=230*ratio;this.xpText.setText(`XP ${this.player.xp}/${need}`);

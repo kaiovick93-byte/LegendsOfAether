@@ -47,6 +47,7 @@ export class Npc extends Phaser.GameObjects.Container{
   this.actionSignature='';
 
   this.createInteractionUi();
+  this.createConversationIcon();
   this.setInteractionActions(actions.shop
    ? [{key:'F',label:'Conversar',type:'talk'},{key:'T',label:'Loja',type:'shop'}]
    : [{key:'F',label:'Conversar',type:'talk'}]);
@@ -60,68 +61,113 @@ export class Npc extends Phaser.GameObjects.Container{
 
  createInteractionUi(){
   const scene=this.scene;
-  this.interactionUi=scene.add.container(0,-101).setAlpha(0).setVisible(false);
+  // Cartões compactos à direita do personagem: a leitura lembra um comando
+  // de RPG, sem cobrir o rosto do NPC ou fundir duas ações em uma só placa.
+  this.interactionUi=scene.add.container(120,-48).setAlpha(0).setVisible(false);
 
-  if(scene.textures.exists('npc_prompt_panel')){
-   this.uiPanel=scene.add.image(0,0,'npc_prompt_panel').setDisplaySize(246,79);
-  }else{
-   this.uiPanel=scene.add.rectangle(0,0,246,79,0x121822,.96).setStrokeStyle(2,0xb68a49,.95);
-  }
-  this.interactionUi.add(this.uiPanel);
-
-  this.nameText=scene.add.text(0,-25,this.npcName,{
-   fontFamily:'Georgia, serif',fontSize:13,color:'#f0d392',fontStyle:'bold',
-   stroke:'#0b0e14',strokeThickness:2,align:'center'
+  this.nameBadge=scene.add.container(0,-47);
+  this.namePanel=this.makePromptPanel(204,30,7,0x0b1322,0xb99155);
+  this.nameText=scene.add.text(0,-5,this.npcName,{
+   fontFamily:'Georgia, serif',fontSize:12,color:'#f4dcaa',fontStyle:'bold',
+   stroke:'#070b12',strokeThickness:2,align:'center'
   }).setOrigin(.5);
-  this.interactionUi.add(this.nameText);
-
-  this.roleText=scene.add.text(0,-9,this.npcRole?`• ${this.npcRole} •`:'',{
-   fontFamily:'Georgia, serif',fontSize:9,color:'#aeb8c7',fontStyle:'italic',
-   stroke:'#0b0e14',strokeThickness:1,align:'center'
+  this.roleText=scene.add.text(0,8,this.npcRole||'',{
+   fontFamily:'Georgia, serif',fontSize:8,color:'#b9c3d1',fontStyle:'italic',
+   stroke:'#070b12',strokeThickness:1,align:'center'
   }).setOrigin(.5);
-  this.interactionUi.add(this.roleText);
+  this.nameBadge.add([this.namePanel,this.nameText,this.roleText]);
+  this.interactionUi.add(this.nameBadge);
 
-  this.primaryAction=scene.add.container(-61,18);
-  this.primaryKey=this.makeKeycap('F',-39,0);
-  this.primaryIcon=this.makeActionIcon('talk',-17,0);
-  this.primaryText=scene.add.text(-2,0,'Conversar',{
-   fontFamily:'Georgia, serif',fontSize:10,color:'#e8eee9',fontStyle:'bold',
-   stroke:'#0b0e14',strokeThickness:1
-  }).setOrigin(0,.5);
-  this.primaryAction.add([this.primaryKey,this.primaryIcon,this.primaryText]);
+  const primary=this.makeInteractionRow('F','Conversar',-10);
+  this.primaryAction=primary.container;
+  this.primaryKey=primary.keycap;
+  this.primaryText=primary.label;
   this.interactionUi.add(this.primaryAction);
 
-  this.secondaryAction=scene.add.container(61,18).setVisible(false);
-  this.secondaryKey=this.makeKeycap('T',-38,0);
-  this.secondaryIcon=this.makeActionIcon('shop',-16,0);
-  this.secondaryText=scene.add.text(-1,0,'Loja',{
-   fontFamily:'Georgia, serif',fontSize:10,color:'#f0d392',fontStyle:'bold',
-   stroke:'#0b0e14',strokeThickness:1
-  }).setOrigin(0,.5);
-  this.secondaryAction.add([this.secondaryKey,this.secondaryIcon,this.secondaryText]);
+  const secondary=this.makeInteractionRow('T','Loja',26);
+  this.secondaryAction=secondary.container.setVisible(false);
+  this.secondaryKey=secondary.keycap;
+  this.secondaryText=secondary.label;
   this.interactionUi.add(this.secondaryAction);
 
   this.add(this.interactionUi);
  }
 
+ makePromptPanel(width,height,radius=7,fill=0x0b1322,stroke=0x7f8998){
+  const g=this.scene.add.graphics();
+  g.fillStyle(0x02050b,.34).fillRoundedRect(-width/2+2,-height/2+3,width,height,radius);
+  g.fillStyle(fill,.97).fillRoundedRect(-width/2,-height/2,width,height,radius);
+  g.lineStyle(1.4,stroke,.92).strokeRoundedRect(-width/2,-height/2,width,height,radius);
+  g.lineStyle(1,0x263247,.9).strokeRoundedRect(-width/2+3,-height/2+3,width-6,height-6,Math.max(3,radius-2));
+  return g;
+ }
+
+ makeInteractionRow(key,label,y){
+  const container=this.scene.add.container(0,y);
+  const panel=this.makePromptPanel(204,32,7,0x080f1d,0x657186);
+  const keycap=this.makeKeycap(key,-82,0);
+  const bullet=this.scene.add.circle(-57,0,2.2,0xd7b56d,1);
+  const text=this.scene.add.text(-48,0,label,{
+   fontFamily:'Georgia, serif',fontSize:12,color:'#f2f4f7',fontStyle:'bold',
+   stroke:'#06090f',strokeThickness:1
+  }).setOrigin(0,.5);
+  container.add([panel,keycap,bullet,text]);
+  return{container,keycap,label:text};
+ }
+
  makeKeycap(key,x,y){
-  const texture=key==='T'?'npc_key_t':'npc_key_f';
-  if(this.scene.textures.exists(texture))return this.scene.add.image(x,y,texture).setDisplaySize(20,20);
   const c=this.scene.add.container(x,y);
-  const bg=this.scene.add.rectangle(0,0,20,20,0x252d38,1).setStrokeStyle(1,0xd0a65c,1);
-  const t=this.scene.add.text(0,0,key,{fontFamily:'Arial',fontSize:10,color:'#f3ead6',fontStyle:'bold'}).setOrigin(.5);
+  const bg=this.scene.add.graphics();
+  bg.fillStyle(0x02040a,.55).fillRoundedRect(-11.5,-10.5,25,25,5);
+  bg.fillStyle(0xf7f7f2,1).fillRoundedRect(-12.5,-12.5,25,25,5);
+  bg.lineStyle(1.5,0xc7ced7,1).strokeRoundedRect(-12.5,-12.5,25,25,5);
+  const t=this.scene.add.text(0,0,key,{fontFamily:'Arial',fontSize:13,color:'#111927',fontStyle:'bold'}).setOrigin(.5);
   c.add([bg,t]);return c;
  }
 
- makeActionIcon(type,x,y){
-  const texture=type==='shop'?'npc_icon_shop':'npc_icon_talk';
-  if(this.scene.textures.exists(texture))return this.scene.add.image(x,y,texture).setDisplaySize(18,18);
-  return this.scene.add.circle(x,y,7,type==='shop'?0xc6924c:0x65a98f,1);
+ createConversationIcon(){
+  const scene=this.scene;
+  this.conversationIcon=scene.add.container(0,-123).setVisible(false).setAlpha(0).setScale(.82);
+  const bubble=scene.add.graphics();
+  bubble.fillStyle(0x03060b,.34).fillRoundedRect(-24,-16,48,32,8);
+  bubble.fillTriangle(-6,16,5,16,-2,24);
+  bubble.fillStyle(0xf7f7f2,1).fillRoundedRect(-25,-18,48,32,8);
+  bubble.fillTriangle(-7,13,5,13,-2,22);
+  bubble.lineStyle(2,0x172131,1).strokeRoundedRect(-25,-18,48,32,8);
+  const dots=[-10,0,10].map(x=>scene.add.circle(x,-2,3.1,0x111927,1));
+  this.conversationIcon.add([bubble,...dots]);
+  this.add(this.conversationIcon);
+ }
+
+ showConversationIcon(){
+  if(!this.conversationIcon)return;
+  this.conversationIconTween?.stop();
+  this.conversationIconFloat?.stop();
+  this.conversationIcon.setVisible(true).setAlpha(0).setScale(.82).setY(-119);
+  this.conversationIconTween=this.scene.tweens.add({
+   targets:this.conversationIcon,alpha:1,scale:1,y:-123,duration:150,ease:'Back.Out',
+   onComplete:()=>{
+    if(!this.conversationIcon?.visible)return;
+    this.conversationIconFloat=this.scene.tweens.add({targets:this.conversationIcon,y:{from:-123,to:-126},duration:850,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+   }
+  });
+ }
+
+ hideConversationIcon(immediate=false){
+  if(!this.conversationIcon)return;
+  this.conversationIconTween?.stop();
+  this.conversationIconFloat?.stop();
+  this.conversationIconFloat=null;
+  if(immediate){this.conversationIcon.setVisible(false).setAlpha(0).setY(-119);return}
+  this.conversationIconTween=this.scene.tweens.add({
+   targets:this.conversationIcon,alpha:0,scale:.86,y:-119,duration:110,ease:'Sine.In',
+   onComplete:()=>this.conversationIcon?.setVisible(false)
+  });
  }
 
  setRole(role){
   this.npcRole=role||'';
-  this.roleText?.setText(this.npcRole?`• ${this.npcRole} •`:'');
+  this.roleText?.setText(this.npcRole);
   return this;
  }
 
@@ -133,18 +179,19 @@ export class Npc extends Phaser.GameObjects.Container{
 
   const a=normalized[0];
   this.primaryText?.setText(a.label||'Conversar');
-  if(this.primaryKey){this.primaryKey.destroy();this.primaryKey=this.makeKeycap(a.key||'F',-39,0);this.primaryAction.addAt(this.primaryKey,0)}
-  if(this.primaryIcon){this.primaryIcon.destroy();this.primaryIcon=this.makeActionIcon(a.type||'talk',-17,0);this.primaryAction.addAt(this.primaryIcon,1)}
+  if(this.primaryKey){this.primaryKey.destroy();this.primaryKey=this.makeKeycap(a.key||'F',-82,0);this.primaryAction.addAt(this.primaryKey,1)}
 
   const b=normalized[1];
   this.secondaryAction?.setVisible(!!b);
   if(b){
    this.secondaryText?.setText(b.label||'Ação');
-   if(this.secondaryKey){this.secondaryKey.destroy();this.secondaryKey=this.makeKeycap(b.key||'T',-38,0);this.secondaryAction.addAt(this.secondaryKey,0)}
-   if(this.secondaryIcon){this.secondaryIcon.destroy();this.secondaryIcon=this.makeActionIcon(b.type||'shop',-16,0);this.secondaryAction.addAt(this.secondaryIcon,1)}
-   this.primaryAction?.setX(-61);
+   if(this.secondaryKey){this.secondaryKey.destroy();this.secondaryKey=this.makeKeycap(b.key||'T',-82,0);this.secondaryAction.addAt(this.secondaryKey,1)}
+   this.nameBadge?.setY(-47);
+   this.primaryAction?.setY(-10);
+   this.secondaryAction?.setY(26);
   }else{
-   this.primaryAction?.setX(-15);
+   this.nameBadge?.setY(-30);
+   this.primaryAction?.setY(7);
   }
  }
 
@@ -158,16 +205,16 @@ export class Npc extends Phaser.GameObjects.Container{
  showInteractionUi(){
   if(!this.interactionUi)return;
   this.interactionTween?.stop();
-  this.interactionUi.setVisible(true).setAlpha(0).setY(-95);
-  this.interactionTween=this.scene.tweens.add({targets:this.interactionUi,alpha:1,y:-101,duration:145,ease:'Sine.Out'});
+  this.interactionUi.setVisible(true).setAlpha(0).setX(114);
+  this.interactionTween=this.scene.tweens.add({targets:this.interactionUi,alpha:1,x:120,duration:145,ease:'Sine.Out'});
  }
 
  hideInteractionUi(immediate=false){
   if(!this.interactionUi)return;
   this.interactionTween?.stop();
-  if(immediate){this.interactionUi.setAlpha(0).setVisible(false).setY(-95);return}
+  if(immediate){this.interactionUi.setAlpha(0).setVisible(false).setX(114);return}
   this.interactionTween=this.scene.tweens.add({
-   targets:this.interactionUi,alpha:0,y:-95,duration:115,ease:'Sine.In',
+   targets:this.interactionUi,alpha:0,x:114,duration:115,ease:'Sine.In',
    onComplete:()=>this.interactionUi?.setVisible(false)
   });
  }
@@ -185,7 +232,7 @@ export class Npc extends Phaser.GameObjects.Container{
 
  setNpcVisible(v){
   this.setVisible(v);
-  if(!v)this.hideInteractionUi(true);
+  if(!v){this.hideInteractionUi(true);this.hideConversationIcon(true)}
   else if(this.nearby)this.showInteractionUi();
  }
 
@@ -229,7 +276,7 @@ export class Npc extends Phaser.GameObjects.Container{
   const source=this.scene.textures.get(textureKey).getSourceImage();
   const targetHeight=options.height??108;
   this.isoDisplayScale=targetHeight/source.height;
-  this.sprite.setScale(this.isoDisplayScale);
+  this.sprite.setScale(this.isoDisplayScale).setFlipX(!!options.flipX);
   this.characterVisual.add(this.sprite);
 
   this.isIsometricStatic=true;
@@ -275,20 +322,29 @@ export class Npc extends Phaser.GameObjects.Container{
   this.isIsometricWalker=true;
   this.isoBaseTexture=textureKey;
   this.isoActionTexture=null;
-  this.isoWalkAnimation=`npc-${textureKey}-walk`;
-  if(!this.scene.anims.exists(this.isoWalkAnimation)){
-   this.scene.anims.create({
-    key:this.isoWalkAnimation,
-    frames:this.scene.anims.generateFrameNumbers(textureKey,{start:0,end:3}),
-    frameRate:7,
-    repeat:-1
-   });
+  this.isoDirectionRows={
+   south:0,southWest:1,west:2,northWest:3,
+   north:4,northEast:5,east:6,southEast:7
+  };
+  this.isoWalkAnimations={};
+  for(const [direction,row] of Object.entries(this.isoDirectionRows)){
+   const key=`npc-${textureKey}-walk-${direction}`;
+   this.isoWalkAnimations[direction]=key;
+   if(!this.scene.anims.exists(key)){
+    const start=Number(row)*4;
+    this.scene.anims.create({
+     key,
+     frames:this.scene.anims.generateFrameNumbers(textureKey,{start,end:start+3}),
+     frameRate:7,
+     repeat:-1
+    });
+   }
   }
   try{this.idleBobTween?.stop()}catch(e){}
   this.idleBobTween=null;
   this.characterVisual.setPosition(0,0).setScale(1,1).setAngle(0);
-  this.currentFacing=options.facing||'right';
-  this.sprite.setFlipX(this.currentFacing==='left');
+  this.currentFacing=options.facing||'south';
+  this.sprite.setFlipX(false).setFrame((this.isoDirectionRows[this.currentFacing]??0)*4);
   return true;
  }
 
@@ -306,9 +362,8 @@ export class Npc extends Phaser.GameObjects.Container{
   if(!this.sprite) return;
   if(this.isIsometricWalker){
    this.currentFacing=dir;
-   this.sprite.stop().setFrame(0);
-   if(dir==='left')this.sprite.setFlipX(true);
-   else if(dir==='right')this.sprite.setFlipX(false);
+   const row=this.isoDirectionRows?.[dir]??0;
+   this.sprite.stop().setFlipX(false).setFrame(row*4);
    return;
   }
   if(this.isIsometricStatic){this.currentFacing=dir;return}
@@ -342,6 +397,7 @@ export class Npc extends Phaser.GameObjects.Container{
   if(s.includes('erudita')||s.includes('erudito'))return'scholar';
   if(s.includes('artesa')||s.includes('artesao'))return'artisan';
   if(s.includes('ancia')||s.includes('anciao'))return'elder';
+  if(s.includes('general'))return'general';
   if(s.includes('guarda do portao leste'))return'east_guard';
   if(s.includes('guarda do sul'))return'south_guard';
   if(s.includes('morador'))return'resident';
@@ -606,8 +662,11 @@ export class Npc extends Phaser.GameObjects.Container{
   try{this.idleActionTween?.stop()}catch(e){}
   try{this.idleFrameEvent?.remove(false)}catch(e){}
   try{this.interactionTween?.stop()}catch(e){}
+  try{this.conversationIconTween?.stop()}catch(e){}
+  try{this.conversationIconFloat?.stop()}catch(e){}
   try{if(this.isoActionComplete)this.sprite?.off('animationcomplete',this.isoActionComplete)}catch(e){}
   this.idleBobTween=null;this.idleActionTween=null;this.idleFrameEvent=null;this.interactionTween=null;
+  this.conversationIconTween=null;this.conversationIconFloat=null;
   for(const go of this.idleDecor){try{go?.destroy?.()}catch(e){}}
   try{this.isoActionProp?.destroy?.()}catch(e){}
   for(const go of this.isoEffects){try{go?.destroy?.()}catch(e){}}
