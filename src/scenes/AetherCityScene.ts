@@ -1,4 +1,4 @@
- // @ts-nocheck
+// @ts-nocheck
 import {Player} from '../entities/Player';
 import {Inventory} from '../inventory/Inventory';
 import {EquipmentManager} from '../equipment/EquipmentManager';
@@ -63,11 +63,22 @@ export class AetherCityScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, AetherCityScene.WORLD_WIDTH, AetherCityScene.WORLD_HEIGHT);
     this.cameras.main.setBackgroundColor('#0c1717');
-    this.cameras.main.setBounds(0, 0, AetherCityScene.WORLD_WIDTH, AetherCityScene.WORLD_HEIGHT);
-    this.cameras.main.setDeadzone(220, 100);
-    this.cameras.main.startFollow(this.player, true, .12, .12, 0, -90);
     // Leve afastamento: mostra mais ruas sem tornar personagens ilegíveis.
-    this.cameras.main.setZoom(.92);
+    const cityZoom = .92;
+    this.cameras.main.setZoom(cityZoom);
+    // A câmera pode ultrapassar a caixa técnica do mapa. Assim, ao caminhar
+    // até a muralha norte, a cidade continua descendo e o herói permanece na
+    // zona central de leitura em vez de ficar preso ao topo da tela.
+    const cameraPadX = Math.ceil(this.scale.width / cityZoom / 2);
+    const cameraPadY = Math.ceil(this.scale.height / cityZoom / 2) + 80;
+    this.cameras.main.setBounds(
+      -cameraPadX,
+      -cameraPadY,
+      AetherCityScene.WORLD_WIDTH + cameraPadX * 2,
+      AetherCityScene.WORLD_HEIGHT + cameraPadY * 2
+    );
+    this.cameras.main.setDeadzone(180, 80);
+    this.cameras.main.startFollow(this.player, true, .12, .12, 0, 54);
     this.cameras.main.setRoundPixels(true);
 
     this.createWorld();
@@ -504,7 +515,12 @@ export class AetherCityScene extends Phaser.Scene {
     const height = mask?.height ?? 96;
     const samples = [];
     const step = 3;
-    for (let y = 1; y < height; y += step) {
+    // Colisão corporal é contato no chão: somente pernas e pés opacos entram
+    // no volume físico. Cabeça, cabelos e armas continuam participando da
+    // oclusão visual, mas não prendem o herói quando duas silhuetas se cruzam
+    // em profundidades isométricas diferentes.
+    const contactBandStart = Math.floor(height * .66);
+    for (let y = contactBandStart; y < height; y += step) {
       for (let x = 1; x < width; x += step) {
         const alpha = mask?.alpha[y * width + x] ?? 0;
         if (alpha >= 64) {

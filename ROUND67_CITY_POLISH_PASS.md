@@ -8,7 +8,8 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 
 ## Cidade e circulação
 
-- câmera afastada discretamente para ampliar a leitura das ruas;
+- canvas configurado em `FIT`, ocupando a maior área 16:9 disponível no navegador sem distorção;
+- câmera afastada discretamente para ampliar a leitura das ruas e com margem além do limite norte; o mapa continua descendo quando o herói avança para cima e ele não termina colado ao topo da tela;
 - ateliê de Maelis transferido para o espaço entre a taverna e o Portão Leste, na mesma linha de implantação de ferraria, curandeira e taverna, com Maelis diante da fachada;
 - árvore e Marco de Senda centralizados visualmente em seus jardins;
 - muralhas refeitas como módulos periódicos com conectores isométricos exatos em `2:1`, mantendo profundidade própria por segmento;
@@ -23,6 +24,7 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 ## Colisão e oclusão
 
 - o herói usa escala `1,28×` na cidade; a altura opaca das seis aparências fica na mesma faixa de `98–107 px` dos NPCs;
+- o contato físico usa somente pixels opacos da faixa inferior de pernas e pés; cabeça, cabelos e armas continuam sendo renderizados/ocultados, mas não criam colisão antecipada nem prendem o herói junto aos guardas dos portões;
 - muralhas, pilares dos portões, edifícios, fonte, Marco de Senda, árvore e NPCs fixos usam máscaras extraídas do canal alfa das próprias texturas;
 - pixels transparentes dos canvases não bloqueiam o movimento; as máscaras são pré-calculadas uma vez e reutilizadas durante a cena;
 - edifícios usam a faixa opaca da base e o corpo completo somente na aproximação frontal;
@@ -69,13 +71,15 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 - Guerreiro aceita apenas espadas, Mago apenas cajados e Caçador apenas arcos; itens incompatíveis não podem ser equipados;
 - arma e armadura alteram imediatamente a folha usada pelo personagem, inclusive quando os dois itens estão equipados ao mesmo tempo; cada equipamento foi integrado à anatomia das 32 poses, com espada baixa, cajado ligado à pegada e arco acompanhado de aljava;
 - os estados `cajado` e `cajado + armadura` da maga feminina foram refeitos: cajado preso à mão, borda preta removida e identidade feminina preservada nas 32 células;
+- Maga feminina (`armadura`, `cajado` e `cajado + armadura`), Caçador masculino (`base`, `armadura` e `arco`), Guerreira com armadura e Guerreiro com espada foram normalizados novamente; halos, resíduos opacos e contornos grossos foram removidos sem alterar as 32 poses ou a linha dos pés;
+- o inventário sempre apresenta o estado visual atual no quadro frontal Sul, independentemente da direção em que o herói estava andando no mapa;
 - saves registram a aparência selecionada e migram saves antigos para a aparência masculina da classe já salva;
 - as 24 combinações visuais (`6 aparências × 4 estados`) possuem folhas normais e folhas vazadas de contorno dourado, totalizando 48 spritesheets compatíveis com a oclusão universal.
 
 ## Interação
 
-- aproximação de NPCs apresenta o nome e a função em um cabeçalho compacto;
-- cada comando aparece em seu próprio cartão escuro, com tecla branca e texto legível (`F · Conversar` e, para Aldren, `T · Loja`);
+- aproximação de NPCs apresenta nome, função e comandos dentro de uma única moldura compacta baseada na arte de `F · Conversar`;
+- `F · Conversar` e, para Aldren, `T · Loja` compartilham essa mesma placa, sem um cabeçalho ou segundo cartão separado;
 - o Marco de Senda usa a mesma linguagem visual, mas mostra corretamente `F · Examinar`;
 - ao iniciar uma conversa, um balão branco com reticências aparece sobre o NPC e acompanha personagens ambulantes;
 - o indicador desaparece ao encerrar a conversa, abrir a loja ou ocultar o NPC.
@@ -84,11 +88,20 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 
 - botão, cena, validador e texturas exclusivas do protótipo isométrico do Round 59 removidos;
 - NPCs e limites urbanos 2D substituídos por versões isométricas foram removidos; `resident.png` e `traveler.png` permanecem porque ainda representam trabalhadores da fazenda nos Arredores;
+- conector e meias-muralhas não referenciados, dois poços 2D obsoletos, o antigo jogador/contorno genérico e a fumaça exclusiva da ferraria foram retirados; somente as peças e folhas carregadas em execução permanecem;
 - `assets/source`, `ROUND8_MANIFEST.txt`, imagens de QA e scripts históricos de preparação/render/validação foram removidos do pacote executável;
 - a validação foi consolidada em `validate-project.mjs`;
 - documentação histórica anterior consolidada em `HISTORICO_E_REFERENCIAS_ATE_ROUND66.md`;
 - apenas este relatório do round atual permanece separado do histórico;
 - `dist/` e `node_modules/` não fazem parte do pacote-fonte final.
+
+## Interface inferior
+
+- nova moldura 2,5D em aço azul-escuro e ouro envelhecido, com transparência real;
+- orbes de HP e Mana são preenchidos pelo Phaser e diminuem proporcionalmente aos valores atuais;
+- oito espaços exatos no canal central: três habilidades de classe, ataque básico e quatro espaços reservados para expansão;
+- atalhos de poções, inventário, habilidades, controles e pausa permanecem legíveis na própria barra;
+- nível, ouro e experiência continuam visíveis sem ocupar a área do mapa.
 
 ## Validação
 
@@ -101,4 +114,4 @@ npm run validate
 npm run build
 ```
 
-O validador consolidado verifica planta, quatro encontros naturais de muralha, centro exclusivo dos portões, pontos de retorno, máscaras alfa pré-calculadas, escala opaca do herói/NPCs, subpassos de movimento, células contínuas sem fragmentos, tolerância a falhas de recursos ambientes, dez ações em quatro quadros, duas folhas ambulantes em oito direções, seis protagonistas em oito direções, quatro estados distintos de equipamento por aparência, 48 folhas de oclusão, restrições de arma por classe, migração de saves, nove perfis de fumaça, dezesseis tufos animados, gramado refinado, quatro pátios residenciais, telhados distintos, transparência, alinhamento do ateliê, guardas voltados para dentro, limpeza de assets/scripts legados e ausência de arquivos de QA no pacote.
+O validador consolidado verifica planta, quatro encontros naturais de muralha, centro exclusivo dos portões, pontos de retorno, movimento inicial livre nos dois portões para as seis aparências, faixa opaca de contato dos pés, máscaras alfa pré-calculadas, escala opaca do herói/NPCs, subpassos de movimento, câmera com margem norte, canvas expansível, retrato frontal do inventário, placa única dos NPCs, barra inferior com oito espaços e HP/Mana dinâmicos, células contínuas sem fragmentos, tolerância a falhas de recursos ambientes, dez ações em quatro quadros, duas folhas ambulantes em oito direções, seis protagonistas em oito direções, quatro estados distintos de equipamento por aparência, 48 folhas de oclusão, restrições de arma por classe, migração de saves, nove perfis de fumaça, dezesseis tufos animados, gramado refinado, quatro pátios residenciais, telhados distintos, transparência, alinhamento do ateliê, guardas voltados para dentro, limpeza de assets/scripts legados e ausência de arquivos de QA no pacote.

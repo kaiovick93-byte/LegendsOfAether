@@ -1,6 +1,6 @@
 // @ts-nocheck
 import {getItemDefinition,rarityColor} from '../items/itemCatalog';
-import {appearanceFor} from '../character/PlayerAppearance';
+import {appearanceFor,idleFrameForFacing} from '../character/PlayerAppearance';
 
 export class CharacterInventoryPanel{
   constructor(scene,player,inventory,equipment,save){
@@ -25,7 +25,7 @@ export class CharacterInventoryPanel{
     this.equipBg=scene.add.rectangle(225,350,350,320,0x182033,.98).setScrollFactor(0).setDepth(951).setStrokeStyle(1,0x32405f,1).setVisible(false);
     this.equipTitle=scene.add.text(225,205,'EQUIPAMENTOS / APARÊNCIA',{fontFamily:'Arial',fontSize:15,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5).setScrollFactor(0).setDepth(952).setVisible(false);
     this.appearanceBg=scene.add.rectangle(125,365,130,215,0x111827,1).setScrollFactor(0).setDepth(952).setStrokeStyle(1,0x3f5072,1).setVisible(false);
-    this.appearance=scene.add.image(125,350,player.getTextureKey(),player.getIdleFrame()).setScale(1.18).setScrollFactor(0).setDepth(954).setVisible(false);
+    this.appearance=scene.add.image(125,350,player.getTextureKey(),idleFrameForFacing('down')).setScale(1.18).setScrollFactor(0).setDepth(954).setVisible(false);
     this.appearanceText=scene.add.text(125,495,'APARÊNCIA',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7'}).setOrigin(.5).setScrollFactor(0).setDepth(955).setVisible(false);
 
     this.slotArea=[];this.buildSlots();
@@ -68,7 +68,10 @@ export class CharacterInventoryPanel{
     const names={warrior:'Guerreiro',mage:'Mago',ranger:'Caçador'};
     const appearance=appearanceFor(this.player.appearanceId);
     this.classText.setText(`${names[this.player.characterClass]||'Aventureiro'} • ${appearance.genderLabel}  •  Nível ${this.player.level}  •  Ouro ${this.player.gold}`);
-    this.appearance.setTexture(this.player.getTextureKey(),this.player.getIdleFrame());
+    // O painel é uma ficha, não uma cópia da direção momentânea no mapa.
+    // Estado e equipamento permanecem atuais, mas o retrato sempre olha para
+    // a frente para facilitar a comparação entre base, arma e armadura.
+    this.appearance.setTexture(this.player.getTextureKey(),idleFrameForFacing('down'));
     this.statsText.setText(`HP ${this.player.hp}/${this.player.maxHp}   MANA ${this.player.mana}/${this.player.maxMana}\nATQ ${this.player.attackDamage}   DEF ${this.player.defense}   SPD ${this.player.speed}`);
     const need=Math.max(1,this.player.level*100),ratio=Phaser.Math.Clamp(this.player.xp/need,0,1);
     this.xpFill.width=230*ratio;this.xpText.setText(`XP ${this.player.xp}/${need}`);

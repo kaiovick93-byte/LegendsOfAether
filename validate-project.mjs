@@ -67,6 +67,9 @@ const menu=read('src/scenes/MenuScene.ts');
 const npc=read('src/npc/Npc.ts');
 const wandering=read('src/npc/WanderingNpc.ts');
 const player=read('src/entities/Player.ts');
+const inventoryPanel=read('src/ui/CharacterInventoryPanel.ts');
+const bottomBar=read('src/ui/BottomActionBar.ts');
+const abilitySystem=read('src/abilities/AbilitySystem.ts');
 const playerAppearance=read('src/character/PlayerAppearance.ts');
 const characterSelect=read('src/scenes/CharacterSelectScene.ts');
 const equipment=read('src/equipment/EquipmentManager.ts');
@@ -92,8 +95,11 @@ const markdown=fs.readdirSync(root).filter(name=>name.endsWith('.md')).sort();
 expect(JSON.stringify(markdown)===JSON.stringify(['HISTORICO_E_REFERENCIAS_ATE_ROUND66.md','README.md','ROUND67_CITY_POLISH_PASS.md']),`documentação raiz não está consolidada: ${markdown.join(', ')}`);
 expect(read('HISTORICO_E_REFERENCIAS_ATE_ROUND66.md').includes('Documento original: ROUND66_CITY_CONTACT_DEPTH_PASS.md'),'histórico não incorporou o Round 66');
 
-// Câmera, planta e centralização dos jardins.
-expect(scene.includes('this.cameras.main.setZoom(.92)'),'zoom leve da cidade não está aplicado');
+// Câmera, viewport, planta e centralização dos jardins.
+expect(scene.includes('const cityZoom = .92')&&scene.includes('this.cameras.main.setZoom(cityZoom)'),'zoom leve da cidade não está aplicado');
+expect(scene.includes('const cameraPadY = Math.ceil(this.scale.height / cityZoom / 2) + 80')&&scene.includes('AetherCityScene.WORLD_HEIGHT + cameraPadY * 2'),'câmera não possui margem para manter o herói legível na muralha norte');
+expect(scene.includes('startFollow(this.player, true, .12, .12, 0, 54)'),'câmera não mantém o herói abaixo do centro para ampliar a leitura ao norte');
+expect(main.includes('mode:Phaser.Scale.FIT')&&main.includes('autoCenter:Phaser.Scale.CENTER_BOTH')&&main.includes('expandParent:true'),'canvas não expande para a área disponível do navegador');
 expect(scene.includes("addIsoImage('city_tree', u, v, 184, .02, 13)"),'padding visual da árvore não foi compensado');
 expect(scene.includes('const waystoneY = center.y - 11'),'Marco de Senda não foi centralizado no jardim');
 
@@ -198,9 +204,9 @@ expect(preload.includes("'healer_house_abandoned'")&&preload.includes("'healer_i
 expect(scene.includes('isHealerFaithRestored()')&&scene.includes('healerFaithRestored'),'flag futura da missão de Elara não está ligada à cidade');
 expect(scene.includes("key:healerRestored?'healer_house':'healer_house_abandoned'")&&scene.includes("iso: healerRestored?'healer_iso':'healer_iso_devastated'"),'alternância visual inicial/restaurada de Elara está incompleta');
 
-// Linguagem de interação inspirada em cartões de RPG e indicador de diálogo.
-expect(npc.includes('makeInteractionRow')&&npc.includes('makePromptPanel'),'cartões de interação dos NPCs estão ausentes');
-expect(npc.includes("makeKeycap(key,-82,0)")&&npc.includes('0xf7f7f2'),'teclas brancas dos cartões não estão configuradas');
+// Linguagem de interação unificada e indicador de diálogo.
+expect(npc.includes("scene.add.image(0,0,'npc_prompt_panel')")&&npc.includes("makeInteractionRow('F','Conversar','talk'"),'nome e comando do NPC não compartilham a mesma moldura');
+expect(npc.includes("'npc_key_t':'npc_key_f'")&&npc.includes("'npc_icon_shop':'npc_icon_talk'"),'artes das teclas/ações não estão ligadas ao cartão unificado');
 expect(npc.includes('showConversationIcon()')&&npc.includes('hideConversationIcon(immediate=false)'),'balão de conversa não possui ciclo próprio');
 expect(npc.includes('fillTriangle(-7,13,5,13,-2,22)')&&npc.includes('const dots=[-10,0,10]'),'ícone de reticências não está desenhado');
 expect(scene.includes('near.showConversationIcon?.()')&&scene.includes('npc?.hideConversationIcon?.()'),'Cidade de Aether não controla o indicador de conversa');
@@ -256,9 +262,88 @@ expect(envelopeBlocked(12.7,25.7),'torre esquerda do Portão Sul permite saída'
 expect(!envelopeBlocked(26.2,14),'centro do arco Leste foi fechado');
 expect(!envelopeBlocked(14,26.2),'centro do arco Sul foi fechado');
 
+// Regressão reproduzida do Round 67: a silhueta inteira do herói se cruzava
+// com o guarda no spawn e impedia qualquer primeiro passo. Esta simulação usa
+// os PNGs e escalas reais dos dois portões e exige fuga do ponto inicial para
+// todas as seis aparências.
+const collisionPngCache=new Map();
+const collisionPng=relative=>{
+  if(!collisionPngCache.has(relative))collisionPngCache.set(relative,decodeRgbaPng(relative));
+  return collisionPngCache.get(relative);
+};
+const project=(u,v)=>({x:1600+(u-v)*48,y:250+(u+v)*24});
+const targetGeometry=(relative,u,v,scale,options={})=>{
+  const png=collisionPng(relative),position=project(u,v);
+  const worldX=position.x+(options.offsetX||0),worldY=position.y+(options.offsetY||0);
+  const originX=options.originX??.5,originY=options.originY??.5;
+  return{relative,png,worldX,worldY,scale,originX,originY,flipX:!!options.flipX,sourceMinY:options.sourceMinY??0,
+    left:worldX-png.width*scale*originX,top:worldY-png.height*scale*originY};
+};
+const spawnTargets=[];
+const wallRelative='assets/images/environment/isometric/isometric_city_wall.png';
+const wallScale=96/250;
+const addWallRunAudit=(fixedAxis,fixed,start,end,flip)=>{
+  const count=Math.round((end-start)/2);
+  for(let index=0;index<count;index++){
+    const middle=start+2*(index+.5),u=fixedAxis==='u'?fixed:middle,v=fixedAxis==='v'?fixed:middle;
+    spawnTargets.push(targetGeometry(wallRelative,u,v,wallScale,{offsetY:-14,flipX:flip}));
+  }
+};
+addWallRunAudit('u',2,2,26,true);addWallRunAudit('v',2,2,26,false);
+addWallRunAudit('u',26,2,12,true);addWallRunAudit('u',26,16,26,true);
+addWallRunAudit('v',26,2,12,false);addWallRunAudit('v',26,16,26,false);
+spawnTargets.push(
+  targetGeometry('assets/images/environment/isometric/isometric_city_gate_east.png',26.03,14,384/1285,{offsetY:-3,sourceMinY:.56}),
+  targetGeometry('assets/images/environment/isometric/isometric_city_gate.png',14,26.03,384/1285,{offsetY:-3,sourceMinY:.56}),
+  targetGeometry('assets/images/characters/npcs/isometric/guard_iso.png',24.20,13.05,116/224,{offsetY:8,originY:1}),
+  targetGeometry('assets/images/characters/npcs/isometric/south_guard_iso.png',13.05,24.20,116/224,{offsetY:8,originY:1,flipX:true})
+);
+const playerContactSamples=(appearanceId,frameNumber)=>{
+  const png=collisionPng(`assets/images/characters/player/${appearanceId}_base.png`),samples=[];
+  const frameColumn=frameNumber%4,frameRow=Math.floor(frameNumber/4),startY=Math.floor(96*.66);
+  for(let y=startY+1;y<96;y+=3)for(let x=1;x<96;x+=3){
+    const sourceX=frameColumn*96+x,sourceY=frameRow*96+y;
+    if(png.data[(sourceY*png.width+sourceX)*4+3]>=64)samples.push({x:(x+1.5-48)*1.28,y:(y+1.5-96*.86)*1.28});
+  }
+  return samples;
+};
+const blockedBySpawnTargets=(appearanceId,frameNumber,u,v)=>{
+  const foot=project(u,v),samples=playerContactSamples(appearanceId,frameNumber).map(sample=>({x:foot.x+sample.x,y:foot.y+sample.y}));
+  for(const target of spawnTargets){
+    let hits=0;
+    for(const point of samples){
+      let sourceX=Math.floor((point.x-target.left)/target.scale);
+      const sourceY=Math.floor((point.y-target.top)/target.scale);
+      if(target.flipX)sourceX=target.png.width-1-sourceX;
+      if(sourceX<0||sourceX>=target.png.width||sourceY<target.png.height*target.sourceMinY||sourceY>=target.png.height)continue;
+      if(target.png.data[(sourceY*target.png.width+sourceX)*4+3]>=36&&++hits>=2)return true;
+    }
+  }
+  return false;
+};
+const simulateSpawnMove=(appearanceId,spawn,frameNumber,du,dv)=>{
+  let {u,v}=spawn;
+  for(let tick=0;tick<12;tick++){
+    for(const [axisU,axisV] of [[du,0],[0,dv]]){
+      const steps=Math.max(1,Math.ceil(Math.max(Math.abs(axisU),Math.abs(axisV))/.035));
+      for(let step=0;step<steps;step++){
+        const nextU=u+axisU/steps,nextV=v+axisV/steps;
+        if(envelopeBlocked(nextU,nextV)||blockedBySpawnTargets(appearanceId,frameNumber,nextU,nextV))break;
+        u=nextU;v=nextV;
+      }
+    }
+  }
+  return Math.hypot(u-spawn.u,v-spawn.v);
+};
+for(const appearanceId of ['warrior_m','warrior_f','mage_m','mage_f','ranger_m','ranger_f']){
+  expect(simulateSpawnMove(appearanceId,{u:14,v:25.02},17,.031,-.031)>.20,`${appearanceId} nasce preso no Portão Sul`);
+  expect(simulateSpawnMove(appearanceId,{u:25.02,v:14},9,-.031,.031)>.20,`${appearanceId} nasce preso no Portão Leste`);
+}
+
 // Contato por imagem: o corpo-base consulta exclusivamente a opacidade real.
 expect(scene.includes('this.player.setOrigin(.5, .86).setScale(1.28)'),'jogador não foi igualado à altura opaca dos NPCs');
 expect(scene.includes('getPlayerCollisionSamples()')&&scene.includes("const key = `player-${this.player.appearanceId}-base`")&&scene.includes('alpha >= 64'),'máscara corporal do jogador não usa a folha-base opaca');
+expect(scene.includes('const contactBandStart = Math.floor(height * .66)')&&scene.includes('for (let y = contactBandStart; y < height; y += step)'),'contato do jogador ainda usa cabeça/arma e pode nascer preso ao guarda');
 expect(scene.includes('isBlockedBySolidMasks(u, v)')&&scene.includes('getTextureAlphaMask(entry.key, geometry.frameName)')&&scene.includes('targetMask.alpha[sourceY * targetMask.width + sourceX]'),'colisão urbana não consulta a opacidade dos sprites');
 expect(scene.includes("document.createElement('canvas')")&&scene.includes('this.textureAlphaMaskCache.set(cacheKey, mask)'),'máscaras alfa não são pré-calculadas para evitar leitura de canvas por pixel');
 expect(scene.includes("registerSolidMask(this.fountain, 'city_fountain'")&&scene.includes("label: 'Marco de Senda'")&&scene.includes("registerSolidMask(image, 'iso_city_wall'"),'fonte, Marco ou muralhas não usam máscaras opacas');
@@ -297,6 +382,8 @@ expect(preload.includes('PLAYER_DIRECTION_ROWS')&&preload.includes('start=row*4,
 expect(characterSelect.includes("this.selectedAppearance='warrior_m'")&&characterSelect.includes("this.registry.set('selectedAppearance'")&&characterSelect.includes("playerTextureKey(id,'base')"),'tela de novo jogo não permite escolher as seis aparências');
 expect(!/heritage|negro|negra|asiát|caucas/i.test(`${playerAppearance}\n${characterSelect}`),'menu ou modelo de aparência ainda expõe rótulos étnicos');
 expect(player.includes('facingFromVector(dx,dy')&&player.includes('appearanceId:this.appearanceId')&&player.includes('setEquipmentVisual(slots={})'),'jogador não salva aparência, quantiza oito direções ou reage ao equipamento');
+expect(abilitySystem.includes('upRight:[diagonal,-diagonal]')&&abilitySystem.includes('downLeft:[-diagonal,diagonal]'),'habilidade de mobilidade não acompanha as oito direções do jogador');
+expect(inventoryPanel.includes("idleFrameForFacing('down')")&&!inventoryPanel.includes('this.player.getIdleFrame()'),'inventário não fixa o retrato frontal do estado atual');
 expect(equipment.includes('item.allowedClass===this.player.characterClass')&&equipment.includes('this.player.setEquipmentVisual?.(this.slots)'),'restrição de arma ou aparência equipada não está ligada ao inventário');
 expect(itemsCatalog.includes("iron_sword:{id:'iron_sword'")&&itemsCatalog.includes("allowedClass:'warrior'")&&itemsCatalog.includes("apprentice_staff:{id:'apprentice_staff'")&&itemsCatalog.includes("allowedClass:'mage'")&&itemsCatalog.includes("hunter_bow:{id:'hunter_bow'")&&itemsCatalog.includes("allowedClass:'ranger'"),'espada/cajado/arco não possuem restrições corretas de classe');
 for(const appearanceId of appearances){
@@ -366,11 +453,31 @@ const residentStats=alphaCellStats('assets/images/characters/npcs/isometric/resi
 expect(residentStats.length===32&&residentStats.every(cell=>cell.height>=198&&cell.height<=206),'morador não mantém altura e baseline consistentes nos 32 quadros');
 expect(residentStats.every(cell=>(cell.components[1]??0)<10),'morador ainda possui fragmento desconectado de outro quadro');
 expect(scene.includes("residentRoute, 106")&&scene.includes("travelerRoute, 102"),'morador e viajante ainda estão maiores que os NPCs fixos');
-for(const relative of ['assets/images/characters/player/mage_f_weapon.png','assets/images/characters/player/mage_f_weapon_armor.png']){
+for(const relative of [
+  'assets/images/characters/player/mage_f_armor.png',
+  'assets/images/characters/player/mage_f_weapon.png',
+  'assets/images/characters/player/mage_f_weapon_armor.png',
+  'assets/images/characters/player/ranger_m_base.png',
+  'assets/images/characters/player/ranger_m_armor.png',
+  'assets/images/characters/player/ranger_m_weapon.png',
+  'assets/images/characters/player/warrior_f_armor.png',
+  'assets/images/characters/player/warrior_m_weapon.png'
+]){
   const stats=alphaCellStats(relative,96,96);
-  expect(stats.length===32&&stats.every(cell=>cell.height>=82&&cell.height<=86),`estado da maga perdeu escala/baseline: ${relative}`);
-  expect(stats.every(cell=>(cell.components[1]??0)===0),`estado da maga possui halo ou fragmento separado: ${relative}`);
+  expect(stats.length===32&&stats.every(cell=>cell.height>=82&&cell.height<=86),`estado do jogador perdeu escala/baseline: ${relative}`);
+  expect(stats.every(cell=>(cell.components[1]??0)<3),`estado do jogador possui halo ou fragmento separado: ${relative}`);
 }
+
+const hudFrame='assets/images/ui/hud/bottom_hud_frame.png';
+expect(exists(hudFrame),'moldura artística da barra inferior está ausente');
+if(exists(hudFrame)){
+  const d=pngDimensions(hudFrame);
+  expect(d.width===960&&d.height===154,'moldura da barra inferior não preserva o canvas 960x154');
+  expect(pngColorType(hudFrame)===6,'moldura da barra inferior não possui transparência RGBA');
+}
+expect(preload.includes("this.load.image('bottom_hud_frame'")&&bottomBar.includes("scene.add.image(0,0,'bottom_hud_frame')"),'arte da barra inferior não está integrada ao preload/Phaser');
+expect(bottomBar.includes('for(let index=0;index<8;index++)')&&bottomBar.includes("this.slotTexts[3].setText('ESPAÇO\\nATAQUE\\nBÁSICO')"),'barra inferior não reserva exatamente oito habilidades/comandos');
+expect(bottomBar.includes('this.hpOrb.setEndAngle(-90+360*healthRatio)')&&bottomBar.includes('this.manaOrb.setEndAngle(-90+360*manaRatio)'),'HP e Mana não diminuem visualmente com os valores reais');
 for(const direction of ['south:0','southWest:1','west:2','northWest:3','north:4','northEast:5','east:6','southEast:7']){
   expect(npc.includes(direction),`mapeamento direcional ausente: ${direction}`);
 }
@@ -415,13 +522,21 @@ expect(exists('assets/images/characters/npcs/resident.png')&&exists('assets/imag
 expect(preload.includes("this.load.spritesheet('resident'")&&preload.includes("this.load.spritesheet('traveler'"),'trabalhadores da fazenda não estão no preload');
 for(const relative of [
   'assets/images/characters/ambient/elder_feeder.png',
+  'assets/images/characters/player.png',
+  'assets/images/characters/player_outline_gold.png',
   'assets/images/environment/city/city_grass.png',
   'assets/images/environment/city/city_pavement.png',
   'assets/images/environment/city/city_wall_horizontal.png',
   'assets/images/environment/city/city_wall_vertical.png',
   'assets/images/environment/city/city_tower.png',
   'assets/images/environment/city/gate_east.png',
-  'assets/images/environment/city/gate_south.png'
+  'assets/images/environment/city/gate_south.png',
+  'assets/images/environment/city/props/city_well.png',
+  'assets/images/environment/city/props/city_well_detailed.png',
+  'assets/images/environment/buildings/blacksmith_smoke.png',
+  'assets/images/environment/isometric/isometric_city_wall_gate_join.png',
+  'assets/images/environment/isometric/isometric_city_wall_half_left.png',
+  'assets/images/environment/isometric/isometric_city_wall_half_right.png'
 ])expect(!exists(relative),`asset 2D urbano substituído ainda existe: ${relative}`);
 expect(!exists('assets/source'),'pasta assets/source não usada ainda existe');
 expect(!exists('ROUND8_MANIFEST.txt'),'manifesto legado do Round 8 ainda existe');
@@ -438,4 +553,4 @@ if(issues.length){
   process.exit(1);
 }
 
-console.log('PROJECT_AUDIT_OK walls=4natural-corners gates=alpha-pillars+center-only collision=opaque-sprites+substeps ground=refined+16sway residential=4paved-yards artisan=business-row heroes=6x4statesx8dirs equipment=female-mage-clean+class-locked occlusion=48outlines walkers=common-scale+artifact-free elder=decode-safe ambient=failure-safe assets=runtime-clean scripts=consolidated');
+console.log('PROJECT_AUDIT_OK movement=6heroesx2gates contact=opaque-feet camera=north-margin viewport=fit inventory=front npc-prompt=unified hud=8slots+dynamic-orbs sprites=8clean-states walls=4natural-corners gates=center-only occlusion=48outlines assets=runtime-clean');

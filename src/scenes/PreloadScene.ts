@@ -89,6 +89,7 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('npc_key_t','assets/images/ui/npc_interaction/keycap_t.png');
     this.load.image('npc_icon_talk','assets/images/ui/npc_interaction/icon_talk.png');
     this.load.image('npc_icon_shop','assets/images/ui/npc_interaction/icon_shop.png');
+    this.load.image('bottom_hud_frame','assets/images/ui/hud/bottom_hud_frame.png');
     this.load.image('dialogue_body_panel','assets/images/ui/dialogue/dialogue_body_panel.png');
     this.load.image('dialogue_header_bar','assets/images/ui/dialogue/dialogue_header_bar.png');
     this.load.image('dialogue_portrait_frame','assets/images/ui/dialogue/dialogue_portrait_frame.png');

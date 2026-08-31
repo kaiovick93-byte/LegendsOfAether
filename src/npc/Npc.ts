@@ -61,68 +61,48 @@ export class Npc extends Phaser.GameObjects.Container{
 
  createInteractionUi(){
   const scene=this.scene;
-  // Cartões compactos à direita do personagem: a leitura lembra um comando
-  // de RPG, sem cobrir o rosto do NPC ou fundir duas ações em uma só placa.
-  this.interactionUi=scene.add.container(120,-48).setAlpha(0).setVisible(false);
-
-  this.nameBadge=scene.add.container(0,-47);
-  this.namePanel=this.makePromptPanel(204,30,7,0x0b1322,0xb99155);
-  this.nameText=scene.add.text(0,-5,this.npcName,{
-   fontFamily:'Georgia, serif',fontSize:12,color:'#f4dcaa',fontStyle:'bold',
-   stroke:'#070b12',strokeThickness:2,align:'center'
-  }).setOrigin(.5);
-  this.roleText=scene.add.text(0,8,this.npcRole||'',{
-   fontFamily:'Georgia, serif',fontSize:8,color:'#b9c3d1',fontStyle:'italic',
+  // Nome, função e comandos compartilham a mesma moldura. A placa usa a arte
+  // do antigo “F — Conversar”, mas agora o nome fica discretamente acima dela
+  // sem criar um segundo cartão flutuante.
+  this.interactionUi=scene.add.container(122,-55).setAlpha(0).setVisible(false);
+  this.interactionPanel=scene.add.image(0,0,'npc_prompt_panel').setDisplaySize(252,81);
+  this.nameText=scene.add.text(0,-27,this.npcName,{
+   fontFamily:'Georgia, serif',fontSize:11,color:'#e8cf96',fontStyle:'bold',
    stroke:'#070b12',strokeThickness:1,align:'center'
   }).setOrigin(.5);
-  this.nameBadge.add([this.namePanel,this.nameText,this.roleText]);
-  this.interactionUi.add(this.nameBadge);
+  this.roleText=scene.add.text(0,-14,this.npcRole||'',{
+   fontFamily:'Georgia, serif',fontSize:7,color:'#aeb8c8',fontStyle:'italic',
+   stroke:'#070b12',strokeThickness:1,align:'center'
+  }).setOrigin(.5);
+  this.interactionUi.add([this.interactionPanel,this.nameText,this.roleText]);
 
-  const primary=this.makeInteractionRow('F','Conversar',-10);
+  const primary=this.makeInteractionRow('F','Conversar','talk',18);
   this.primaryAction=primary.container;
   this.primaryKey=primary.keycap;
+  this.primaryIcon=primary.icon;
   this.primaryText=primary.label;
   this.interactionUi.add(this.primaryAction);
 
-  const secondary=this.makeInteractionRow('T','Loja',26);
+  const secondary=this.makeInteractionRow('T','Loja','shop',31);
   this.secondaryAction=secondary.container.setVisible(false);
   this.secondaryKey=secondary.keycap;
+  this.secondaryIcon=secondary.icon;
   this.secondaryText=secondary.label;
   this.interactionUi.add(this.secondaryAction);
 
   this.add(this.interactionUi);
  }
 
- makePromptPanel(width,height,radius=7,fill=0x0b1322,stroke=0x7f8998){
-  const g=this.scene.add.graphics();
-  g.fillStyle(0x02050b,.34).fillRoundedRect(-width/2+2,-height/2+3,width,height,radius);
-  g.fillStyle(fill,.97).fillRoundedRect(-width/2,-height/2,width,height,radius);
-  g.lineStyle(1.4,stroke,.92).strokeRoundedRect(-width/2,-height/2,width,height,radius);
-  g.lineStyle(1,0x263247,.9).strokeRoundedRect(-width/2+3,-height/2+3,width-6,height-6,Math.max(3,radius-2));
-  return g;
- }
-
- makeInteractionRow(key,label,y){
+ makeInteractionRow(key,label,type,y){
   const container=this.scene.add.container(0,y);
-  const panel=this.makePromptPanel(204,32,7,0x080f1d,0x657186);
-  const keycap=this.makeKeycap(key,-82,0);
-  const bullet=this.scene.add.circle(-57,0,2.2,0xd7b56d,1);
+  const keycap=this.scene.add.image(-92,0,key==='T'?'npc_key_t':'npc_key_f').setDisplaySize(23,23);
+  const icon=this.scene.add.image(-64,0,type==='shop'?'npc_icon_shop':'npc_icon_talk').setDisplaySize(19,19).setAlpha(.9);
   const text=this.scene.add.text(-48,0,label,{
-   fontFamily:'Georgia, serif',fontSize:12,color:'#f2f4f7',fontStyle:'bold',
+   fontFamily:'Georgia, serif',fontSize:11,color:'#edf0f4',fontStyle:'bold',
    stroke:'#06090f',strokeThickness:1
   }).setOrigin(0,.5);
-  container.add([panel,keycap,bullet,text]);
-  return{container,keycap,label:text};
- }
-
- makeKeycap(key,x,y){
-  const c=this.scene.add.container(x,y);
-  const bg=this.scene.add.graphics();
-  bg.fillStyle(0x02040a,.55).fillRoundedRect(-11.5,-10.5,25,25,5);
-  bg.fillStyle(0xf7f7f2,1).fillRoundedRect(-12.5,-12.5,25,25,5);
-  bg.lineStyle(1.5,0xc7ced7,1).strokeRoundedRect(-12.5,-12.5,25,25,5);
-  const t=this.scene.add.text(0,0,key,{fontFamily:'Arial',fontSize:13,color:'#111927',fontStyle:'bold'}).setOrigin(.5);
-  c.add([bg,t]);return c;
+  container.add([keycap,icon,text]);
+  return{container,keycap,icon,label:text};
  }
 
  createConversationIcon(){
@@ -179,19 +159,19 @@ export class Npc extends Phaser.GameObjects.Container{
 
   const a=normalized[0];
   this.primaryText?.setText(a.label||'Conversar');
-  if(this.primaryKey){this.primaryKey.destroy();this.primaryKey=this.makeKeycap(a.key||'F',-82,0);this.primaryAction.addAt(this.primaryKey,1)}
+  this.primaryKey?.setTexture((a.key||'F')==='T'?'npc_key_t':'npc_key_f');
+  this.primaryIcon?.setTexture(a.type==='shop'?'npc_icon_shop':'npc_icon_talk');
 
   const b=normalized[1];
   this.secondaryAction?.setVisible(!!b);
   if(b){
    this.secondaryText?.setText(b.label||'Ação');
-   if(this.secondaryKey){this.secondaryKey.destroy();this.secondaryKey=this.makeKeycap(b.key||'T',-82,0);this.secondaryAction.addAt(this.secondaryKey,1)}
-   this.nameBadge?.setY(-47);
-   this.primaryAction?.setY(-10);
-   this.secondaryAction?.setY(26);
+   this.secondaryKey?.setTexture((b.key||'T')==='F'?'npc_key_f':'npc_key_t');
+   this.secondaryIcon?.setTexture(b.type==='shop'?'npc_icon_shop':'npc_icon_talk');
+   this.primaryAction?.setY(8);
+   this.secondaryAction?.setY(30);
   }else{
-   this.nameBadge?.setY(-30);
-   this.primaryAction?.setY(7);
+   this.primaryAction?.setY(20);
   }
  }
 
@@ -205,16 +185,16 @@ export class Npc extends Phaser.GameObjects.Container{
  showInteractionUi(){
   if(!this.interactionUi)return;
   this.interactionTween?.stop();
-  this.interactionUi.setVisible(true).setAlpha(0).setX(114);
-  this.interactionTween=this.scene.tweens.add({targets:this.interactionUi,alpha:1,x:120,duration:145,ease:'Sine.Out'});
+  this.interactionUi.setVisible(true).setAlpha(0).setX(116);
+  this.interactionTween=this.scene.tweens.add({targets:this.interactionUi,alpha:1,x:122,duration:145,ease:'Sine.Out'});
  }
 
  hideInteractionUi(immediate=false){
   if(!this.interactionUi)return;
   this.interactionTween?.stop();
-  if(immediate){this.interactionUi.setAlpha(0).setVisible(false).setX(114);return}
+  if(immediate){this.interactionUi.setAlpha(0).setVisible(false).setX(116);return}
   this.interactionTween=this.scene.tweens.add({
-   targets:this.interactionUi,alpha:0,x:114,duration:115,ease:'Sine.In',
+   targets:this.interactionUi,alpha:0,x:116,duration:115,ease:'Sine.In',
    onComplete:()=>this.interactionUi?.setVisible(false)
   });
  }
