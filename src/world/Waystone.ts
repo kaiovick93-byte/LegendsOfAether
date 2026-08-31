@@ -25,11 +25,14 @@ export class Waystone extends Phaser.GameObjects.Container{
     scene.add.existing(this);
     this.setDepth(30);
 
-    // Colisão física apenas na base do monumento. O topo permanece visual,
-    // permitindo que o jogador circule naturalmente ao redor do Marco de Senda.
-    this.blocker=scene.add.rectangle(x,y+4,58,38,0x000000,0).setDepth(0);
-    scene.physics.add.existing(this.blocker,true);
-    if(scene.player) this.playerCollider=scene.physics.add.collider(scene.player,this.blocker);
+    // A cidade isométrica usa a máscara alfa completa do próprio sprite e não
+    // deve receber um segundo retângulo invisível. As cenas cartesianas antigas
+    // mantêm o pequeno bloqueio de base até adotarem o mesmo movimento lógico.
+    if(!scene.usesLogicalAlphaCollision){
+      this.blocker=scene.add.rectangle(x,y+4,58,38,0x000000,0).setDepth(0);
+      scene.physics.add.existing(this.blocker,true);
+      if(scene.player) this.playerCollider=scene.physics.add.collider(scene.player,this.blocker);
+    }
     scene.events.once('shutdown',()=>{
       try{this.playerCollider?.destroy()}catch(e){}
       try{this.blocker?.destroy()}catch(e){}

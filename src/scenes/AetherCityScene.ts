@@ -1,4 +1,4 @@
-// @ts-nocheck
+ // @ts-nocheck
 import {Player} from '../entities/Player';
 import {Inventory} from '../inventory/Inventory';
 import {EquipmentManager} from '../equipment/EquipmentManager';
@@ -24,8 +24,8 @@ import {Waystone} from '../world/Waystone';
  *
  * A cidade virou uma cena própria. Isso permite uma grade lógica real sem
  * alterar a física cartesiana dos Arredores, Fazenda, Floresta, Caverna e
- * Castelo. Toda colisão urbana é calculada em (u,v); arte e telhados não
- * participam do bloqueio.
+ * Castelo. O deslocamento continua em (u,v), mas o contato urbano consulta os
+ * pixels opacos das imagens e ignora todo o padding transparente.
  */
 export class AetherCityScene extends Phaser.Scene {
   static readonly TILE_WIDTH = 96;
@@ -37,6 +37,8 @@ export class AetherCityScene extends Phaser.Scene {
   static readonly ORIGIN_Y = 250;
   static readonly WORLD_WIDTH = 3200;
   static readonly WORLD_HEIGHT = 1900;
+  static readonly GATE_MIN = 13.42;
+  static readonly GATE_MAX = 14.58;
 
   constructor() {
     super('AetherCityScene');
@@ -45,12 +47,11 @@ export class AetherCityScene extends Phaser.Scene {
   create() {
     this.switching = false;
     this.dialogueOpen = false;
-    this.blockedRects = [];
-    this.blockedCircles = [];
-    this.blockedScreenEllipses = [];
-    this.blockedBuildingMasks = [];
+    this.usesLogicalAlphaCollision = true;
+    this.solidMasks = [];
+    this.playerCollisionMaskCache = new Map();
+    this.textureAlphaMaskCache = new Map();
     this.occluders = [];
-    this.fixedNpcLogical = [];
     this.cityActors = [];
     this.ambientActors = [];
     // Primeiro quadro já dentro da avenida: nenhuma torre encobre o herói.
@@ -156,14 +157,16 @@ export class AetherCityScene extends Phaser.Scene {
     const frame = texture === 'player-fallback' ? 0 : this.player.getIdleFrame();
     this.registry.set('playerTextureKey', texture);
     this.player.setTexture(texture, frame);
-    this.player.setOrigin(.5, .86).setScale(.78);
+    // As folhas de 96 px têm cerca de 80 px realmente opacos. Em 1,28x o
+    // corpo visível fica entre 98 e 107 px, a mesma faixa dos NPCs urbanos.
+    this.player.setOrigin(.5, .86).setScale(1.28);
     this.player.setVisible(true).setActive(true).setAlpha(1).clearTint();
     this.player.setCollideWorldBounds(false);
     this.player.body.setVelocity(0, 0);
     this.player.facing = this.entryFacing || 'down';
     this.player.playMove(false);
     if (!this.playerShadow?.active) {
-      this.playerShadow = this.add.ellipse(this.player.x, this.player.y + 4, 38, 16, 0x000000, .28);
+      this.playerShadow = this.add.ellipse(this.player.x, this.player.y + 5, 48, 18, 0x000000, .28);
     }
     this.createPlayerOcclusionOutline(texture, frame);
   }
@@ -286,56 +289,10 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   createCollisionPlan() {
-    const C = AetherCityScene;
-    const wall = 1.10;
-    const wallStart = C.CITY_MIN - wall / 2;
-    const wallEnd = C.CITY_MAX + wall / 2;
-
-    // A faixa coincide com toda a base visível da muralha. A versão anterior
-    // bloqueava só o eixo central (.48), deixando uma faixa caminhável dentro
-    // da própria pedra.
-    this.addBlockedRect(wallStart, wallStart, wall, wallEnd - wallStart, 'muralha noroeste');
-    this.addBlockedRect(wallStart, wallStart, wallEnd - wallStart, wall, 'muralha nordeste');
-
-    // Lateral leste (u=26) com vão central.
-    this.addBlockedRect(C.CITY_MAX - wall / 2, wallStart, wall, 12.02 - wallStart, 'muralha leste norte');
-    this.addBlockedRect(C.CITY_MAX - wall / 2, 15.98, wall, wallEnd - 15.98, 'muralha leste sul');
-    this.addBlockedRect(25.05, 11.50, 1.80, 1.72, 'torre norte do Portão Leste');
-    this.addBlockedRect(25.05, 14.78, 1.80, 1.72, 'torre sul do Portão Leste');
-
-    // Lateral sul (v=26) com vão central.
-    this.addBlockedRect(wallStart, C.CITY_MAX - wall / 2, 12.02 - wallStart, wall, 'muralha sul oeste');
-    this.addBlockedRect(15.98, C.CITY_MAX - wall / 2, wallEnd - 15.98, wall, 'muralha sul leste');
-    this.addBlockedRect(11.50, 25.05, 1.72, 1.80, 'torre oeste do Portão Sul');
-    this.addBlockedRect(14.78, 25.05, 1.72, 1.80, 'torre leste do Portão Sul');
-
-    // Os edifícios não recebem retângulos genéricos. A colisão é lida da
-    // opacidade real da faixa inferior de cada imagem em isBlocked().
-    const buildingPlan = this.getBuildingPlan();
-
-    // Obstáculos ilustrados usam a base visível em tela, não o quadrado
-    // transparente do PNG. Isso é especialmente importante para a fonte.
-    const fountain = this.project(14, 14);
-    this.addBlockedScreenEllipse(fountain.x + 9, fountain.y - 39, 69, 19, 'base desenhada da fonte');
-    const waystone = this.project(17.50, 17.80);
-    this.addBlockedScreenEllipse(waystone.x, waystone.y - 5, 42, 14, 'base do Marco de Senda');
-    // Só o tronco bloqueia, por todos os lados; a copa continua oclusora.
-    const tree = this.project(20.60, 19.40);
-    this.addBlockedScreenEllipse(tree.x, tree.y - 14, 14, 10, 'tronco da árvore do Marco');
-
-    this.cityBuildingRects = buildingPlan.map(({label, rect:[u,v,w,h]}) => ({label, u1:u, v1:v, u2:u+w, v2:v+h}));
-  }
-
-  addBlockedRect(u, v, width, height, label) {
-    this.blockedRects.push({u1: u, v1: v, u2: u + width, v2: v + height, label});
-  }
-
-  addBlockedCircle(u, v, radius, label) {
-    this.blockedCircles.push({u, v, radius, label});
-  }
-
-  addBlockedScreenEllipse(x, y, radiusX, radiusY, label) {
-    this.blockedScreenEllipses.push({x, y, radiusX, radiusY, label});
+    // A planta continua disponível para auditoria e rotas. Os volumes de
+    // colisão, porém, são registrados somente depois que cada sprite existe e
+    // usam seus pixels opacos; nenhum retângulo transparente participa.
+    this.cityBuildingRects = this.getBuildingPlan().map(({label, rect:[u,v,w,h]}) => ({label, u1:u, v1:v, u2:u+w, v2:v+h}));
   }
 
   createWallsAndGates() {
@@ -359,6 +316,9 @@ export class AetherCityScene extends Phaser.Scene {
       .setOrigin(.5, .5).setScale(gateTargetWidth / eastGateSource.width)
       .setDepth(this.depthAt(26, 14, .15));
     this.registerOccluder(this.eastGateSprite, 'iso_city_gate_east', east.y + 8);
+    this.registerSolidMask(this.eastGateSprite, 'iso_city_gate_east', {
+      label: 'Portão Leste', sourceMinY: .56, minHits: 2
+    });
 
     const south = this.project(14.0, 26.03);
     const southGateSource = this.textures.get('iso_city_gate').getSourceImage();
@@ -366,6 +326,9 @@ export class AetherCityScene extends Phaser.Scene {
       .setOrigin(.5, .5).setScale(gateTargetWidth / southGateSource.width)
       .setDepth(this.depthAt(14, 26, .15));
     this.registerOccluder(this.southGateSprite, 'iso_city_gate', south.y + 8);
+    this.registerSolidMask(this.southGateSprite, 'iso_city_gate', {
+      label: 'Portão Sul', sourceMinY: .56, minHits: 2
+    });
   }
 
   addWallRun(fixedAxis, fixed, start, end, flip) {
@@ -387,19 +350,22 @@ export class AetherCityScene extends Phaser.Scene {
         .setDepth(this.depthAt(u, v, .08));
       this.wallSprites.push(image);
       this.registerOccluder(image, 'iso_city_wall', p.y + 7, {behindMargin: 8});
+      this.registerSolidMask(image, 'iso_city_wall', {label: 'muralha', minHits: 2});
     }
   }
 
   createBuildings() {
     this.cityBuildings = [];
-    this.blockedBuildingMasks = [];
     for (const building of this.getBuildingPlan()) {
       const image = this.addIsoImage(building.key, building.u, building.v, building.height);
       if (building.flipX) image.setFlipX(true);
       const entry = {...building, image};
       this.cityBuildings.push(entry);
-      this.blockedBuildingMasks.push(entry);
       this.registerOccluder(image, building.key, image.y - 2, {behindMargin: 10});
+      this.registerSolidMask(image, building.key, {
+        label: building.label, mode: 'facade', baseY: image.y - 2,
+        behindMargin: 10, sourceMinY: building.collisionBand, minHits: 2
+      });
       if (building.smoke) this.createChimneySmoke(entry);
     }
   }
@@ -435,6 +401,7 @@ export class AetherCityScene extends Phaser.Scene {
     // malha contínua até todas as fachadas, sem postes, cercas ou caixotes.
     this.fountain = this.addIsoImage('city_fountain', 14, 14, 176, .03);
     this.registerOccluder(this.fountain, 'city_fountain', this.fountain.y - 3);
+    this.registerSolidMask(this.fountain, 'city_fountain', {label: 'fonte', minHits: 2});
 
     const u = 20.60, v = 19.40;
     // Compensa o padding inferior do PNG para o tronco pousar no centro exato
@@ -442,6 +409,9 @@ export class AetherCityScene extends Phaser.Scene {
     const tree = this.addIsoImage('city_tree', u, v, 184, .02, 13);
     this.cityTree = tree;
     this.registerOccluder(tree, 'city_tree', tree.y - 4);
+    this.registerSolidMask(tree, 'city_tree', {
+      label: 'tronco da árvore do Marco', sourceMinY: .55, minHits: 2
+    });
   }
 
   addIsoImage(key, u, v, targetHeight, depthOffset = 0, screenYOffset = 0) {
@@ -464,6 +434,160 @@ export class AetherCityScene extends Phaser.Scene {
     };
     this.occluders.push(entry);
     return entry;
+  }
+
+  registerSolidMask(image, key, options = {}) {
+    if (!image || !key || !this.textures.exists(key)) return null;
+    const entry = {
+      image, key,
+      label: options.label ?? key,
+      frame: options.frame,
+      mode: options.mode ?? 'silhouette',
+      baseY: options.baseY,
+      behindMargin: options.behindMargin ?? 7,
+      sourceMinY: options.sourceMinY ?? 0,
+      sourceMaxY: options.sourceMaxY ?? 1,
+      alphaThreshold: options.alphaThreshold ?? 36,
+      minHits: options.minHits ?? 2,
+      worldX: options.worldX,
+      worldY: options.worldY,
+      scaleX: options.scaleX,
+      scaleY: options.scaleY,
+      originX: options.originX,
+      originY: options.originY,
+      flipX: options.flipX,
+      active: options.active
+    };
+    this.solidMasks.push(entry);
+    return entry;
+  }
+
+  resolveSolidValue(value, fallback) {
+    if (typeof value === 'function') return value();
+    return value ?? fallback;
+  }
+
+  getTextureAlphaMask(key, frameName = '__BASE') {
+    const texture = this.textures.get(key);
+    const frame = texture?.get(frameName);
+    if (!frame) return null;
+    const cacheKey = `${key}:${String(frame.name)}`;
+    if (this.textureAlphaMaskCache.has(cacheKey)) return this.textureAlphaMaskCache.get(cacheKey);
+    const width = frame.width, height = frame.height;
+    const source = frame.source?.image ?? texture.getSourceImage();
+    const cut = frame.data?.cut ?? {x:0, y:0, w:width, h:height};
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const context = canvas.getContext('2d', {willReadFrequently: true});
+    context.clearRect(0, 0, width, height);
+    context.drawImage(source, cut.x, cut.y, cut.w, cut.h, 0, 0, width, height);
+    const rgba = context.getImageData(0, 0, width, height).data;
+    const alpha = new Uint8Array(width * height);
+    for (let index = 0, pixel = 3; index < alpha.length; index++, pixel += 4) alpha[index] = rgba[pixel];
+    const mask = {width, height, alpha};
+    this.textureAlphaMaskCache.set(cacheKey, mask);
+    return mask;
+  }
+
+  getPlayerCollisionSamples() {
+    const frameNumber = Number.isFinite(Number(this.player?.frame?.name))
+      ? Number(this.player.frame.name)
+      : this.player.getIdleFrame();
+    // Armas e cajados não alargam o corpo físico. A máscara corporal vem da
+    // folha-base da mesma identidade e do mesmo quadro direcional.
+    const key = `player-${this.player.appearanceId}-base`;
+    if (!this.textures.exists(key)) return [];
+    const cacheKey = `${key}:${frameNumber}`;
+    if (this.playerCollisionMaskCache.has(cacheKey)) return this.playerCollisionMaskCache.get(cacheKey);
+    const mask = this.getTextureAlphaMask(key, frameNumber);
+    const width = mask?.width ?? 96;
+    const height = mask?.height ?? 96;
+    const samples = [];
+    const step = 3;
+    for (let y = 1; y < height; y += step) {
+      for (let x = 1; x < width; x += step) {
+        const alpha = mask?.alpha[y * width + x] ?? 0;
+        if (alpha >= 64) {
+          samples.push({
+            x: x + step / 2 - width * this.player.originX,
+            y: y + step / 2 - height * this.player.originY
+          });
+        }
+      }
+    }
+    this.playerCollisionMaskCache.set(cacheKey, samples);
+    return samples;
+  }
+
+  getSolidGeometry(entry) {
+    const image = entry.image;
+    if (!image?.active || this.resolveSolidValue(entry.active, true) === false) return null;
+    const texture = this.textures.get(entry.key);
+    const frameName = entry.frame ?? image.frame?.name ?? '__BASE';
+    const frame = texture?.get(frameName);
+    if (!frame) return null;
+    const width = frame.width;
+    const height = frame.height;
+    const scaleX = Math.abs(this.resolveSolidValue(entry.scaleX, image.scaleX ?? 1)) || 1;
+    const scaleY = Math.abs(this.resolveSolidValue(entry.scaleY, image.scaleY ?? 1)) || 1;
+    const worldX = this.resolveSolidValue(entry.worldX, image.x);
+    const worldY = this.resolveSolidValue(entry.worldY, image.y);
+    const originX = this.resolveSolidValue(entry.originX, image.originX ?? .5);
+    const originY = this.resolveSolidValue(entry.originY, image.originY ?? .5);
+    const displayWidth = width * scaleX;
+    const displayHeight = height * scaleY;
+    return {
+      frameName, width, height, scaleX, scaleY, worldX, worldY,
+      left: worldX - displayWidth * originX,
+      top: worldY - displayHeight * originY,
+      right: worldX + displayWidth * (1 - originX),
+      bottom: worldY + displayHeight * (1 - originY),
+      flipX: !!this.resolveSolidValue(entry.flipX, image.flipX)
+    };
+  }
+
+  isBlockedBySolidMasks(u, v) {
+    if (!this.solidMasks?.length) return false;
+    const foot = this.project(u, v);
+    const playerSamples = this.getPlayerCollisionSamples();
+    if (!playerSamples.length) return false;
+    const scaleX = Math.abs(this.player.scaleX) || 1;
+    const scaleY = Math.abs(this.player.scaleY) || 1;
+    const worldSamples = playerSamples.map(sample => ({
+      x: foot.x + sample.x * scaleX,
+      y: foot.y + sample.y * scaleY,
+      bodyY: sample.y * scaleY
+    }));
+    const playerLeft = Math.min(...worldSamples.map(point => point.x));
+    const playerRight = Math.max(...worldSamples.map(point => point.x));
+    const playerTop = Math.min(...worldSamples.map(point => point.y));
+    const playerBottom = Math.max(...worldSamples.map(point => point.y));
+
+    for (const entry of this.solidMasks) {
+      const geometry = this.getSolidGeometry(entry);
+      if (!geometry) continue;
+      const targetMask = this.getTextureAlphaMask(entry.key, geometry.frameName);
+      if (!targetMask) continue;
+      if (playerRight < geometry.left || playerLeft >= geometry.right ||
+          playerBottom < geometry.top || playerTop >= geometry.bottom) continue;
+      const behindFacade = entry.mode === 'facade' && foot.y < entry.baseY - entry.behindMargin;
+      let hits = 0;
+      for (const point of worldSamples) {
+        // Atrás de uma fachada, somente a faixa dos pés encontra a base. A
+        // parte superior continua responsável pela oclusão, não por bloqueio.
+        if (behindFacade && point.bodyY < -20) continue;
+        if (point.x < geometry.left || point.x >= geometry.right ||
+            point.y < geometry.top || point.y >= geometry.bottom) continue;
+        let sourceX = Math.floor((point.x - geometry.left) / geometry.scaleX);
+        const sourceY = Math.floor((point.y - geometry.top) / geometry.scaleY);
+        if (geometry.flipX) sourceX = geometry.width - 1 - sourceX;
+        if (sourceY < geometry.height * entry.sourceMinY ||
+            sourceY >= geometry.height * entry.sourceMaxY) continue;
+        const alpha = targetMask.alpha[sourceY * targetMask.width + sourceX] ?? 0;
+        if (alpha >= entry.alphaThreshold && ++hits >= entry.minHits) return true;
+      }
+    }
+    return false;
   }
 
   createNpcs() {
@@ -496,7 +620,19 @@ export class AetherCityScene extends Phaser.Scene {
       npc.isGateGuard = !!options.gateGuard;
       npc.setDepth(this.depthAt(u, v, npc.isGateGuard ? .34 : .06));
       this.cityActors.push(npc);
-      this.fixedNpcLogical.push({u, v, radius: .28, name});
+      if (npc.sprite && npc.textureKey) {
+        this.registerSolidMask(npc.sprite, npc.isoBaseTexture ?? npc.textureKey, {
+          label: name,
+          frame: '__BASE',
+          worldX: () => npc.x + (npc.sprite?.x ?? 0),
+          worldY: () => npc.y + (npc.sprite?.y ?? 0),
+          scaleX: () => npc.isoDisplayScale || Math.abs(npc.sprite?.scaleX) || 1,
+          scaleY: () => npc.isoDisplayScale || Math.abs(npc.sprite?.scaleY) || 1,
+          originX: .5, originY: 1,
+          flipX: () => !!npc.sprite?.flipX,
+          minHits: 2
+        });
+      }
       if (texture === 'merchant') this.merchant = npc;
       if (texture === 'blacksmith') this.blacksmith = npc;
       if (texture === 'healer') this.healer = npc;
@@ -514,8 +650,8 @@ export class AetherCityScene extends Phaser.Scene {
     const residentRoute = [[10.80,20.90],[9.80,21.20],[8.40,21.20],[6.60,21.20],[6.60,23.70],[6.60,24.70],[6.60,23.70],[6.60,21.20],[4.70,21.20],[3.00,21.20],[4.70,21.20],[6.60,21.20],[6.60,19.00],[6.60,17.30],[8.10,17.00],[10.00,17.20],[10.70,18.80]];
     const travelerRoute = [[9.8,11.5],[10.0,10.0],[11.8,9.0],[13.5,9.2],[15.0,9.0],[15.4,10.2],[15.0,11.4],[14.0,12.0],[12.4,11.8],[11.0,11.4]];
     this.walkers = [
-      this.createWalker('resident', 'resident_iso_walk', 'Tomas Belmon', 'Morador de Aether', ['A praça ainda é o lugar mais seguro de Aether.'], residentRoute, 110, 44, 700, 'portrait_tomas'),
-      this.createWalker('traveler', 'traveler_iso_walk', 'Darian Kestrel', 'Viajante', ['Ouvi rumores sobre o castelo.'], travelerRoute, 112, 50, 1100, 'portrait_darian')
+      this.createWalker('resident', 'resident_iso_walk', 'Tomas Belmon', 'Morador de Aether', ['A praça ainda é o lugar mais seguro de Aether.'], residentRoute, 106, 44, 700, 'portrait_tomas'),
+      this.createWalker('traveler', 'traveler_iso_walk', 'Darian Kestrel', 'Viajante', ['Ouvi rumores sobre o castelo.'], travelerRoute, 102, 50, 1100, 'portrait_darian')
     ];
     this.cityActors.push(...this.walkers);
   }
@@ -722,6 +858,16 @@ export class AetherCityScene extends Phaser.Scene {
         worldX: center.x, worldY: waystoneY,
         originX: this.waystone.sprite.originX, originY: this.waystone.sprite.originY
       });
+      this.registerSolidMask(this.waystone.sprite, 'waystone_dormant', {
+        label: 'Marco de Senda',
+        worldX: () => this.waystone.x + (this.waystone.sprite?.x ?? 0),
+        worldY: () => this.waystone.y + (this.waystone.sprite?.y ?? 0),
+        originX: () => this.waystone.sprite?.originX ?? .5,
+        originY: () => this.waystone.sprite?.originY ?? .88,
+        scaleX: () => Math.abs(this.waystone.sprite?.scaleX) || 1,
+        scaleY: () => Math.abs(this.waystone.sprite?.scaleY) || 1,
+        minHits: 2
+      });
     }
   }
 
@@ -789,8 +935,13 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   tryMove(du, dv) {
-    const u = this.logicalPlayer.u + du, v = this.logicalPlayer.v + dv;
-    if (!this.isBlocked(u, v, this.logicalPlayer.radius)) {
+    // Subpassos menores que dois pixels de tela evitam atravessar uma faixa
+    // opaca fina quando o navegador entrega um quadro mais longo.
+    const steps = Math.max(1, Math.ceil(Math.max(Math.abs(du), Math.abs(dv)) / .035));
+    const stepU = du / steps, stepV = dv / steps;
+    for (let index = 0; index < steps; index++) {
+      const u = this.logicalPlayer.u + stepU, v = this.logicalPlayer.v + stepV;
+      if (this.isBlocked(u, v, this.logicalPlayer.radius)) break;
       this.logicalPlayer.u = u;
       this.logicalPlayer.v = v;
     }
@@ -802,8 +953,8 @@ export class AetherCityScene extends Phaser.Scene {
     // margem 3.12 impede entrar na pedra atrás da ferraria e do mercado.
     const innerMin = 3.12;
     const innerMax = 25.35;
-    const gateMin = 13.22;
-    const gateMax = 14.78;
+    const gateMin = C.GATE_MIN;
+    const gateMax = C.GATE_MAX;
     const insideEastGate = v - radius > gateMin && v + radius < gateMax;
     const insideSouthGate = u - radius > gateMin && u + radius < gateMax;
 
@@ -820,65 +971,7 @@ export class AetherCityScene extends Phaser.Scene {
     const C = AetherCityScene;
     if (u < .68 + radius || v < .68 + radius || u > C.MAP_SIZE - .68 - radius || v > C.MAP_SIZE - .68 - radius) return true;
     if (this.isOutsideCityWallEnvelope(u, v, radius)) return true;
-    for (const rect of this.blockedRects) {
-      const nearestU = Phaser.Math.Clamp(u, rect.u1, rect.u2);
-      const nearestV = Phaser.Math.Clamp(v, rect.v1, rect.v2);
-      if (Math.hypot(u - nearestU, v - nearestV) < radius) return true;
-    }
-    for (const circle of this.blockedCircles) if (Math.hypot(u - circle.u, v - circle.v) < radius + circle.radius) return true;
-    const foot = this.project(u, v);
-    const playerPadX = radius * AetherCityScene.TILE_WIDTH / Math.SQRT2;
-    const playerPadY = radius * AetherCityScene.TILE_HEIGHT / Math.SQRT2;
-    for (const ellipse of this.blockedScreenEllipses) {
-      const dx = (foot.x - ellipse.x) / (ellipse.radiusX + playerPadX);
-      const dy = (foot.y - ellipse.y) / (ellipse.radiusY + playerPadY);
-      if (dx * dx + dy * dy < 1) return true;
-    }
-    if (this.isBlockedByBuildingMask(u, v, radius)) return true;
-    for (const npc of this.fixedNpcLogical) if (Math.hypot(u - npc.u, v - npc.v) < radius + npc.radius) return true;
-    return false;
-  }
-
-  isBlockedByBuildingMask(u, v, radius) {
-    if (!this.blockedBuildingMasks?.length) return false;
-    const foot = this.project(u, v);
-    const spreadX = Math.max(8, radius * 42);
-    const spreadY = Math.max(4, radius * 18);
-    const footSamples = [[0,0],[-spreadX,0],[spreadX,0],[0,-spreadY],[0,spreadY]];
-    // Em aproximação frontal, cabeça e tronco contam para o contato visual.
-    // Atrás do prédio, somente os pés bloqueiam e a silhueta dourada assume.
-    const bodySamples = [[0,-62],[-10,-51],[10,-51],[-11,-37],[11,-37],[0,-23]];
-
-    for (const building of this.blockedBuildingMasks) {
-      const image = building.image;
-      if (!image?.active) continue;
-      const source = this.textures.get(building.key).getSourceImage();
-      const scaleX = Math.abs(image.scaleX) || 1;
-      const scaleY = Math.abs(image.scaleY) || 1;
-      const left = image.x - source.width * scaleX * image.originX;
-      const top = image.y - source.height * scaleY * image.originY;
-      const bandStart = source.height * (building.collisionBand ?? .64);
-
-      for (const [offsetX, offsetY] of footSamples) {
-        let sourceX = Math.floor((foot.x + offsetX - left) / scaleX);
-        const sourceY = Math.floor((foot.y + offsetY - top) / scaleY);
-        if (image.flipX) sourceX = source.width - 1 - sourceX;
-        if (sourceX < 0 || sourceX >= source.width || sourceY < bandStart || sourceY >= source.height) continue;
-        const alpha = this.textures.getPixelAlpha(sourceX, sourceY, building.key);
-        if (alpha !== null && alpha >= 24) return true;
-      }
-
-      if (foot.y < image.y - 8) continue;
-      for (const [offsetX, offsetY] of bodySamples) {
-        let sourceX = Math.floor((foot.x + offsetX - left) / scaleX);
-        const sourceY = Math.floor((foot.y + offsetY - top) / scaleY);
-        if (image.flipX) sourceX = source.width - 1 - sourceX;
-        if (sourceX < 0 || sourceX >= source.width || sourceY < 0 || sourceY >= source.height) continue;
-        const alpha = this.textures.getPixelAlpha(sourceX, sourceY, building.key);
-        if (alpha !== null && alpha >= 36) return true;
-      }
-    }
-    return false;
+    return this.isBlockedBySolidMasks(u, v);
   }
 
   updatePlayerProjection() {
@@ -982,8 +1075,9 @@ export class AetherCityScene extends Phaser.Scene {
 
   checkGateTransitions() {
     const {u, v} = this.logicalPlayer;
-    if (u > 26.58 && v > 13.22 && v < 14.78) this.exitCity('east');
-    else if (v > 26.58 && u > 13.22 && u < 14.78) this.exitCity('south');
+    const min = AetherCityScene.GATE_MIN, max = AetherCityScene.GATE_MAX;
+    if (u > 26.58 && v > min && v < max) this.exitCity('east');
+    else if (v > 26.58 && u > min && u < max) this.exitCity('south');
   }
 
   exitCity(gate) {

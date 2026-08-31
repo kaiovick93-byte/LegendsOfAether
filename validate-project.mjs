@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import {fileURLToPath} from 'node:url';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
@@ -11,6 +12,51 @@ const pngDimensions=relative=>{
   return {width:buffer.readUInt32BE(16),height:buffer.readUInt32BE(20)};
 };
 const pngColorType=relative=>fs.readFileSync(path.join(root,relative))[25];
+const decodeRgbaPng=relative=>{
+  const buffer=fs.readFileSync(path.join(root,relative));
+  const width=buffer.readUInt32BE(16),height=buffer.readUInt32BE(20);
+  if(buffer[24]!==8||buffer[25]!==6||buffer[28]!==0)throw new Error(`PNG RGBA não suportado: ${relative}`);
+  const chunks=[];
+  for(let offset=8;offset<buffer.length;){
+    const length=buffer.readUInt32BE(offset),type=buffer.toString('ascii',offset+4,offset+8);
+    if(type==='IDAT')chunks.push(buffer.subarray(offset+8,offset+8+length));
+    offset+=12+length;
+  }
+  const raw=zlib.inflateSync(Buffer.concat(chunks)),stride=width*4,data=Buffer.alloc(height*stride);
+  const paeth=(a,b,c)=>{const p=a+b-c,pa=Math.abs(p-a),pb=Math.abs(p-b),pc=Math.abs(p-c);return pa<=pb&&pa<=pc?a:pb<=pc?b:c};
+  let source=0;
+  for(let y=0;y<height;y++){
+    const filter=raw[source++],row=y*stride,previous=(y-1)*stride;
+    for(let x=0;x<stride;x++){
+      const left=x>=4?data[row+x-4]:0,up=y?data[previous+x]:0,upperLeft=y&&x>=4?data[previous+x-4]:0;
+      const predictor=filter===0?0:filter===1?left:filter===2?up:filter===3?Math.floor((left+up)/2):paeth(left,up,upperLeft);
+      data[row+x]=(raw[source++]+predictor)&255;
+    }
+  }
+  return{width,height,data};
+};
+const alphaCellStats=(relative,cellWidth,cellHeight)=>{
+  const png=decodeRgbaPng(relative),stats=[];
+  for(let row=0;row<png.height/cellHeight;row++)for(let column=0;column<png.width/cellWidth;column++){
+    const mask=new Uint8Array(cellWidth*cellHeight);
+    let minX=cellWidth,minY=cellHeight,maxX=-1,maxY=-1;
+    for(let y=0;y<cellHeight;y++)for(let x=0;x<cellWidth;x++){
+      const alpha=png.data[((row*cellHeight+y)*png.width+column*cellWidth+x)*4+3];
+      if(alpha>=24){mask[y*cellWidth+x]=1;minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y)}
+    }
+    const components=[];
+    for(let index=0;index<mask.length;index++)if(mask[index]===1){
+      let count=0;const stack=[index];mask[index]=2;
+      while(stack.length){const current=stack.pop(),x=current%cellWidth,y=Math.floor(current/cellWidth);count++;
+        for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!(dx||dy))continue;const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=cellWidth||ny>=cellHeight)continue;const next=ny*cellWidth+nx;if(mask[next]===1){mask[next]=2;stack.push(next)}}
+      }
+      components.push(count);
+    }
+    components.sort((a,b)=>b-a);
+    stats.push({width:maxX-minX+1,height:maxY-minY+1,components});
+  }
+  return stats;
+};
 const issues=[];
 const expect=(condition,message)=>{if(!condition)issues.push(message)};
 
@@ -90,7 +136,7 @@ if(exists(merchantShop)){
 expect(preload.includes("this.load.image('merchant_shop'")&&preload.includes("this.load.image('iso_city_pavement'"),'novas artes não usam as chaves estáveis do preload');
 expect(scene.includes("flipX:true")&&scene.includes("npc:[7.55,13.68]"),'mercado não está voltado para a praça com Aldren diante do balcão');
 expect(scene.includes('if (building.flipX) image.setFlipX(true)'),'espelhamento do mercado não está aplicado à arte');
-expect((scene.match(/if \(image\.flipX\) sourceX = source\.width - 1 - sourceX;/g)||[]).length>=3,'colisão alfa e oclusão não acompanham o mercado espelhado');
+expect(scene.includes('if (geometry.flipX) sourceX = geometry.width - 1 - sourceX')&&scene.includes('if (image.flipX) sourceX = source.width - 1 - sourceX'),'colisão alfa ou oclusão não acompanha sprites espelhados');
 expect(scene.includes("action: 'merchant_iso_action', height: 112, flipX: true")&&npc.includes('setFlipX(!!options.flipX)'),'Aldren e sua ação não estão orientados para a praça');
 
 // Corredor comercial e bairro residencial com vias próprias.
@@ -193,14 +239,14 @@ expect(scene.includes("east.y - 3, 'iso_city_gate_east'")&&scene.includes("south
 expect(scene.includes('const innerMin = 3.12')&&scene.includes('const innerMax = 25.35'),'envelope interno dos muros não está calibrado');
 
 // Portões: vão real único e retorno direcional no limite interno.
-expect(scene.includes('const gateMin = 13.22')&&scene.includes('const gateMax = 14.78'),'largura física dos arcos não está restrita');
+expect(scene.includes('static readonly GATE_MIN = 13.42')&&scene.includes('static readonly GATE_MAX = 14.58'),'largura física dos arcos não está restrita ao vão central');
 expect(scene.includes("this.logicalPlayer = {u: 25.02, v: 14, radius: .27}")&&scene.includes("this.logicalPlayer = {u: 14, v: 25.02, radius: .27}"),'retornos dos portões não usam o limite interno');
 expect(scene.includes("this.entryFacing = 'left'")&&scene.includes("this.entryFacing = 'up'"),'direção de retorno dos portões não foi preservada');
-expect(scene.includes('u > 13.22 && u < 14.78')&&scene.includes('v > 13.22 && v < 14.78'),'transição ainda aceita as torres como passagem');
+expect(scene.includes('const min = AetherCityScene.GATE_MIN, max = AetherCityScene.GATE_MAX')&&scene.includes('v > min && v < max')&&scene.includes('u > min && u < max'),'transição ainda aceita as torres como passagem');
 
 const envelopeBlocked=(u,v,r=.27)=>{
-  const insideEast=v-r>13.22&&v+r<14.78;
-  const insideSouth=u-r>13.22&&u+r<14.78;
+  const insideEast=v-r>13.42&&v+r<14.58;
+  const insideSouth=u-r>13.42&&u+r<14.58;
   return u-r<3.12||v-r<3.12||(u+r>25.35&&!insideEast)||(v+r>25.35&&!insideSouth);
 };
 expect(!envelopeBlocked(25.02,14),'spawn interno do Portão Leste está bloqueado');
@@ -210,11 +256,17 @@ expect(envelopeBlocked(12.7,25.7),'torre esquerda do Portão Sul permite saída'
 expect(!envelopeBlocked(26.2,14),'centro do arco Leste foi fechado');
 expect(!envelopeBlocked(14,26.2),'centro do arco Sul foi fechado');
 
-// Contato por imagem: corpo na frente, pés atrás e bases elípticas de props.
-expect(scene.includes('const bodySamples = [[0,-62]'),'amostras de cabeça/tronco estão ausentes');
-expect(scene.includes('if (foot.y < image.y - 8) continue'),'colisão corporal não está limitada à aproximação frontal');
-expect(scene.includes('addBlockedScreenEllipse(fountain.x + 9, fountain.y - 39, 69, 19'),'fonte ainda considera o canvas transparente');
-expect(scene.includes("addBlockedScreenEllipse(tree.x, tree.y - 14, 14, 10, 'tronco"),'tronco não possui contato lateral calibrado');
+// Contato por imagem: o corpo-base consulta exclusivamente a opacidade real.
+expect(scene.includes('this.player.setOrigin(.5, .86).setScale(1.28)'),'jogador não foi igualado à altura opaca dos NPCs');
+expect(scene.includes('getPlayerCollisionSamples()')&&scene.includes("const key = `player-${this.player.appearanceId}-base`")&&scene.includes('alpha >= 64'),'máscara corporal do jogador não usa a folha-base opaca');
+expect(scene.includes('isBlockedBySolidMasks(u, v)')&&scene.includes('getTextureAlphaMask(entry.key, geometry.frameName)')&&scene.includes('targetMask.alpha[sourceY * targetMask.width + sourceX]'),'colisão urbana não consulta a opacidade dos sprites');
+expect(scene.includes("document.createElement('canvas')")&&scene.includes('this.textureAlphaMaskCache.set(cacheKey, mask)'),'máscaras alfa não são pré-calculadas para evitar leitura de canvas por pixel');
+expect(scene.includes("registerSolidMask(this.fountain, 'city_fountain'")&&scene.includes("label: 'Marco de Senda'")&&scene.includes("registerSolidMask(image, 'iso_city_wall'"),'fonte, Marco ou muralhas não usam máscaras opacas');
+expect(scene.includes("registerSolidMask(this.eastGateSprite, 'iso_city_gate_east'")&&scene.includes("registerSolidMask(this.southGateSprite, 'iso_city_gate'")&&scene.includes('sourceMinY: .56'),'pilares dos portões não possuem máscara inferior própria');
+expect(scene.includes('registerSolidMask(npc.sprite')&&!scene.includes('fixedNpcLogical'),'NPCs fixos ainda usam círculos lógicos distantes da imagem');
+expect(!scene.includes('addBlockedScreenEllipse')&&!scene.includes('blockedRects')&&!scene.includes('blockedBuildingMasks'),'a cidade ainda contém elipses ou retângulos transparentes de colisão');
+expect(scene.includes('/ .035')&&scene.includes('for (let index = 0; index < steps; index++)'),'movimento não usa subpassos contra máscaras finas');
+expect(waystone.includes('if(!scene.usesLogicalAlphaCollision)'),'Marco de Senda ainda cria um retângulo invisível na cidade');
 expect(scene.includes('this.player.y >= occluder.baseY - occluder.behindMargin'),'contorno dourado não exige posição atrás do objeto');
 expect(scene.includes('lowestOccluderDepth - .02')&&scene.includes('this.player.getOutlineTextureKey()'),'oclusão universal dourada não acompanha a aparência ativa');
 
@@ -232,7 +284,7 @@ for(const appearanceId of appearances){
         const d=pngDimensions(relative);
         expect(d.width===384&&d.height===768,`folha do jogador não possui 4x8 células 96x96: ${relative}`);
         expect(pngColorType(relative)===6,`folha do jogador não possui alpha RGBA: ${relative}`);
-        expect(size(relative)>80000,`folha do jogador parece vazia ou simplificada: ${relative}`);
+        expect(size(relative)>(suffix?8000:80000),`folha do jogador parece vazia ou simplificada: ${relative}`);
       }
       playerSheets++;
     }
@@ -310,6 +362,15 @@ for(const key of ['resident_iso_walk','traveler_iso_walk']){
   }
   expect(preload.includes(`'${key}'`)&&preload.includes('{frameWidth:208,frameHeight:224}'),`${key} não está carregado em células 208x224`);
 }
+const residentStats=alphaCellStats('assets/images/characters/npcs/isometric/resident_iso_walk.png',208,224);
+expect(residentStats.length===32&&residentStats.every(cell=>cell.height>=198&&cell.height<=206),'morador não mantém altura e baseline consistentes nos 32 quadros');
+expect(residentStats.every(cell=>(cell.components[1]??0)<10),'morador ainda possui fragmento desconectado de outro quadro');
+expect(scene.includes("residentRoute, 106")&&scene.includes("travelerRoute, 102"),'morador e viajante ainda estão maiores que os NPCs fixos');
+for(const relative of ['assets/images/characters/player/mage_f_weapon.png','assets/images/characters/player/mage_f_weapon_armor.png']){
+  const stats=alphaCellStats(relative,96,96);
+  expect(stats.length===32&&stats.every(cell=>cell.height>=82&&cell.height<=86),`estado da maga perdeu escala/baseline: ${relative}`);
+  expect(stats.every(cell=>(cell.components[1]??0)===0),`estado da maga possui halo ou fragmento separado: ${relative}`);
+}
 for(const direction of ['south:0','southWest:1','west:2','northWest:3','north:4','northEast:5','east:6','southEast:7']){
   expect(npc.includes(direction),`mapeamento direcional ausente: ${direction}`);
 }
@@ -377,4 +438,4 @@ if(issues.length){
   process.exit(1);
 }
 
-console.log('PROJECT_AUDIT_OK walls=4natural-corners gates=compact-no-overlap collision=body+alpha ground=refined+16sway residential=4paved-yards artisan=business-row heroes=6x4statesx8dirs equipment=natural+class-locked occlusion=48outlines elder=decode-safe ambient=failure-safe assets=runtime-clean scripts=consolidated');
+console.log('PROJECT_AUDIT_OK walls=4natural-corners gates=alpha-pillars+center-only collision=opaque-sprites+substeps ground=refined+16sway residential=4paved-yards artisan=business-row heroes=6x4statesx8dirs equipment=female-mage-clean+class-locked occlusion=48outlines walkers=common-scale+artifact-free elder=decode-safe ambient=failure-safe assets=runtime-clean scripts=consolidated');
