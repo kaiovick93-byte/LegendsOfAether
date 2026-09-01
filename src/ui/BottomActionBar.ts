@@ -1,0 +1,111 @@
+// @ts-nocheck
+export class BottomActionBar {
+  constructor(private scene, private player, private abilities, private getItemCount){
+    const w=scene.scale.width,h=scene.scale.height;
+    this.root=scene.add.container(w/2,h).setScrollFactor(0).setDepth(700);
+    // A moldura é exibida nos 960×154 px nativos. Em telas estreitas todo o
+    // conjunto é reduzido uniformemente; nunca se estica apenas a imagem.
+    this.frameWidth=960;
+    this.frameHeight=154;
+    this.frame=scene.add.image(0,0,'bottom_hud_frame').setOrigin(.5,1);
+    this.root.add(this.frame);
+
+    // Os medalhões da nova moldura são círculos reais. Todos os elementos
+    // internos usam coordenadas nativas; nenhum deles recebe escala X/Y
+    // independente, evitando a aparência achatada da barra anterior.
+    const orbX=326;
+    const orbY=-77;
+    const orbRadius=43;
+    this.hpBack=scene.add.circle(-orbX,orbY,orbRadius,0x17070c,.72);
+    this.hpOrb=scene.add.arc(-orbX,orbY,orbRadius-3,-90,270,false,0xc53c52,.91);
+    this.hpShine=scene.add.circle(-orbX-10,orbY-13,orbRadius*.32,0xff9aac,.14);
+    this.hpText=scene.add.text(-orbX,orbY-4,'',{fontFamily:'Georgia, serif',fontSize:12,color:'#fff6f4',fontStyle:'bold',stroke:'#28070d',strokeThickness:3,align:'center'}).setOrigin(.5);
+    this.hpPotion=scene.add.text(-orbX,orbY+28,'',{fontFamily:'Arial',fontSize:9,color:'#edcfd3',fontStyle:'bold',stroke:'#090d14',strokeThickness:2}).setOrigin(.5);
+
+    this.manaBack=scene.add.circle(orbX,orbY,orbRadius,0x06111d,.74);
+    this.manaOrb=scene.add.arc(orbX,orbY,orbRadius-3,-90,270,false,0x347fca,.92);
+    this.manaShine=scene.add.circle(orbX-10,orbY-13,orbRadius*.32,0x9ed4ff,.14);
+    this.manaText=scene.add.text(orbX,orbY-4,'',{fontFamily:'Georgia, serif',fontSize:12,color:'#f2f8ff',fontStyle:'bold',stroke:'#06162c',strokeThickness:3,align:'center'}).setOrigin(.5);
+    this.manaPotion=scene.add.text(orbX,orbY+28,'',{fontFamily:'Arial',fontSize:9,color:'#c8e3ff',fontStyle:'bold',stroke:'#090d14',strokeThickness:2}).setOrigin(.5);
+    this.root.add([this.hpBack,this.hpOrb,this.hpShine,this.hpText,this.hpPotion,this.manaBack,this.manaOrb,this.manaShine,this.manaText,this.manaPotion]);
+
+    this.statusText=scene.add.text(0,-126,'',{fontFamily:'Georgia, serif',fontSize:10,color:'#e4c77c',fontStyle:'bold',stroke:'#080c12',strokeThickness:2}).setOrigin(.5);
+    this.commands=scene.add.text(0,-23,'I  INVENTÁRIO   •   K  SKILLS   •   C  CONTROLES   •   P  MENU',{fontFamily:'Arial',fontSize:10,color:'#d4deeb',fontStyle:'bold',stroke:'#080c12',strokeThickness:2}).setOrigin(.5);
+    this.root.add([this.statusText,this.commands]);
+
+    this.slotBacks=[];
+    this.slotTexts=[];
+    const slotWidth=52,slotGap=5,slotY=-76;
+    const firstX=-(slotWidth+slotGap)*3.5;
+    for(let index=0;index<8;index++){
+      const x=firstX+index*(slotWidth+slotGap);
+      const back=scene.add.rectangle(x,slotY,slotWidth,48,0x101a2a,.54).setStrokeStyle(1,index<4?0xa27c3e:0x52627b,.72);
+      const text=scene.add.text(x,slotY,'',{fontFamily:'Arial',fontSize:8,color:'#eef2f8',fontStyle:'bold',align:'center',lineSpacing:0,wordWrap:{width:slotWidth-4}}).setOrigin(.5);
+      this.root.add([back,text]);
+      this.slotBacks.push(back);
+      this.slotTexts.push(text);
+    }
+
+    this.xpBg=scene.add.rectangle(-221,-43,442,5,0x202b3d,.96).setOrigin(0,.5);
+    this.xpFill=scene.add.rectangle(-221,-43,0,5,0x68b8d8,1).setOrigin(0,.5);
+    this.xpText=scene.add.text(0,-43,'',{fontFamily:'Arial',fontSize:8,color:'#d4e0ee',fontStyle:'bold',stroke:'#080c12',strokeThickness:2}).setOrigin(.5);
+    this.root.add([this.xpBg,this.xpFill,this.xpText]);
+    this.visible=true;
+    this.resizeHandler=(gameSize)=>this.layout(gameSize.width,gameSize.height);
+    scene.scale.on(Phaser.Scale.Events.RESIZE,this.resizeHandler);
+    scene.events.once('shutdown',()=>scene.scale.off(Phaser.Scale.Events.RESIZE,this.resizeHandler));
+    this.layout(w,h);
+    this.update();
+  }
+
+  layout(width,height){
+    const scale=Math.min(1,width/this.frameWidth);
+    this.root.setPosition(width/2,height).setScale(scale,scale);
+  }
+
+  setVisible(value){this.visible=value;this.root.setVisible(value)}
+
+  update(){
+    if(!this.visible)return;
+    const healthRatio=Phaser.Math.Clamp(this.player.hp/Math.max(1,this.player.maxHp),0,1);
+    const manaRatio=Phaser.Math.Clamp(this.player.mana/Math.max(1,this.player.maxMana),0,1);
+    this.hpOrb.setEndAngle(-90+360*healthRatio).setAlpha(.54+.41*healthRatio);
+    this.manaOrb.setEndAngle(-90+360*manaRatio).setAlpha(.54+.41*manaRatio);
+    this.hpText.setText(`HP\n${this.player.hp}/${this.player.maxHp}`);
+    this.manaText.setText(`MANA\n${this.player.mana}/${this.player.maxMana}`);
+    this.hpPotion.setText(`H • POÇÃO ×${this.getItemCount('healing_potion')}`);
+    this.manaPotion.setText(`M • POÇÃO ×${this.getItemCount('mana_potion')}`);
+
+    const classNames={warrior:'GUERREIRO',mage:'MAGO',ranger:'CAÇADOR'};
+    this.statusText.setText(`${classNames[this.player.characterClass]||'AVENTUREIRO'}  •  NÍVEL ${this.player.level}  •  OURO ${this.player.gold}`);
+    const need=Math.max(1,this.player.level*100);
+    this.xpFill.width=442*Phaser.Math.Clamp(this.player.xp/need,0,1);
+    this.xpText.setText(`XP ${this.player.xp}/${need}`);
+
+    const loadout=this.abilities.loadout();
+    const abilitySlots=[
+      {id:'primary',key:'Q'},
+      {id:'secondary',key:'1'},
+      {id:'mobility',key:'2'}
+    ];
+    for(let index=0;index<3;index++){
+      const slot=abilitySlots[index];
+      const definition=loadout[slot.id];
+      const cooldown=this.abilities.cooldown(slot.id);
+      const rank=this.player.scene.skillManager?.getRank(slot.id)||0;
+      const mana=definition[1]+Math.max(0,rank-1)*3;
+      const state=rank<=0?'BLOQUEADA':cooldown>0?`${(cooldown/1000).toFixed(1)}s`:`${mana} MP`;
+      this.slotTexts[index].setText(`${slot.key}\n${definition[0]}\n${state}`);
+      this.slotTexts[index].setColor(rank<=0?'#758299':cooldown>0?'#a6afbd':'#f2f4f7');
+      this.slotBacks[index].setFillStyle(rank<=0?0x0c121d:cooldown>0?0x151c28:0x101a2a,.92);
+    }
+    this.slotTexts[3].setText('ESPAÇO\nATAQUE\nBÁSICO').setColor('#f2f4f7');
+    this.slotBacks[3].setFillStyle(0x171824,.94);
+    for(let index=4;index<8;index++){
+      this.slotTexts[index].setText(`${index-1}\n—\nVAZIO`).setColor('#66748a');
+      this.slotBacks[index].setFillStyle(0x0b111b,.86);
+    }
+  }
+
+  destroy(){this.scene.scale.off(Phaser.Scale.Events.RESIZE,this.resizeHandler);this.root.destroy(true)}
+}
