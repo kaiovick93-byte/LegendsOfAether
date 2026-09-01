@@ -228,6 +228,16 @@ export class IsoPhysicsSprite extends IsoSprite {
     config.scene.physics.add.existing(this);
     this.updateIsoPosition();
   }
+
+  /**
+   * Mantém a API encadeável de Phaser.Physics.Arcade.Sprite mesmo que esta
+   * classe herde de Sprite para preservar a projeção isométrica autoritativa.
+   */
+  public setCollideWorldBounds(value:boolean=true): this {
+    const body=this.body as Phaser.Physics.Arcade.Body|undefined;
+    body?.setCollideWorldBounds(value);
+    return this;
+  }
 }
 
 /**
