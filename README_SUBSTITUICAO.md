@@ -1,21 +1,22 @@
-# Round 67 v11.3 — arquivos alterados
+# Round 67 v11.4 — correção de movimento inicial
 
-Copie os arquivos deste pacote sobre o projeto, preservando exatamente os caminhos:
+Substitua estes arquivos no projeto, preservando os mesmos caminhos:
 
-- `src/isometric/IsoOcclusion.ts`
+- `src/entities/Player.ts`
+- `src/scenes/AetherCityScene.ts`
 - `validate-project.mjs`
 
-O arquivo de execução corrigido é `src/isometric/IsoOcclusion.ts`. Ele adiciona
-ao `IsoPhysicsSprite` a API encadeável `setCollideWorldBounds`, delegando a
-configuração ao `Phaser.Physics.Arcade.Body` e retornando o próprio sprite.
-
-`validate-project.mjs` contém o teste de regressão que impede que essa API seja
-removida novamente.
+Esta revisão impede que o corpo Arcade recalcule `x/y` depois do movimento
+isométrico, usa uma máscara corporal estável para colisões e atualiza a direção
+antes de testar o primeiro passo. O novo jogo também começa voltado para o
+interior da cidade pelo Portão Sul.
 
 Depois da substituição, execute:
 
 ```bash
+npm install
 npm run check
 npm run validate
 npm run build
 ```
+

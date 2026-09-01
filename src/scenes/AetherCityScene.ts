@@ -157,7 +157,8 @@ export class AetherCityScene extends Phaser.Scene {
       this.player.gold = 25;
     }
 
-    this.entryFacing = 'down';
+    // O novo jogo nasce no Portão Sul e já olha para o interior da cidade.
+    this.entryFacing = 'up';
     if (entrance === 'east') {
       // Limite interno do arco leste, exatamente na direção usada na entrada.
       this.player.setIsoPosition(25.02,14,-6);
@@ -563,9 +564,10 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   getPlayerCollisionSamples() {
-    const frameNumber = Number.isFinite(Number(this.player?.frame?.name))
-      ? Number(this.player.frame.name)
-      : this.player.getIdleFrame();
+    // O colisor usa uma pose estável da direção atual. Vinculá-lo ao quadro
+    // momentâneo da caminhada fazia a área dos pés oscilar e podia bloquear
+    // o primeiro passo antes da animação virar para a direção pressionada.
+    const frameNumber = this.player.getIdleFrame();
     // Armas e cajados não alargam o corpo físico. A máscara corporal vem da
     // folha-base da mesma identidade e do mesmo quadro direcional.
     const key = `player-${this.player.appearanceId}-base`;
@@ -1038,10 +1040,10 @@ export class AetherCityScene extends Phaser.Scene {
     const du = (sx / AetherCityScene.TILE_WIDTH + sy / AetherCityScene.TILE_HEIGHT) * dt;
     const dv = (-sx / AetherCityScene.TILE_WIDTH + sy / AetherCityScene.TILE_HEIGHT) * dt;
 
-    this.tryMove(du, 0);
-    this.tryMove(0, dv);
     this.player.updateFacing(sx,sy);
-    this.player.playMove(true);
+    const movedU=this.tryMove(du, 0);
+    const movedV=this.tryMove(0, dv);
+    this.player.playMove(movedU||movedV);
     this.updatePlayerProjection();
   }
 
@@ -1056,11 +1058,14 @@ export class AetherCityScene extends Phaser.Scene {
     // opaca fina quando o navegador entrega um quadro mais longo.
     const steps = Math.max(1, Math.ceil(Math.max(Math.abs(du), Math.abs(dv)) / .035));
     const stepU = du / steps, stepV = dv / steps;
+    let moved=false;
     for (let index = 0; index < steps; index++) {
       const u = this.player.isoX + stepU, v = this.player.isoY + stepV;
       if (this.isBlocked(u, v, this.playerIsoRadius)) break;
       this.player.setIsoPosition(u,v,this.player.isoZ);
+      moved=true;
     }
+    return moved;
   }
 
   isOutsideCityWallEnvelope(u, v, radius) {

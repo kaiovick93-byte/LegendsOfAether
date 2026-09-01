@@ -356,6 +356,22 @@ for(const appearanceId of ['warrior_m','warrior_f','mage_m','mage_f','ranger_m',
   expect(simulateSpawnMove(appearanceId,{u:14,v:25.02},17,0,-.044)>.20,`${appearanceId} nasce preso no Portão Sul`);
   expect(simulateSpawnMove(appearanceId,{u:25.02,v:14},9,-.044,0)>.20,`${appearanceId} nasce preso no Portão Leste`);
 }
+const spawnFirstSteps=[
+  ['Sul para cima',{u:14,v:25.02},17,0,-.02],
+  ['Sul para baixo',{u:14,v:25.02},1,0,.02],
+  ['Sul para esquerda',{u:14,v:25.02},9,-.02,0],
+  ['Sul para direita',{u:14,v:25.02},25,.02,0],
+  ['Leste para cima',{u:25.02,v:14},17,0,-.02],
+  ['Leste para baixo',{u:25.02,v:14},1,0,.02],
+  ['Leste para esquerda',{u:25.02,v:14},9,-.02,0],
+  ['Leste para direita',{u:25.02,v:14},25,.02,0]
+];
+for(const appearanceId of ['warrior_m','warrior_f','mage_m','mage_f','ranger_m','ranger_f']){
+  for(const [label,spawn,frame,du,dv] of spawnFirstSteps){
+    const nextU=spawn.u+du,nextV=spawn.v+dv;
+    expect(!envelopeBlocked(nextU,nextV)&&!blockedBySpawnTargets(appearanceId,frame,nextU,nextV),`${appearanceId} não consegue iniciar movimento: ${label}`);
+  }
+}
 
 // Contato por imagem: o corpo-base consulta exclusivamente a opacidade real.
 expect(scene.includes('this.player.setOrigin(.5,1).setScale(1.28)'),'jogador não usa a mesma altura dos NPCs com origem nos pés');
@@ -379,6 +395,10 @@ expect(isoArchitecture.includes('this.setOrigin(.5,1)')&&isoArchitecture.include
 expect(isoArchitecture.includes('super.setPosition(screen.x,screen.y)')&&isoArchitecture.includes('public setIsoPosition')&&isoArchitecture.includes('return this.updateIsoPosition()'),'posição de tela não é derivada exclusivamente das coordenadas iso');
 expect(player.includes('extends IsoPhysicsSprite')&&player.includes('enableIsoMovement')&&scene.includes('this.player.setIsoPosition(u,v,this.player.isoZ)')&&!scene.includes('logicalPlayer'),'movimento do jogador ainda contorna isoX/isoY/isoZ');
 expect(isoArchitecture.includes('public setCollideWorldBounds(value:boolean=true): this')&&isoArchitecture.includes('body?.setCollideWorldBounds(value)')&&player.includes('setCollideWorldBounds(true)')&&scene.includes('this.player.setCollideWorldBounds(false)'),'API física encadeável do jogador isométrico está ausente ou incompleta');
+expect(player.includes('body.moves=false')&&player.includes('body.updateFromGameObject()'),'corpo Arcade ainda disputa x/y com a posição isométrica autoritativa');
+expect(scene.includes('const frameNumber = this.player.getIdleFrame()')&&!scene.includes('Number(this.player?.frame?.name)'),'colisor do jogador ainda oscila conforme o quadro momentâneo da caminhada');
+expect(scene.indexOf('this.player.updateFacing(sx,sy)')<scene.indexOf('const movedU=this.tryMove(du, 0)')&&scene.includes('this.player.playMove(movedU||movedV)'),'direção física não é atualizada antes do primeiro passo ou animação ignora bloqueio real');
+expect(scene.includes("this.entryFacing = 'up'"),'novo jogo não começa voltado para o interior pelo Portão Sul');
 expect(player.includes('this.body.setSize(32,16,false)')&&player.includes('this.body.setOffset((this.width-32)/2,this.height-16)'),'colisor Phaser 32×16 não está ancorado nos pés');
 expect(scene.includes('const sx = (inputX - inputY) * screenSpeed')&&scene.includes('const sy = (inputX + inputY) * (screenSpeed * .5)'),'movimento não aplica a projeção 2:1 do arquivo de colisão enviado');
 expect(scene.includes('new IsoOcclusionManager(this)')&&scene.includes('this.occlusionManager?.registerWall(image)')&&scene.includes('this.occlusionManager?.checkPlayerOcclusion(this.player)'),'paredes não estão registradas/verificadas pelo gerenciador de oclusão');

@@ -16,7 +16,22 @@ export class Player extends IsoPhysicsSprite{
     this.body.setOffset((this.width-32)/2,this.height-16);
     this.hp=120;this.maxHp=120;this.mana=60;this.maxMana=60;this.level=1;this.xp=0;this.gold=25;this.attackDamage=14;this.defense=0;this.speed=170;this.characterClass=appearanceFor(appearanceId).classId;this.appearanceId=appearanceFor(appearanceId).id;this.visualState='base';this.facing='down';this.dead=false;this.skillPoints=0;this.attributePoints=0;this.nextAttack=0;this.equipment={attack:0,defense:0,hp:0,mana:0,speed:0};this.skills={attack:0,hp:0,mana:0,speed:0};this.attributeBonuses={hp:0,mana:0,attack:0,defense:0};
   }
-  enableIsoMovement(config,x,y,z=0){this.isoDriven=true;this.configureIsoProjection(config);this.setIsoPosition(x,y,z);this.body?.setVelocity(0,0);return this}
+  enableIsoMovement(config,x,y,z=0){
+    this.isoDriven=true;
+    this.configureIsoProjection(config);
+    this.setIsoPosition(x,y,z);
+    const body=this.body as Phaser.Physics.Arcade.Body|undefined;
+    if(body){
+      // Na cidade, isoX/isoY são a única autoridade de movimento. Um corpo
+      // Arcade dinâmico reaplicaria x/y no postUpdate e disputaria posição
+      // com updateIsoPosition(), fazendo o herói parecer preso no início.
+      body.setVelocity(0,0);
+      body.setCollideWorldBounds(false);
+      body.moves=false;
+      body.updateFromGameObject();
+    }
+    return this;
+  }
   move(dx,dy){if(this.dead)return false;this.body.setVelocity(dx*this.speed,dy*this.speed);if(dx||dy){this.body.velocity.normalize().scale(this.speed);this.updateFacing(dx,dy)}return !!(dx||dy)}
   updateFacing(dx,dy){this.facing=facingFromVector(dx,dy,this.facing);return this.facing}
   playMove(moving){if(this.dead)return;if(!moving){this.anims.stop();this.setFrame(this.getIdleFrame());return}const key=`${this.getTextureKey()}-walk-${this.facing}`;if(this.scene.anims.exists(key))this.anims.play(key,true);else this.setFrame(this.getIdleFrame())}
