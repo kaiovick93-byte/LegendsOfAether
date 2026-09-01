@@ -1,7 +1,22 @@
 // @ts-nocheck
 import {appearanceFor,defaultAppearanceForClass,facingFromVector,idleFrameForFacing,playerOutlineTextureKey,playerTextureKey} from '../character/PlayerAppearance';
-export class Player extends Phaser.Physics.Arcade.Sprite{
-  constructor(scene,x,y){const appearanceId=scene.registry.get('selectedAppearance')||'warrior_m';const texture=scene.textures.exists(playerTextureKey(appearanceId,'base'))?playerTextureKey(appearanceId,'base'):'player-fallback';super(scene,x,y,texture,texture==='player-fallback'?0:1);scene.add.existing(this);scene.physics.add.existing(this);this.setScale(.7);this.setDepth(20);this.setCollideWorldBounds(true);/* Colisor top-down apenas nos pés: cabeça e braços não bloqueiam antes da arte. */this.body.setSize(38,22,false);this.body.setOffset(29,71);this.hp=120;this.maxHp=120;this.mana=60;this.maxMana=60;this.level=1;this.xp=0;this.gold=25;this.attackDamage=14;this.defense=0;this.speed=170;this.characterClass=appearanceFor(appearanceId).classId;this.appearanceId=appearanceFor(appearanceId).id;this.visualState='base';this.facing='down';this.dead=false;this.skillPoints=0;this.attributePoints=0;this.nextAttack=0;this.equipment={attack:0,defense:0,hp:0,mana:0,speed:0};this.skills={attack:0,hp:0,mana:0,speed:0};this.attributeBonuses={hp:0,mana:0,attack:0,defense:0}}
+import {IsoPhysicsSprite} from '../isometric/IsoOcclusion';
+export class Player extends IsoPhysicsSprite{
+  constructor(scene,x,y){
+    const appearanceId=scene.registry.get('selectedAppearance')||'warrior_m';
+    const texture=scene.textures.exists(playerTextureKey(appearanceId,'base'))?playerTextureKey(appearanceId,'base'):'player-fallback';
+    // A projeção cartesiana 2×2 preserva os mapas legados. A Cidade de
+    // Aether substitui esta projeção pela malha 96×48 após criar o jogador.
+    super({scene,isoX:(x+y)/2,isoY:(y-x)/2,isoZ:0,texture,frame:texture==='player-fallback'?0:1,tileWidth:2,tileHeight:2});
+    this.isoDriven=false;
+    this.setScale(.7).setDepth(20).setCollideWorldBounds(true);
+    // Regra do arquivo phaser_isometric_collision.ts: somente os pés têm
+    // corpo físico. Cabeça, cabelo, capa e armas nunca antecipam colisões.
+    this.body.setSize(32,16,false);
+    this.body.setOffset((this.width-32)/2,this.height-16);
+    this.hp=120;this.maxHp=120;this.mana=60;this.maxMana=60;this.level=1;this.xp=0;this.gold=25;this.attackDamage=14;this.defense=0;this.speed=170;this.characterClass=appearanceFor(appearanceId).classId;this.appearanceId=appearanceFor(appearanceId).id;this.visualState='base';this.facing='down';this.dead=false;this.skillPoints=0;this.attributePoints=0;this.nextAttack=0;this.equipment={attack:0,defense:0,hp:0,mana:0,speed:0};this.skills={attack:0,hp:0,mana:0,speed:0};this.attributeBonuses={hp:0,mana:0,attack:0,defense:0};
+  }
+  enableIsoMovement(config,x,y,z=0){this.isoDriven=true;this.configureIsoProjection(config);this.setIsoPosition(x,y,z);this.body?.setVelocity(0,0);return this}
   move(dx,dy){if(this.dead)return false;this.body.setVelocity(dx*this.speed,dy*this.speed);if(dx||dy){this.body.velocity.normalize().scale(this.speed);this.updateFacing(dx,dy)}return !!(dx||dy)}
   updateFacing(dx,dy){this.facing=facingFromVector(dx,dy,this.facing);return this.facing}
   playMove(moving){if(this.dead)return;if(!moving){this.anims.stop();this.setFrame(this.getIdleFrame());return}const key=`${this.getTextureKey()}-walk-${this.facing}`;if(this.scene.anims.exists(key))this.anims.play(key,true);else this.setFrame(this.getIdleFrame())}
@@ -23,6 +38,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite{
   allocateAttribute(stat){if(this.attributePoints<=0)return false;if(stat==='hp'){this.attributeBonuses.hp+=5;this.maxHp+=5;this.hp+=5}if(stat==='mana'){this.attributeBonuses.mana+=3;this.maxMana+=3;this.mana+=3}if(stat==='attack'){this.attributeBonuses.attack+=1;this.attackDamage+=1}if(stat==='defense'){this.attributeBonuses.defense+=1;this.defense+=1}this.attributePoints--;return true}
   serialize(){return{hp:this.hp,mana:this.mana,level:this.level,xp:this.xp,gold:this.gold,characterClass:this.characterClass,appearanceId:this.appearanceId,skillPoints:this.skillPoints,attributePoints:this.attributePoints,attributeBonuses:{...this.attributeBonuses}}}
   loadState(s){this.level=s.level||1;this.xp=s.xp||0;this.gold=s.gold||0;this.skillPoints=s.skillPoints||0;this.attributePoints=s.attributePoints||0;this.attributeBonuses={hp:s.attributeBonuses?.hp||0,mana:s.attributeBonuses?.mana||0,attack:s.attributeBonuses?.attack||0,defense:s.attributeBonuses?.defense||0};this.appearanceId=appearanceFor(s.appearanceId||defaultAppearanceForClass(s.characterClass||'warrior')).id;this.applyClass(s.characterClass||'warrior');this.hp=Math.min(s.hp??this.maxHp,this.maxHp);this.mana=Math.min(s.mana??this.maxMana,this.maxMana);this.dead=false;this.refreshAppearanceTexture()}
-  respawn(x,y){this.setPosition(x,y);this.dead=false;this.hp=this.maxHp;this.mana=this.maxMana;this.clearTint();this.setAlpha(1)}
+  respawn(x,y){if(this.isoDriven){const iso=this.screenToIso(x,y);this.setIsoPosition(iso.x,iso.y,this.isoZ)}else{this.setPosition(x,y);const iso=this.screenToIso(x,y);this.isoX=iso.x;this.isoY=iso.y}this.dead=false;this.hp=this.maxHp;this.mana=this.maxMana;this.clearTint();this.setAlpha(1)}
   isDead(){return this.dead}
 }

@@ -6,33 +6,34 @@ export class CharacterInventoryPanel{
   constructor(scene,player,inventory,equipment,save){
     this.scene=scene;this.player=player;this.inv=inventory;this.equipment=equipment;this.save=save;this.visible=false;
     const w=scene.scale.width,h=scene.scale.height;
-    const top=24;
+    this.ox=(w-960)/2;this.oy=(h-540)/2;
+    const top=this.oy+24;
     this.bg=scene.add.rectangle(w/2,h/2,w-36,h-30,0x0d1422,.99).setScrollFactor(0).setDepth(950).setStrokeStyle(2,0x526a93,1).setVisible(false);
     this.title=scene.add.text(w/2,top+10,'PERSONAGEM • EQUIPAMENTOS • INVENTÁRIO',{fontFamily:'Arial',fontSize:20,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5).setScrollFactor(0).setDepth(951).setVisible(false);
     this.closeBtn=scene.add.text(w-26,top+4,'I • FECHAR',{fontFamily:'Arial',fontSize:11,color:'#9aa8c7',backgroundColor:'#182033',padding:{left:7,right:7,top:4,bottom:4}}).setOrigin(1,0).setScrollFactor(0).setDepth(952).setInteractive({useHandCursor:true}).setVisible(false);
     this.closeBtn.on('pointerdown',()=>this.hide());
 
-    this.statusBg=scene.add.rectangle(w/2,112,w-70,94,0x182033,.98).setScrollFactor(0).setDepth(951).setStrokeStyle(1,0x32405f,1).setVisible(false);
-    this.classText=scene.add.text(38,78,'',{fontFamily:'Arial',fontSize:16,color:'#ffd166',fontStyle:'bold'}).setScrollFactor(0).setDepth(952).setVisible(false);
-    this.statsText=scene.add.text(38,104,'',{fontFamily:'Arial',fontSize:11,color:'#c8d1ea',lineSpacing:3}).setScrollFactor(0).setDepth(952).setVisible(false);
-    this.xpBg=scene.add.rectangle(w-400,76,230,7,0x3a465f,1).setOrigin(.5).setScrollFactor(0).setDepth(952).setVisible(false);
-    this.xpFill=scene.add.rectangle(w-515,76,0,7,0x7ee0ff,1).setOrigin(0,.5).setScrollFactor(0).setDepth(953).setVisible(false);
-    this.xpText=scene.add.text(w-515,90,'',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7'}).setScrollFactor(0).setDepth(953).setVisible(false);
+    this.statusBg=scene.add.rectangle(this.ox+480,this.oy+112,890,94,0x182033,.98).setScrollFactor(0).setDepth(951).setStrokeStyle(1,0x32405f,1).setVisible(false);
+    this.classText=scene.add.text(this.ox+38,this.oy+78,'',{fontFamily:'Arial',fontSize:16,color:'#ffd166',fontStyle:'bold'}).setScrollFactor(0).setDepth(952).setVisible(false);
+    this.statsText=scene.add.text(this.ox+38,this.oy+104,'',{fontFamily:'Arial',fontSize:11,color:'#c8d1ea',lineSpacing:3}).setScrollFactor(0).setDepth(952).setVisible(false);
+    this.xpBg=scene.add.rectangle(this.ox+560,this.oy+76,230,7,0x3a465f,1).setOrigin(.5).setScrollFactor(0).setDepth(952).setVisible(false);
+    this.xpFill=scene.add.rectangle(this.ox+445,this.oy+76,0,7,0x7ee0ff,1).setOrigin(0,.5).setScrollFactor(0).setDepth(953).setVisible(false);
+    this.xpText=scene.add.text(this.ox+445,this.oy+90,'',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7'}).setScrollFactor(0).setDepth(953).setVisible(false);
 
-    this.attrTitle=scene.add.text(w-515,107,'',{fontFamily:'Arial',fontSize:11,color:'#ffd166'}).setScrollFactor(0).setDepth(952).setVisible(false);
+    this.attrTitle=scene.add.text(this.ox+445,this.oy+107,'',{fontFamily:'Arial',fontSize:11,color:'#ffd166'}).setScrollFactor(0).setDepth(952).setVisible(false);
     this.attrButtons=[];this.buildAttrButtons();
 
-    this.equipBg=scene.add.rectangle(225,350,350,320,0x182033,.98).setScrollFactor(0).setDepth(951).setStrokeStyle(1,0x32405f,1).setVisible(false);
-    this.equipTitle=scene.add.text(225,205,'EQUIPAMENTOS / APARÊNCIA',{fontFamily:'Arial',fontSize:15,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5).setScrollFactor(0).setDepth(952).setVisible(false);
-    this.appearanceBg=scene.add.rectangle(125,365,130,215,0x111827,1).setScrollFactor(0).setDepth(952).setStrokeStyle(1,0x3f5072,1).setVisible(false);
-    this.appearance=scene.add.image(125,350,player.getTextureKey(),idleFrameForFacing('down')).setScale(1.18).setScrollFactor(0).setDepth(954).setVisible(false);
-    this.appearanceText=scene.add.text(125,495,'APARÊNCIA',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7'}).setOrigin(.5).setScrollFactor(0).setDepth(955).setVisible(false);
+    this.equipBg=scene.add.rectangle(this.ox+225,this.oy+350,350,320,0x182033,.98).setScrollFactor(0).setDepth(951).setStrokeStyle(1,0x32405f,1).setVisible(false);
+    this.equipTitle=scene.add.text(this.ox+225,this.oy+205,'EQUIPAMENTOS / APARÊNCIA',{fontFamily:'Arial',fontSize:15,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5).setScrollFactor(0).setDepth(952).setVisible(false);
+    this.appearanceBg=scene.add.rectangle(this.ox+125,this.oy+365,130,215,0x111827,1).setScrollFactor(0).setDepth(952).setStrokeStyle(1,0x3f5072,1).setVisible(false);
+    this.appearance=scene.add.image(this.ox+125,this.oy+350,player.getTextureKey(),idleFrameForFacing('down')).setScale(1.18).setScrollFactor(0).setDepth(954).setVisible(false);
+    this.appearanceText=scene.add.text(this.ox+125,this.oy+495,'APARÊNCIA',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7'}).setOrigin(.5).setScrollFactor(0).setDepth(955).setVisible(false);
 
     this.slotArea=[];this.buildSlots();
 
-    this.invBg=scene.add.rectangle(700,365,420,350,0x182033,.98).setScrollFactor(0).setDepth(951).setStrokeStyle(1,0x32405f,1).setVisible(false);
-    this.invTitle=scene.add.text(700,205,'INVENTÁRIO — ITENS',{fontFamily:'Arial',fontSize:15,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5).setScrollFactor(0).setDepth(952).setVisible(false);
-    this.hint=scene.add.text(700,520,'Clique em um equipamento para equipar.\nClique no slot equipado para desequipar.',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7',align:'center'}).setOrigin(.5).setScrollFactor(0).setDepth(953).setVisible(false);
+    this.invBg=scene.add.rectangle(this.ox+700,this.oy+365,420,350,0x182033,.98).setScrollFactor(0).setDepth(951).setStrokeStyle(1,0x32405f,1).setVisible(false);
+    this.invTitle=scene.add.text(this.ox+700,this.oy+205,'INVENTÁRIO — ITENS',{fontFamily:'Arial',fontSize:15,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5).setScrollFactor(0).setDepth(952).setVisible(false);
+    this.hint=scene.add.text(this.ox+700,this.oy+520,'Clique em um equipamento para equipar.\nClique no slot equipado para desequipar.',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7',align:'center'}).setOrigin(.5).setScrollFactor(0).setDepth(953).setVisible(false);
     this.rows=[];this.refresh();
   }
   isVisible(){return this.visible}
@@ -47,7 +48,7 @@ export class CharacterInventoryPanel{
   }
   buildAttrButtons(){
     [['HP','hp'],['MANA','mana'],['ATQ','attack'],['DEF','defense']].forEach(([name,id],i)=>{
-      const b=this.scene.add.text(358+i*70,142,`+${name}`,{fontFamily:'Arial',fontSize:9,color:'#73e6a8',backgroundColor:'#24314d',padding:{left:5,right:5,top:4,bottom:4}})
+      const b=this.scene.add.text(this.ox+358+i*70,this.oy+142,`+${name}`,{fontFamily:'Arial',fontSize:9,color:'#73e6a8',backgroundColor:'#24314d',padding:{left:5,right:5,top:4,bottom:4}})
         .setOrigin(.5).setScrollFactor(0).setDepth(954).setInteractive({useHandCursor:true}).setVisible(false);
       b.on('pointerdown',()=>{if(this.player.allocateAttribute(id)){this.refresh();this.save()}});
       this.attrButtons.push(b);
@@ -56,10 +57,10 @@ export class CharacterInventoryPanel{
   buildSlots(){
     const defs=[['weapon','ARMA'],['armor','ARMADURA'],['trinket','TRINKET']];
     defs.forEach(([slot,label],i)=>{
-      const y=270+i*84;
-      const box=this.scene.add.rectangle(355,y,155,62,0x24314d,1).setScrollFactor(0).setDepth(954).setStrokeStyle(1,0x4a5e82,1).setInteractive({useHandCursor:true}).setVisible(false);
-      const l=this.scene.add.text(285,y-20,label,{fontFamily:'Arial',fontSize:9,color:'#9aa8c7'}).setScrollFactor(0).setDepth(955).setVisible(false);
-      const value=this.scene.add.text(285,y-1,'Vazio',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7',wordWrap:{width:135}}).setScrollFactor(0).setDepth(955).setVisible(false);
+      const y=this.oy+270+i*84;
+      const box=this.scene.add.rectangle(this.ox+355,y,155,62,0x24314d,1).setScrollFactor(0).setDepth(954).setStrokeStyle(1,0x4a5e82,1).setInteractive({useHandCursor:true}).setVisible(false);
+      const l=this.scene.add.text(this.ox+285,y-20,label,{fontFamily:'Arial',fontSize:9,color:'#9aa8c7'}).setScrollFactor(0).setDepth(955).setVisible(false);
+      const value=this.scene.add.text(this.ox+285,y-1,'Vazio',{fontFamily:'Arial',fontSize:10,color:'#9aa8c7',wordWrap:{width:135}}).setScrollFactor(0).setDepth(955).setVisible(false);
       box.on('pointerdown',()=>{if(this.equipment.unequip(slot,this.inv)){this.refresh();this.save()}});
       this.slotArea.push({slot,label:l,box,value});
     });
@@ -86,11 +87,11 @@ export class CharacterInventoryPanel{
     this.rows.forEach(r=>r.destroy());this.rows=[];
     const items=this.inv.items||[];
     if(!items.length){
-      this.rows.push(this.scene.add.text(700,330,'Nenhum item no inventário',{fontFamily:'Arial',fontSize:14,color:'#9aa8c7'}).setOrigin(.5).setScrollFactor(0).setDepth(955).setVisible(this.visible));
+      this.rows.push(this.scene.add.text(this.ox+700,this.oy+330,'Nenhum item no inventário',{fontFamily:'Arial',fontSize:14,color:'#9aa8c7'}).setOrigin(.5).setScrollFactor(0).setDepth(955).setVisible(this.visible));
       return;
     }
     items.slice(0,16).forEach((entry,i)=>{
-      const item=getItemDefinition(entry.id),col=i%2,row=Math.floor(i/2),x=605+col*190,y=245+row*45;
+      const item=getItemDefinition(entry.id),col=i%2,row=Math.floor(i/2),x=this.ox+605+col*190,y=this.oy+245+row*45;
       const card=this.scene.add.rectangle(x,y,180,36,0x24314d,1).setScrollFactor(0).setDepth(954).setStrokeStyle(1,0x3a4b6a,1).setVisible(this.visible);
       const text=this.scene.add.text(x,y,`${item?.name||entry.id}  x${entry.qty}`,{fontFamily:'Arial',fontSize:10,color:item?rarityTextColor(item.rarity):'#ecf0ff',align:'center',wordWrap:{width:166}}).setOrigin(.5).setScrollFactor(0).setDepth(955).setVisible(this.visible);
       const hit=item&&['weapon','armor','trinket'].includes(item.type);

@@ -1,9 +1,11 @@
 // @ts-nocheck
 import {SaveManager} from '../save/SaveManager';
 import {ScreenFade} from '../ui/ScreenFade';
+import {centerReferenceViewport} from '../render/Viewport';
 export class MenuScene extends Phaser.Scene{
  constructor(){super('MenuScene')}
  create(){
+  centerReferenceViewport(this);
   this.sm=new SaveManager(); this.fade=new ScreenFade(this);
   this.add.text(480,75,'LEGENDS OF AETHER',{fontFamily:'Arial',fontSize:42,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5);
   this.add.text(480,120,'Action RPG de navegador',{fontFamily:'Arial',fontSize:17,color:'#7ee0ff'}).setOrigin(.5);

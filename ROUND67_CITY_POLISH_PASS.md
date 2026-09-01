@@ -8,8 +8,9 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 
 ## Cidade e circulação
 
-- canvas configurado em `FIT`, ocupando a maior área 16:9 disponível no navegador sem distorção;
-- câmera afastada discretamente para ampliar a leitura das ruas e com margem além do limite norte; o mapa continua descendo quando o herói avança para cima e ele não termina colado ao topo da tela;
+- canvas configurado em `RESIZE`, com correspondência `1:1` entre pixels lógicos e a área real do navegador; uma janela maior revela mais mapa em vez de esticar um quadro `960×540`;
+- pinturas renderizadas com antialiasing, sem `pixelArt` ou arredondamento de câmera; textos usam texturas internas ajustadas à densidade da tela;
+- câmera em zoom nativo `1`, com margem responsiva além do limite norte; o mapa continua descendo quando o herói avança para cima e ele não termina colado ao topo da tela;
 - ateliê de Maelis transferido para o espaço entre a taverna e o Portão Leste, na mesma linha de implantação de ferraria, curandeira e taverna, com Maelis diante da fachada;
 - árvore e Marco de Senda centralizados visualmente em seus jardins;
 - muralhas refeitas como módulos periódicos com conectores isométricos exatos em `2:1`, mantendo profundidade própria por segmento;
@@ -24,11 +25,18 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 ## Colisão e oclusão
 
 - o herói usa escala `1,28×` na cidade; a altura opaca das seis aparências fica na mesma faixa de `98–107 px` dos NPCs;
+- os dois guardas usam `124 px` de canvas exibido, resultando em aproximadamente `113 px` opacos e eliminando a diferença percebida para Mira, Cassian e os demais NPCs;
+- o jogador herda de `IsoSprite` por meio de `IsoPhysicsSprite`; a posição autoritativa permanece em `isoX`, `isoY` e `isoZ`, e toda alteração urbana termina em `updateIsoPosition()`;
+- a ordenação automática usa `(isoX + isoY) × 100 + isoZ × 0,01`, reservando apenas um `depthBase` para manter a interface acima do mundo;
+- todos os sprites isométricos usam origem `(0.5, 1)`, fixando projeção, colisão e ordenação na linha dos pés;
+- o controle aplica a transformação isométrica `2:1` do arquivo `phaser_isometric_collision.ts`, com normalização diagonal e movimento pelos dois eixos do losango;
+- o corpo Arcade do herói mede `32×16 px` e fica centralizado na base; as máscaras alfa continuam sendo a autoridade final para preservar a exigência de que pixels transparentes nunca colidam;
 - o contato físico usa somente pixels opacos da faixa inferior de pernas e pés; cabeça, cabelos e armas continuam sendo renderizados/ocultados, mas não criam colisão antecipada nem prendem o herói junto aos guardas dos portões;
 - muralhas, pilares dos portões, edifícios, fonte, Marco de Senda, árvore e NPCs fixos usam máscaras extraídas do canal alfa das próprias texturas;
 - pixels transparentes dos canvases não bloqueiam o movimento; as máscaras são pré-calculadas uma vez e reutilizadas durante a cena;
 - edifícios usam a faixa opaca da base e o corpo completo somente na aproximação frontal;
 - atrás dos objetos, o herói continua livre para ser ocultado e exibir apenas o contorno dourado;
+- muralhas, portões, edifícios e demais elementos altos isométricos são registrados no `IsoOcclusionManager`; a cena chama `checkPlayerOcclusion(player)` a cada atualização e aplica fade suave quando existe sobreposição real e o herói está atrás;
 - fonte deixa de possuir a antiga elipse invisível à direita;
 - árvore bloqueia somente os pixels opacos da faixa do tronco;
 - Marco de Senda não cria o retângulo físico adicional na cidade e impede a entrada do corpo pela própria silhueta;
@@ -78,7 +86,7 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 
 ## Interação
 
-- aproximação de NPCs apresenta nome, função e comandos dentro de uma única moldura compacta baseada na arte de `F · Conversar`;
+- aproximação de NPCs apresenta nome, função e comandos dentro de uma única moldura branca compacta, centralizada diretamente sobre a cabeça;
 - `F · Conversar` e, para Aldren, `T · Loja` compartilham essa mesma placa, sem um cabeçalho ou segundo cartão separado;
 - o Marco de Senda usa a mesma linguagem visual, mas mostra corretamente `F · Examinar`;
 - ao iniciar uma conversa, um balão branco com reticências aparece sobre o NPC e acompanha personagens ambulantes;
@@ -89,6 +97,7 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 - botão, cena, validador e texturas exclusivas do protótipo isométrico do Round 59 removidos;
 - NPCs e limites urbanos 2D substituídos por versões isométricas foram removidos; `resident.png` e `traveler.png` permanecem porque ainda representam trabalhadores da fazenda nos Arredores;
 - conector e meias-muralhas não referenciados, dois poços 2D obsoletos, o antigo jogador/contorno genérico e a fumaça exclusiva da ferraria foram retirados; somente as peças e folhas carregadas em execução permanecem;
+- painel escuro e ícones coloridos substituídos da interação foram removidos; somente as teclas ainda usadas no diálogo completo permanecem;
 - `assets/source`, `ROUND8_MANIFEST.txt`, imagens de QA e scripts históricos de preparação/render/validação foram removidos do pacote executável;
 - a validação foi consolidada em `validate-project.mjs`;
 - documentação histórica anterior consolidada em `HISTORICO_E_REFERENCIAS_ATE_ROUND66.md`;
@@ -98,6 +107,7 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 ## Interface inferior
 
 - nova moldura 2,5D em aço azul-escuro e ouro envelhecido, com transparência real;
+- moldura exibida nos `960×154 px` originais em telas largas; em telas menores, todo o conjunto é reduzido uniformemente, sem deformar a arte ou os orbes;
 - orbes de HP e Mana são preenchidos pelo Phaser e diminuem proporcionalmente aos valores atuais;
 - oito espaços exatos no canal central: três habilidades de classe, ataque básico e quatro espaços reservados para expansão;
 - atalhos de poções, inventário, habilidades, controles e pausa permanecem legíveis na própria barra;
@@ -114,4 +124,4 @@ npm run validate
 npm run build
 ```
 
-O validador consolidado verifica planta, quatro encontros naturais de muralha, centro exclusivo dos portões, pontos de retorno, movimento inicial livre nos dois portões para as seis aparências, faixa opaca de contato dos pés, máscaras alfa pré-calculadas, escala opaca do herói/NPCs, subpassos de movimento, câmera com margem norte, canvas expansível, retrato frontal do inventário, placa única dos NPCs, barra inferior com oito espaços e HP/Mana dinâmicos, células contínuas sem fragmentos, tolerância a falhas de recursos ambientes, dez ações em quatro quadros, duas folhas ambulantes em oito direções, seis protagonistas em oito direções, quatro estados distintos de equipamento por aparência, 48 folhas de oclusão, restrições de arma por classe, migração de saves, nove perfis de fumaça, dezesseis tufos animados, gramado refinado, quatro pátios residenciais, telhados distintos, transparência, alinhamento do ateliê, guardas voltados para dentro, limpeza de assets/scripts legados e ausência de arquivos de QA no pacote.
+O validador consolidado verifica planta, quatro encontros naturais de muralha, centro exclusivo dos portões, pontos de retorno, movimento inicial livre nos dois portões para as seis aparências, faixa opaca de contato dos pés, colisor `32×16`, projeção de movimento `2:1`, autoridade de `isoX/isoY/isoZ`, fórmula de depth, registro e checagem do `IsoOcclusionManager`, máscaras alfa pré-calculadas, escala opaca do herói/NPCs/guardas, subpassos de movimento, câmera com margem norte, canvas nativo responsivo, retrato frontal do inventário, placa branca única dos NPCs, barra inferior nativa com oito espaços e HP/Mana dinâmicos, células contínuas sem fragmentos, tolerância a falhas de recursos ambientes, dez ações em quatro quadros, duas folhas ambulantes em oito direções, seis protagonistas em oito direções, quatro estados distintos de equipamento por aparência, 48 folhas de oclusão, restrições de arma por classe, migração de saves, nove perfis de fumaça, dezesseis tufos animados, gramado refinado, quatro pátios residenciais, telhados distintos, transparência, alinhamento do ateliê, guardas voltados para dentro, limpeza de assets/scripts legados e ausência de arquivos de QA no pacote.

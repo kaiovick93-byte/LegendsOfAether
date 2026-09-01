@@ -2,10 +2,12 @@
 import {CLASSES} from '../character/CharacterClass';
 import {PLAYER_APPEARANCE_ORDER,PLAYER_APPEARANCES,idleFrameForFacing,playerTextureKey} from '../character/PlayerAppearance';
 import {ScreenFade} from '../ui/ScreenFade';
+import {centerReferenceViewport} from '../render/Viewport';
 
 export class CharacterSelectScene extends Phaser.Scene{
  constructor(){super('CharacterSelectScene')}
  create(){
+  centerReferenceViewport(this);
   this.fade=new ScreenFade(this);this.selectedAppearance='warrior_m';this.cards=[];
   this.add.rectangle(480,270,960,540,0x0d1422,1);
   this.add.text(480,30,'ESCOLHA SEU HERÓI',{fontFamily:'Arial',fontSize:'28px',color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5);

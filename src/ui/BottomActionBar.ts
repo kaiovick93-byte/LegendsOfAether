@@ -3,9 +3,11 @@ export class BottomActionBar {
   constructor(private scene, private player, private abilities, private getItemCount){
     const w=scene.scale.width,h=scene.scale.height;
     this.root=scene.add.container(w/2,h).setScrollFactor(0).setDepth(700);
-    this.frameWidth=Math.min(960,w);
-    this.frameHeight=154*(this.frameWidth/960);
-    this.frame=scene.add.image(0,0,'bottom_hud_frame').setOrigin(.5,1).setDisplaySize(this.frameWidth,this.frameHeight);
+    // A moldura é exibida nos 960×154 px nativos. Em telas estreitas todo o
+    // conjunto é reduzido uniformemente; nunca se estica apenas a imagem.
+    this.frameWidth=960;
+    this.frameHeight=154;
+    this.frame=scene.add.image(0,0,'bottom_hud_frame').setOrigin(.5,1);
     this.root.add(this.frame);
 
     const orbX=this.frameWidth*.405;
@@ -14,18 +16,18 @@ export class BottomActionBar {
     this.hpBack=scene.add.circle(-orbX,orbY,orbRadius,0x17070c,.88);
     this.hpOrb=scene.add.arc(-orbX,orbY,orbRadius-2,-90,270,false,0xc53c52,.94);
     this.hpShine=scene.add.circle(-orbX-9,orbY-11,orbRadius*.34,0xff9aac,.14);
-    this.hpText=scene.add.text(-orbX,orbY-1,'',{fontFamily:'Georgia, serif',fontSize:11,color:'#fff6f4',fontStyle:'bold',stroke:'#28070d',strokeThickness:3,align:'center'}).setOrigin(.5);
-    this.hpPotion=scene.add.text(-orbX,orbY+orbRadius+8,'',{fontFamily:'Arial',fontSize:8,color:'#edcfd3',fontStyle:'bold',stroke:'#090d14',strokeThickness:2}).setOrigin(.5);
+    this.hpText=scene.add.text(-orbX,orbY-1,'',{fontFamily:'Georgia, serif',fontSize:12,color:'#fff6f4',fontStyle:'bold',stroke:'#28070d',strokeThickness:3,align:'center'}).setOrigin(.5);
+    this.hpPotion=scene.add.text(-orbX,orbY+orbRadius+8,'',{fontFamily:'Arial',fontSize:10,color:'#edcfd3',fontStyle:'bold',stroke:'#090d14',strokeThickness:2}).setOrigin(.5);
 
     this.manaBack=scene.add.circle(orbX,orbY,orbRadius,0x06111d,.9);
     this.manaOrb=scene.add.arc(orbX,orbY,orbRadius-2,-90,270,false,0x347fca,.95);
     this.manaShine=scene.add.circle(orbX-9,orbY-11,orbRadius*.34,0x9ed4ff,.14);
-    this.manaText=scene.add.text(orbX,orbY-1,'',{fontFamily:'Georgia, serif',fontSize:11,color:'#f2f8ff',fontStyle:'bold',stroke:'#06162c',strokeThickness:3,align:'center'}).setOrigin(.5);
-    this.manaPotion=scene.add.text(orbX,orbY+orbRadius+8,'',{fontFamily:'Arial',fontSize:8,color:'#c8e3ff',fontStyle:'bold',stroke:'#090d14',strokeThickness:2}).setOrigin(.5);
+    this.manaText=scene.add.text(orbX,orbY-1,'',{fontFamily:'Georgia, serif',fontSize:12,color:'#f2f8ff',fontStyle:'bold',stroke:'#06162c',strokeThickness:3,align:'center'}).setOrigin(.5);
+    this.manaPotion=scene.add.text(orbX,orbY+orbRadius+8,'',{fontFamily:'Arial',fontSize:10,color:'#c8e3ff',fontStyle:'bold',stroke:'#090d14',strokeThickness:2}).setOrigin(.5);
     this.root.add([this.hpBack,this.hpOrb,this.hpShine,this.hpText,this.hpPotion,this.manaBack,this.manaOrb,this.manaShine,this.manaText,this.manaPotion]);
 
-    this.statusText=scene.add.text(0,-131,'',{fontFamily:'Georgia, serif',fontSize:8,color:'#e4c77c',fontStyle:'bold',stroke:'#080c12',strokeThickness:2}).setOrigin(.5);
-    this.commands=scene.add.text(0,-116,'H • VIDA   M • MANA   I • INVENTÁRIO   K • HABILIDADES   C • CONTROLES   P • PAUSA',{fontFamily:'Arial',fontSize:7,color:'#bac8dc',fontStyle:'bold',stroke:'#080c12',strokeThickness:2}).setOrigin(.5);
+    this.statusText=scene.add.text(0,-131,'',{fontFamily:'Georgia, serif',fontSize:10,color:'#e4c77c',fontStyle:'bold',stroke:'#080c12',strokeThickness:2}).setOrigin(.5);
+    this.commands=scene.add.text(0,-116,'H • VIDA   M • MANA   I • INVENTÁRIO   K • HABILIDADES   C • CONTROLES   P • PAUSA',{fontFamily:'Arial',fontSize:9,color:'#bac8dc',fontStyle:'bold',stroke:'#080c12',strokeThickness:2}).setOrigin(.5);
     this.root.add([this.statusText,this.commands]);
 
     this.slotBacks=[];
@@ -35,7 +37,7 @@ export class BottomActionBar {
     for(let index=0;index<8;index++){
       const x=firstX+index*(slotWidth+slotGap);
       const back=scene.add.rectangle(x,slotY,slotWidth,56,0x101a2a,.9).setStrokeStyle(1.4,index<4?0xa27c3e:0x52627b,.95);
-      const text=scene.add.text(x,slotY,'',{fontFamily:'Arial',fontSize:8,color:'#eef2f8',fontStyle:'bold',align:'center',lineSpacing:1,wordWrap:{width:slotWidth-5}}).setOrigin(.5);
+      const text=scene.add.text(x,slotY,'',{fontFamily:'Arial',fontSize:9,color:'#eef2f8',fontStyle:'bold',align:'center',lineSpacing:1,wordWrap:{width:slotWidth-5}}).setOrigin(.5);
       this.root.add([back,text]);
       this.slotBacks.push(back);
       this.slotTexts.push(text);
@@ -43,10 +45,19 @@ export class BottomActionBar {
 
     this.xpBg=scene.add.rectangle(-218,-37,436,5,0x202b3d,1).setOrigin(0,.5);
     this.xpFill=scene.add.rectangle(-218,-37,0,5,0x68b8d8,1).setOrigin(0,.5);
-    this.xpText=scene.add.text(0,-26,'',{fontFamily:'Arial',fontSize:7,color:'#aebcd0',fontStyle:'bold',stroke:'#080c12',strokeThickness:2}).setOrigin(.5);
+    this.xpText=scene.add.text(0,-26,'',{fontFamily:'Arial',fontSize:9,color:'#aebcd0',fontStyle:'bold',stroke:'#080c12',strokeThickness:2}).setOrigin(.5);
     this.root.add([this.xpBg,this.xpFill,this.xpText]);
     this.visible=true;
+    this.resizeHandler=(gameSize)=>this.layout(gameSize.width,gameSize.height);
+    scene.scale.on(Phaser.Scale.Events.RESIZE,this.resizeHandler);
+    scene.events.once('shutdown',()=>scene.scale.off(Phaser.Scale.Events.RESIZE,this.resizeHandler));
+    this.layout(w,h);
     this.update();
+  }
+
+  layout(width,height){
+    const scale=Math.min(1,width/this.frameWidth);
+    this.root.setPosition(width/2,height).setScale(scale);
   }
 
   setVisible(value){this.visible=value;this.root.setVisible(value)}
@@ -93,5 +104,5 @@ export class BottomActionBar {
     }
   }
 
-  destroy(){this.root.destroy(true)}
+  destroy(){this.scene.scale.off(Phaser.Scale.Events.RESIZE,this.resizeHandler);this.root.destroy(true)}
 }

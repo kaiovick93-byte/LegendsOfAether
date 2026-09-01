@@ -84,11 +84,8 @@ export class PreloadScene extends Phaser.Scene{
     this.load.spritesheet('farm_cow','assets/images/characters/ambient/farm/cow.png',{frameWidth:112,frameHeight:84});
     this.load.spritesheet('farm_pig','assets/images/characters/ambient/farm/pig.png',{frameWidth:96,frameHeight:72});
     this.load.spritesheet('farm_horse','assets/images/characters/ambient/farm/horse.png',{frameWidth:128,frameHeight:96});
-    this.load.image('npc_prompt_panel','assets/images/ui/npc_interaction/npc_prompt_panel.png');
     this.load.image('npc_key_f','assets/images/ui/npc_interaction/keycap_f.png');
     this.load.image('npc_key_t','assets/images/ui/npc_interaction/keycap_t.png');
-    this.load.image('npc_icon_talk','assets/images/ui/npc_interaction/icon_talk.png');
-    this.load.image('npc_icon_shop','assets/images/ui/npc_interaction/icon_shop.png');
     this.load.image('bottom_hud_frame','assets/images/ui/hud/bottom_hud_frame.png');
     this.load.image('dialogue_body_panel','assets/images/ui/dialogue/dialogue_body_panel.png');
     this.load.image('dialogue_header_bar','assets/images/ui/dialogue/dialogue_header_bar.png');

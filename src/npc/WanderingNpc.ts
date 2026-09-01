@@ -10,7 +10,11 @@ export class WanderingNpc extends Npc{
  constructor(scene,x,y,name,text,route=[],options={}){
   super(scene,x,y,name,text,{role:options.role||'',portrait:options.portrait||'',idleProfile:options.idleProfile||'',idleFacing:options.idleFacing||null,visualScale:options.visualScale??.46});
   this.home={x,y};
-  this.route=(route&&route.length?route:[{x,y}]).map(p=>({x:p.x,y:p.y,pause:p.pause}));
+  this.route=(route&&route.length?route:[{x,y}]).map(p=>{
+   const iso=this.screenToIso(p.x,p.y);
+   return{isoX:iso.x,isoY:iso.y,isoZ:this.isoZ,pause:p.pause};
+  });
+  this.routeState={isoX:this.isoX,isoY:this.isoY,isoZ:this.isoZ};
   this.routeIndex=0;
   this.routeTween=null;
   this.routePauseEvent=null;
@@ -28,6 +32,20 @@ export class WanderingNpc extends Npc{
    this.routePauseEvent=null;
    this.moveToNextRoutePoint();
   });
+ }
+
+ setIsoRoute(route=[]){
+  if(!route.length)return this;
+  this.route=route.map(p=>({
+   isoX:p.isoX??p.u??p.x,
+   isoY:p.isoY??p.v??p.y,
+   isoZ:p.isoZ??this.isoZ,
+   pause:p.pause
+  }));
+  this.routeIndex=0;
+  this.routeState={isoX:this.route[0].isoX,isoY:this.route[0].isoY,isoZ:this.route[0].isoZ};
+  this.setIsoPosition(this.routeState.isoX,this.routeState.isoY,this.routeState.isoZ);
+  return this;
  }
 
  handleNpcUpdate(time){
@@ -79,27 +97,36 @@ export class WanderingNpc extends Npc{
 
   const nextIndex=(this.routeIndex+1)%this.route.length;
   const target=this.route[nextIndex];
-  const distance=Phaser.Math.Distance.Between(this.x,this.y,target.x,target.y);
+  const targetScreen=this.isoToScreen(target.isoX,target.isoY,target.isoZ);
+  const distance=Phaser.Math.Distance.Between(this.x,this.y,targetScreen.x,targetScreen.y);
   if(distance<2){
    this.routeIndex=nextIndex;
    this.scheduleNext(target.pause??Phaser.Math.Between(this.minPause,this.maxPause));
    return;
   }
 
-  const dir=this.getDirectionTo(target.x,target.y);
+  const dir=this.getDirectionTo(targetScreen.x,targetScreen.y);
   this.currentTarget=target;
   this.routeMoving=true;
   this.playWalk(dir);
 
   const duration=Math.max(550,(distance/this.routeSpeed)*1000);
+  this.routeState={isoX:this.isoX,isoY:this.isoY,isoZ:this.isoZ};
   this.routeTween=this.scene.tweens.add({
-   targets:this,
-   x:target.x,
-   y:target.y,
+   targets:this.routeState,
+   isoX:target.isoX,
+   isoY:target.isoY,
+   isoZ:target.isoZ,
    duration,
    ease:'Linear',
-   onUpdate:()=>this.setDepth(this.scene.cityDepth?.(this.y,.04)??(5+this.y/1000+.04)),
+   onUpdate:()=>{
+    this.isoX=this.routeState.isoX;
+    this.isoY=this.routeState.isoY;
+    this.isoZ=this.routeState.isoZ;
+    this.updateIsoPosition();
+   },
    onComplete:()=>{
+    this.setIsoPosition(target.isoX,target.isoY,target.isoZ);
     this.routeTween=null;
     this.routeMoving=false;
     this.routeIndex=nextIndex;
@@ -128,7 +155,10 @@ export class WanderingNpc extends Npc{
   this.dialoguePaused=false;
   try{
    if(this.routeTween&&this.routeTween.isPaused()){
-    if(this.currentTarget)this.playWalk(this.getDirectionTo(this.currentTarget.x,this.currentTarget.y));
+    if(this.currentTarget){
+     const target=this.isoToScreen(this.currentTarget.isoX,this.currentTarget.isoY,this.currentTarget.isoZ);
+     this.playWalk(this.getDirectionTo(target.x,target.y));
+    }
     this.routeTween.resume();
     return;
    }

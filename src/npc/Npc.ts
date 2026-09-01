@@ -1,4 +1,5 @@
 // @ts-nocheck
+import {IsoContainer} from '../isometric/IsoOcclusion';
 /**
  * NPC base class.
  *
@@ -6,9 +7,17 @@
  * keep a natural orientation and live through subtle breathing + profession-
  * specific idle actions. Interaction UI remains completely independent.
  */
-export class Npc extends Phaser.GameObjects.Container{
+export class Npc extends IsoContainer{
  constructor(scene,x,y,name,text,actions={}){
-  super(scene,x,y);
+  // Projeção cartesiana de compatibilidade: mantém x/y visuais dos mapas
+  // legados, mas conserva a fórmula depth=(isoX+isoY)*100. A cidade troca
+  // imediatamente esta configuração pela malha 96×48 oficial.
+  const legacyIsoSum=y/100000;
+  super({
+   scene,isoX:(x+legacyIsoSum)/2,isoY:(legacyIsoSum-x)/2,isoZ:0,
+   tileWidth:2,tileHeight:200000,depthBase:5,depthOffset:.04
+  });
+  this.isoDriven=false;
   this.npcName=name;
   this.npcRole=actions.role||'';
   this.npcPortrait=actions.portrait||'';
@@ -52,57 +61,78 @@ export class Npc extends Phaser.GameObjects.Container{
    ? [{key:'F',label:'Conversar',type:'talk'},{key:'T',label:'Loja',type:'shop'}]
    : [{key:'F',label:'Conversar',type:'talk'}]);
 
-  scene.add.existing(this);
   this.setDepth(25);
   scene.events.on('update', this.handleNpcUpdate, this);
   scene.events.once('shutdown', ()=>this.cleanupNpc());
   scene.events.once('destroy', ()=>this.cleanupNpc());
  }
 
+ enableIsoPosition(config,x,y,z=0){
+  this.isoDriven=true;
+  this.configureIsoProjection(config);
+  this.setIsoPosition(x,y,z);
+  return this;
+ }
+
  createInteractionUi(){
   const scene=this.scene;
-  // Nome, função e comandos compartilham a mesma moldura. A placa usa a arte
-  // do antigo “F — Conversar”, mas agora o nome fica discretamente acima dela
-  // sem criar um segundo cartão flutuante.
-  this.interactionUi=scene.add.container(122,-55).setAlpha(0).setVisible(false);
-  this.interactionPanel=scene.add.image(0,0,'npc_prompt_panel').setDisplaySize(252,81);
-  this.nameText=scene.add.text(0,-27,this.npcName,{
-   fontFamily:'Georgia, serif',fontSize:11,color:'#e8cf96',fontStyle:'bold',
-   stroke:'#070b12',strokeThickness:1,align:'center'
+  // Uma única placa branca discreta: nome, função e ação permanecem juntos
+  // e a âncora fica exatamente sobre o centro da cabeça do NPC.
+  this.interactionVisualHeight=110;
+  this.interactionHasSecondary=false;
+  this.interactionAnchorY=-150;
+  this.interactionUi=scene.add.container(0,this.interactionAnchorY).setAlpha(0).setVisible(false);
+  this.interactionPanel=scene.add.graphics();
+  this.nameText=scene.add.text(0,-14,this.npcName,{
+   fontFamily:'Georgia, serif',fontSize:11,color:'#18212d',fontStyle:'bold',align:'center'
   }).setOrigin(.5);
-  this.roleText=scene.add.text(0,-14,this.npcRole||'',{
-   fontFamily:'Georgia, serif',fontSize:7,color:'#aeb8c8',fontStyle:'italic',
-   stroke:'#070b12',strokeThickness:1,align:'center'
+  this.roleText=scene.add.text(0,-1,this.npcRole||'',{
+   fontFamily:'Georgia, serif',fontSize:8,color:'#647080',fontStyle:'italic',align:'center'
   }).setOrigin(.5);
   this.interactionUi.add([this.interactionPanel,this.nameText,this.roleText]);
 
-  const primary=this.makeInteractionRow('F','Conversar','talk',18);
+  const primary=this.makeInteractionRow('F','Conversar',17);
   this.primaryAction=primary.container;
-  this.primaryKey=primary.keycap;
-  this.primaryIcon=primary.icon;
+  this.primaryKey=primary.keyText;
   this.primaryText=primary.label;
   this.interactionUi.add(this.primaryAction);
 
-  const secondary=this.makeInteractionRow('T','Loja','shop',31);
+  const secondary=this.makeInteractionRow('T','Loja',35);
   this.secondaryAction=secondary.container.setVisible(false);
-  this.secondaryKey=secondary.keycap;
-  this.secondaryIcon=secondary.icon;
+  this.secondaryKey=secondary.keyText;
   this.secondaryText=secondary.label;
   this.interactionUi.add(this.secondaryAction);
 
+  this.redrawInteractionPanel(false);
+  this.setInteractionAnchor(this.interactionVisualHeight);
   this.add(this.interactionUi);
  }
 
- makeInteractionRow(key,label,type,y){
+ redrawInteractionPanel(hasSecondary){
+  const height=hasSecondary?76:58;
+  const top=-26;
+  this.interactionPanel.clear();
+  this.interactionPanel.fillStyle(0xffffff,.92).fillRoundedRect(-96,top,192,height,9);
+  this.interactionPanel.lineStyle(1,0xc4ccd5,.96).strokeRoundedRect(-96,top,192,height,9);
+  this.interactionPanel.lineStyle(1,0xffffff,.78).strokeRoundedRect(-94,top+2,188,height-4,7);
+ }
+
+ setInteractionAnchor(visualHeight=110){
+  this.interactionVisualHeight=visualHeight;
+  const lift=this.interactionHasSecondary?58:40;
+  this.interactionAnchorY=-(visualHeight+lift);
+  this.interactionUi?.setPosition(0,this.interactionAnchorY);
+ }
+
+ makeInteractionRow(key,label,y){
   const container=this.scene.add.container(0,y);
-  const keycap=this.scene.add.image(-92,0,key==='T'?'npc_key_t':'npc_key_f').setDisplaySize(23,23);
-  const icon=this.scene.add.image(-64,0,type==='shop'?'npc_icon_shop':'npc_icon_talk').setDisplaySize(19,19).setAlpha(.9);
-  const text=this.scene.add.text(-48,0,label,{
-   fontFamily:'Georgia, serif',fontSize:11,color:'#edf0f4',fontStyle:'bold',
-   stroke:'#06090f',strokeThickness:1
-  }).setOrigin(0,.5);
-  container.add([keycap,icon,text]);
-  return{container,keycap,icon,label:text};
+  const keycap=this.scene.add.graphics();
+  keycap.fillStyle(0xf4f6f8,1).fillRoundedRect(-72,-10,22,20,5);
+  keycap.lineStyle(1,0x8c98a5,1).strokeRoundedRect(-72,-10,22,20,5);
+  const keyText=this.scene.add.text(-61,0,key,{fontFamily:'Arial',fontSize:11,color:'#17202b',fontStyle:'bold'}).setOrigin(.5);
+  const text=this.scene.add.text(-42,0,label,{fontFamily:'Georgia, serif',fontSize:11,color:'#273342',fontStyle:'bold'}).setOrigin(0,.5);
+  container.add([keycap,keyText,text]);
+  return{container,keyText,label:text};
  }
 
  createConversationIcon(){
@@ -159,20 +189,21 @@ export class Npc extends Phaser.GameObjects.Container{
 
   const a=normalized[0];
   this.primaryText?.setText(a.label||'Conversar');
-  this.primaryKey?.setTexture((a.key||'F')==='T'?'npc_key_t':'npc_key_f');
-  this.primaryIcon?.setTexture(a.type==='shop'?'npc_icon_shop':'npc_icon_talk');
+  this.primaryKey?.setText(a.key||'F');
 
   const b=normalized[1];
+  this.interactionHasSecondary=!!b;
   this.secondaryAction?.setVisible(!!b);
   if(b){
    this.secondaryText?.setText(b.label||'Ação');
-   this.secondaryKey?.setTexture((b.key||'T')==='F'?'npc_key_f':'npc_key_t');
-   this.secondaryIcon?.setTexture(b.type==='shop'?'npc_icon_shop':'npc_icon_talk');
-   this.primaryAction?.setY(8);
-   this.secondaryAction?.setY(30);
+   this.secondaryKey?.setText(b.key||'T');
+   this.primaryAction?.setY(16);
+   this.secondaryAction?.setY(35);
   }else{
-   this.primaryAction?.setY(20);
+   this.primaryAction?.setY(17);
   }
+  this.redrawInteractionPanel(!!b);
+  this.setInteractionAnchor(this.interactionVisualHeight);
  }
 
  // Compatibilidade com cenas antigas que ainda chamam setPrompt().
@@ -185,16 +216,16 @@ export class Npc extends Phaser.GameObjects.Container{
  showInteractionUi(){
   if(!this.interactionUi)return;
   this.interactionTween?.stop();
-  this.interactionUi.setVisible(true).setAlpha(0).setX(116);
-  this.interactionTween=this.scene.tweens.add({targets:this.interactionUi,alpha:1,x:122,duration:145,ease:'Sine.Out'});
+  this.interactionUi.setVisible(true).setAlpha(0).setPosition(0,this.interactionAnchorY+4);
+  this.interactionTween=this.scene.tweens.add({targets:this.interactionUi,alpha:1,y:this.interactionAnchorY,duration:145,ease:'Sine.Out'});
  }
 
  hideInteractionUi(immediate=false){
   if(!this.interactionUi)return;
   this.interactionTween?.stop();
-  if(immediate){this.interactionUi.setAlpha(0).setVisible(false).setX(116);return}
+  if(immediate){this.interactionUi.setAlpha(0).setVisible(false).setPosition(0,this.interactionAnchorY+4);return}
   this.interactionTween=this.scene.tweens.add({
-   targets:this.interactionUi,alpha:0,x:116,duration:115,ease:'Sine.In',
+   targets:this.interactionUi,alpha:0,y:this.interactionAnchorY+4,duration:115,ease:'Sine.In',
    onComplete:()=>this.interactionUi?.setVisible(false)
   });
  }
@@ -257,6 +288,7 @@ export class Npc extends Phaser.GameObjects.Container{
   const targetHeight=options.height??108;
   this.isoDisplayScale=targetHeight/source.height;
   this.sprite.setScale(this.isoDisplayScale).setFlipX(!!options.flipX);
+  this.setInteractionAnchor(targetHeight);
   this.characterVisual.add(this.sprite);
 
   this.isIsometricStatic=true;
@@ -296,6 +328,7 @@ export class Npc extends Phaser.GameObjects.Container{
   const targetHeight=options.height??110;
   this.isoDisplayScale=targetHeight/(frame?.height||224);
   this.sprite.setScale(this.isoDisplayScale);
+  this.setInteractionAnchor(targetHeight);
   this.characterVisual.add(this.sprite);
 
   this.isIsometricStatic=false;
