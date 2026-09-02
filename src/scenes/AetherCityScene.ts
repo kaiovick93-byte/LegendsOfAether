@@ -157,8 +157,7 @@ export class AetherCityScene extends Phaser.Scene {
       this.player.gold = 25;
     }
 
-    // O novo jogo nasce no Portão Sul e já olha para o interior da cidade.
-    this.entryFacing = 'up';
+    this.entryFacing = 'down';
     if (entrance === 'east') {
       // Limite interno do arco leste, exatamente na direção usada na entrada.
       this.player.setIsoPosition(25.02,14,-6);
@@ -200,20 +199,10 @@ export class AetherCityScene extends Phaser.Scene {
     this.player.updateIsoPosition();
     this.player.facing = this.entryFacing || 'down';
     this.player.playMove(false);
-    if (!this.playerShadow?.active) {
-      if (!this.textures.exists('iso_player_shadow')) {
-        const graphics=this.make.graphics({x:0,y:0,add:false});
-        graphics.fillStyle(0x000000,1).fillEllipse(24,9,48,18);
-        graphics.generateTexture('iso_player_shadow',48,18);
-        graphics.destroy();
-      }
-      this.playerShadow = new IsoSprite({
-        scene:this,isoX:this.player.isoX,isoY:this.player.isoY,isoZ:this.player.isoZ-14,
-        texture:'iso_player_shadow',tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
-        screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
-        depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:-.01
-      }).setAlpha(.28);
-    }
+    // A arte dos protagonistas já encosta na linha dos pés. A antiga elipse
+    // criada pelo Phaser fazia todos parecerem flutuar e não é mais usada.
+    this.playerShadow?.destroy?.();
+    this.playerShadow=null;
     this.createPlayerOcclusionOutline(texture, frame);
   }
 
@@ -564,10 +553,9 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   getPlayerCollisionSamples() {
-    // O colisor usa uma pose estável da direção atual. Vinculá-lo ao quadro
-    // momentâneo da caminhada fazia a área dos pés oscilar e podia bloquear
-    // o primeiro passo antes da animação virar para a direção pressionada.
-    const frameNumber = this.player.getIdleFrame();
+    const frameNumber = Number.isFinite(Number(this.player?.frame?.name))
+      ? Number(this.player.frame.name)
+      : this.player.getIdleFrame();
     // Armas e cajados não alargam o corpo físico. A máscara corporal vem da
     // folha-base da mesma identidade e do mesmo quadro direcional.
     const key = `player-${this.player.appearanceId}-base`;
@@ -578,16 +566,16 @@ export class AetherCityScene extends Phaser.Scene {
     const width = mask?.width ?? 96;
     const height = mask?.height ?? 96;
     const samples = [];
-    const step = 3;
+    const step = 2;
     // Colisão corporal é contato no chão: somente pernas e pés opacos entram
     // no volume físico. Cabeça, cabelos e armas continuam participando da
     // oclusão visual, mas não prendem o herói quando duas silhuetas se cruzam
     // em profundidades isométricas diferentes.
-    const contactBandStart = Math.floor(height * .66);
+    const contactBandStart = Math.max(0,height - 14);
     for (let y = contactBandStart; y < height; y += step) {
       for (let x = 1; x < width; x += step) {
         const alpha = mask?.alpha[y * width + x] ?? 0;
-        if (alpha >= 64) {
+        if (alpha >= 96) {
           samples.push({
             x: x + step / 2 - width * this.player.originX,
             y: y + step / 2 - height * this.player.originY
@@ -626,12 +614,12 @@ export class AetherCityScene extends Phaser.Scene {
     };
   }
 
-  isBlockedBySolidMasks(u, v) {
-    if (!this.solidMasks?.length) return false;
+  getSolidMaskCollisionScore(u, v) {
+    if (!this.solidMasks?.length) return 0;
     const foot = this.project(u, v);
     foot.y-=this.player.isoZ;
     const playerSamples = this.getPlayerCollisionSamples();
-    if (!playerSamples.length) return false;
+    if (!playerSamples.length) return 0;
     const scaleX = Math.abs(this.player.scaleX) || 1;
     const scaleY = Math.abs(this.player.scaleY) || 1;
     const worldSamples = playerSamples.map(sample => ({
@@ -644,6 +632,7 @@ export class AetherCityScene extends Phaser.Scene {
     const playerTop = Math.min(...worldSamples.map(point => point.y));
     const playerBottom = Math.max(...worldSamples.map(point => point.y));
 
+    let totalHits=0;
     for (const entry of this.solidMasks) {
       const geometry = this.getSolidGeometry(entry);
       if (!geometry) continue;
@@ -665,10 +654,15 @@ export class AetherCityScene extends Phaser.Scene {
         if (sourceY < geometry.height * entry.sourceMinY ||
             sourceY >= geometry.height * entry.sourceMaxY) continue;
         const alpha = targetMask.alpha[sourceY * targetMask.width + sourceX] ?? 0;
-        if (alpha >= entry.alphaThreshold && ++hits >= entry.minHits) return true;
+        if (alpha >= entry.alphaThreshold) hits++;
       }
+      if(hits>=entry.minHits)totalHits+=hits;
     }
-    return false;
+    return totalHits;
+  }
+
+  isBlockedBySolidMasks(u, v) {
+    return this.getSolidMaskCollisionScore(u,v)>0;
   }
 
   createNpcs() {
@@ -1040,10 +1034,10 @@ export class AetherCityScene extends Phaser.Scene {
     const du = (sx / AetherCityScene.TILE_WIDTH + sy / AetherCityScene.TILE_HEIGHT) * dt;
     const dv = (-sx / AetherCityScene.TILE_WIDTH + sy / AetherCityScene.TILE_HEIGHT) * dt;
 
+    this.tryMove(du, 0);
+    this.tryMove(0, dv);
     this.player.updateFacing(sx,sy);
-    const movedU=this.tryMove(du, 0);
-    const movedV=this.tryMove(0, dv);
-    this.player.playMove(movedU||movedV);
+    this.player.playMove(true);
     this.updatePlayerProjection();
   }
 
@@ -1058,14 +1052,18 @@ export class AetherCityScene extends Phaser.Scene {
     // opaca fina quando o navegador entrega um quadro mais longo.
     const steps = Math.max(1, Math.ceil(Math.max(Math.abs(du), Math.abs(dv)) / .035));
     const stepU = du / steps, stepV = dv / steps;
-    let moved=false;
     for (let index = 0; index < steps; index++) {
       const u = this.player.isoX + stepU, v = this.player.isoY + stepV;
-      if (this.isBlocked(u, v, this.playerIsoRadius)) break;
+      if (this.isBlockedByCityBounds(u,v,this.playerIsoRadius)) break;
+      const currentScore=this.getSolidMaskCollisionScore(this.player.isoX,this.player.isoY);
+      const nextScore=this.getSolidMaskCollisionScore(u,v);
+      // Caso um save ou uma aproximação extrema deixe os pés tocando alguns
+      // pixels opacos, ainda é possível escapar ou deslizar tangencialmente.
+      // Só bloqueamos um contato novo ou um movimento que aumente a invasão.
+      const escapingExistingOverlap=currentScore>0&&nextScore<=currentScore;
+      if(nextScore>0&&!escapingExistingOverlap)break;
       this.player.setIsoPosition(u,v,this.player.isoZ);
-      moved=true;
     }
-    return moved;
   }
 
   isOutsideCityWallEnvelope(u, v, radius) {
@@ -1088,11 +1086,15 @@ export class AetherCityScene extends Phaser.Scene {
     return false;
   }
 
-  isBlocked(u, v, radius) {
+  isBlockedByCityBounds(u, v, radius) {
     const C = AetherCityScene;
     if (u < .68 + radius || v < .68 + radius || u > C.MAP_SIZE - .68 - radius || v > C.MAP_SIZE - .68 - radius) return true;
     if (this.isOutsideCityWallEnvelope(u, v, radius)) return true;
-    return this.isBlockedBySolidMasks(u, v);
+    return false;
+  }
+
+  isBlocked(u, v, radius) {
+    return this.isBlockedByCityBounds(u,v,radius)||this.isBlockedBySolidMasks(u,v);
   }
 
   updatePlayerProjection() {
@@ -1100,7 +1102,6 @@ export class AetherCityScene extends Phaser.Scene {
     this.player.body?.setVelocity(0, 0);
     this.playerNaturalDepth = this.player.depth;
     this.player.setVisible(true).setAlpha(1);
-    this.playerShadow?.setIsoPosition(this.player.isoX,this.player.isoY,this.player.isoZ-14).setAlpha(.28);
     this.syncPlayerOcclusionOutline();
     this.updateUniversalOcclusion();
     this.occlusionManager?.checkPlayerOcclusion(this.player);
@@ -1139,7 +1140,9 @@ export class AetherCityScene extends Phaser.Scene {
       // Sobreposição de pixels não basta: o pé do jogador precisa estar
       // realmente atrás da linha de apoio do objeto. Isso impede o contorno
       // dourado ao tocar uma fachada pela frente.
-      if (!image?.active || this.player.y >= occluder.baseY - occluder.behindMargin) continue;
+      const objectDepth=image?.parentContainer?.depth ?? image?.depth ?? 0;
+      if (!image?.active || this.player.y >= occluder.baseY - occluder.behindMargin ||
+          this.playerNaturalDepth >= objectDepth - .005) continue;
       const texture = this.textures.get(occluder.key);
       const source = texture?.getSourceImage?.();
       if (!source) continue;
@@ -1167,21 +1170,19 @@ export class AetherCityScene extends Phaser.Scene {
       }
       if (objectHits < 2) continue;
       totalHits += objectHits;
-      highestOccluderDepth = Math.max(highestOccluderDepth, image.parentContainer?.depth ?? image.depth ?? 0);
-      lowestOccluderDepth = Math.min(lowestOccluderDepth, image.parentContainer?.depth ?? image.depth ?? 0);
+      highestOccluderDepth = Math.max(highestOccluderDepth, objectDepth);
+      lowestOccluderDepth = Math.min(lowestOccluderDepth, objectDepth);
     }
 
     if (totalHits >= 2) {
-      // O sprite real permanece abaixo do objeto e é recortado pela própria
-      // transparência dele; acima aparece somente a silhueta vazada dourada.
-      this.player.setDepth(Math.min(this.playerNaturalDepth, lowestOccluderDepth - .02));
-      this.playerShadow?.setDepth(this.player.depth - .01);
+      // Atrás do objeto, o corpo real some por completo. Acima permanece
+      // apenas a folha vazada dourada correspondente ao quadro atual.
+      this.player.setDepth(Math.min(this.playerNaturalDepth, lowestOccluderDepth - .02)).setVisible(false).setAlpha(0);
       outline.setVisible(true)
         .setAlpha(Phaser.Math.Clamp(.58 + totalHits / 18, .58, 1))
         .setDepth(highestOccluderDepth + .32);
     } else {
-      this.player.setDepth(this.playerNaturalDepth);
-      this.playerShadow?.updateIsoPosition();
+      this.player.setDepth(this.playerNaturalDepth).setVisible(true).setAlpha(1);
       outline.setVisible(false).setAlpha(0);
     }
   }

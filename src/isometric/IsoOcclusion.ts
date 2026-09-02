@@ -228,16 +228,6 @@ export class IsoPhysicsSprite extends IsoSprite {
     config.scene.physics.add.existing(this);
     this.updateIsoPosition();
   }
-
-  /**
-   * Mantém a API encadeável de Phaser.Physics.Arcade.Sprite mesmo que esta
-   * classe herde de Sprite para preservar a projeção isométrica autoritativa.
-   */
-  public setCollideWorldBounds(value:boolean=true): this {
-    const body=this.body as Phaser.Physics.Arcade.Body|undefined;
-    body?.setCollideWorldBounds(value);
-    return this;
-  }
 }
 
 /**
@@ -245,11 +235,9 @@ export class IsoPhysicsSprite extends IsoSprite {
  * o jogador está atrás da base da parede na ordenação isométrica.
  */
 export class IsoOcclusionManager {
-  private scene: Phaser.Scene;
   private targetsToFade: Phaser.GameObjects.Group;
 
   constructor(scene: Phaser.Scene) {
-    this.scene=scene;
     this.targetsToFade=scene.add.group();
   }
 
@@ -260,26 +248,12 @@ export class IsoOcclusionManager {
 
   public checkPlayerOcclusion(player: IsoSprite): void {
     if(!player?.active)return;
-    const playerBounds=player.getBounds();
-    const playerFootY=player.y;
+    // Os elementos altos permanecem sempre opacos. A cena decide quando o
+    // herói está atrás deles e exibe exclusivamente a folha vazada dourada.
     for(const wall of this.targetsToFade.getChildren() as IsoSprite[]){
       if(!wall?.active)continue;
-      const wallBounds=wall.getBounds();
-      const visuallyOverlapping=Phaser.Geom.Intersects.RectangleToRectangle(playerBounds,wallBounds);
-      const isPlayerBehind=player.depth<wall.depth&&playerFootY<=wall.y+12;
-      this.fadeTo(wall,visuallyOverlapping&&isPlayerBehind ? .35 : 1);
+      wall.scene?.tweens?.killTweensOf(wall);
+      if(wall.alpha!==1)wall.setAlpha(1);
     }
-  }
-
-  private fadeTo(target: IsoSprite,alphaTarget:number): void {
-    if(target.alpha===alphaTarget||(target.data&&target.data.get('tweeningTo')===alphaTarget))return;
-    if(!target.data)target.setDataEnabled();
-    target.data.set('tweeningTo',alphaTarget);
-    this.scene.tweens.add({
-      targets:target,
-      alpha:alphaTarget,
-      duration:150,
-      onComplete:()=>target.data?.set('tweeningTo',null)
-    });
   }
 }
