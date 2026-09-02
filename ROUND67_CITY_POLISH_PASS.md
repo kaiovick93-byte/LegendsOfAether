@@ -31,12 +31,13 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 - todos os sprites isométricos usam origem `(0.5, 1)`, fixando projeção, colisão e ordenação na linha dos pés;
 - o controle aplica a transformação isométrica `2:1` do arquivo `phaser_isometric_collision.ts`, com normalização diagonal e movimento pelos dois eixos do losango;
 - o corpo Arcade do herói mede `32×16 px` e fica centralizado na base; as máscaras alfa continuam sendo a autoridade final para preservar a exigência de que pixels transparentes nunca colidam;
-- o contato físico usa somente pixels opacos da faixa inferior de pernas e pés; cabeça, cabelos e armas continuam sendo renderizados/ocultados, mas não criam colisão antecipada nem prendem o herói junto aos guardas dos portões;
+- o contato físico usa somente pixels opacos dos últimos `14 px` de pernas e pés; cabeça, cabelos e armas continuam sendo renderizados/ocultados, mas não criam colisão antecipada;
+- quando uma posição antiga começa tocando uma máscara, movimentos que reduzem ou mantêm a quantidade de pixels em contato são aceitos; o herói consegue escapar e deslizar junto ao obstáculo sem atravessá-lo;
 - muralhas, pilares dos portões, edifícios, fonte, Marco de Senda, árvore e NPCs fixos usam máscaras extraídas do canal alfa das próprias texturas;
 - pixels transparentes dos canvases não bloqueiam o movimento; as máscaras são pré-calculadas uma vez e reutilizadas durante a cena;
 - edifícios usam a faixa opaca da base e o corpo completo somente na aproximação frontal;
-- atrás dos objetos, o herói continua livre para ser ocultado e exibir apenas o contorno dourado;
-- muralhas, portões, edifícios e demais elementos altos isométricos são registrados no `IsoOcclusionManager`; a cena chama `checkPlayerOcclusion(player)` a cada atualização e aplica fade suave quando existe sobreposição real e o herói está atrás;
+- atrás dos objetos, o sprite real do herói fica invisível e somente o contorno vazado dourado correspondente ao quadro atual permanece visível;
+- muralhas, portões, edifícios e demais elementos altos permanecem totalmente opacos; `IsoOcclusionManager` não altera mais o alpha do cenário;
 - fonte deixa de possuir a antiga elipse invisível à direita;
 - árvore bloqueia somente os pixels opacos da faixa do tronco;
 - Marco de Senda não cria o retângulo físico adicional na cidade e impede a entrada do corpo pela própria silhueta;
@@ -75,12 +76,13 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 - tela de novo jogo reconstruída com seis escolhas: aparência masculina e feminina para Guerreiro, Mago e Caçador;
 - o conjunto preserva diversidade visual sem exibir rótulos étnicos na seleção, mantendo câmera, escala, linha dos pés e linguagem 2,5D comuns aos NPCs;
 - cada protagonista possui 32 quadros reais: quatro poses de caminhada para Sul, Sudeste, Leste, Nordeste, Norte, Noroeste, Oeste e Sudoeste;
+- as 24 combinações normais usam a mesma linha de chão (`y=95`) e a sombra circular gerada pelo Phaser foi removida;
+- Leste, Sudeste e Nordeste são espelhos quadro a quadro de Oeste, Sudoeste e Noroeste, preservando tamanho, fase e sentido da caminhada;
 - o estado inicial usa somente roupas simples, sem arma e sem armadura visíveis;
 - Guerreiro aceita apenas espadas, Mago apenas cajados e Caçador apenas arcos; itens incompatíveis não podem ser equipados;
 - arma e armadura alteram imediatamente a folha usada pelo personagem, inclusive quando os dois itens estão equipados ao mesmo tempo; cada equipamento foi integrado à anatomia das 32 poses, com espada baixa, cajado ligado à pegada e arco acompanhado de aljava;
-- os estados `armadura`, `cajado` e `cajado + armadura` da maga feminina foram refeitos: cajado preso à mão, identidade feminina preservada e nenhuma área branca residual nas 32 células;
-- os estados `armadura` e `arco` do Caçador masculino também foram refeitos; o arco usa madeira marrom e corda discreta, sem bordas claras ou resíduos opacos;
-- os cinco estados revisados preservam exatamente a escala dos estados-base, com `82–84 px` opacos por célula e a mesma linha dos pés em todas as direções;
+- os estados `cajado` e `cajado + armadura` da maga feminina foram refeitos: cajado preso à mão, borda preta removida e identidade feminina preservada nas 32 células;
+- Maga feminina (`armadura`, `cajado` e `cajado + armadura`), Caçador masculino (`base`, `armadura` e `arco`), Guerreira com armadura e Guerreiro com espada foram normalizados novamente; halos, resíduos opacos e contornos grossos foram removidos sem alterar as 32 poses ou a linha dos pés;
 - o inventário sempre apresenta o estado visual atual no quadro frontal Sul, independentemente da direção em que o herói estava andando no mapa;
 - saves registram a aparência selecionada e migram saves antigos para a aparência masculina da classe já salva;
 - as 24 combinações visuais (`6 aparências × 4 estados`) possuem folhas normais e folhas vazadas de contorno dourado, totalizando 48 spritesheets compatíveis com a oclusão universal.
@@ -108,10 +110,10 @@ O Round 67 fecha a etapa de acabamento da Cidade de Aether isométrica com foco 
 ## Interface inferior
 
 - nova moldura 2,5D em aço azul-escuro e ouro envelhecido, com transparência real;
-- moldura exibida nos `960×154 px` originais em telas largas; em telas menores, todo o conjunto é reduzido uniformemente, sem deformar a arte ou os orbes;
+- moldura reconstruída em `1320×154 px`, ampliando apenas o painel central e preservando ornamentos e orbes no tamanho nativo; em telas menores, todo o conjunto é reduzido uniformemente;
 - orbes de HP e Mana são preenchidos pelo Phaser e diminuem proporcionalmente aos valores atuais;
-- oito espaços exatos no canal central: três habilidades de classe, ataque básico e quatro espaços reservados para expansão;
-- atalhos de poções e os comandos `I · Inventário`, `K · Skills`, `C · Controles` e `P · Menu` permanecem legíveis na própria barra;
+- quatorze espaços exatos: poções de HP e Mana, oito habilidades/ações e quatro comandos;
+- após as oito habilidades, `K` Skills, `I` Inventário, `C` Controles e `P` Menu possuem ícones próprios;
 - nível, ouro e experiência continuam visíveis sem ocupar a área do mapa.
 
 ## Validação

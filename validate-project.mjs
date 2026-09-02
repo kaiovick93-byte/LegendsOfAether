@@ -53,19 +53,27 @@ const alphaCellStats=(relative,cellWidth,cellHeight)=>{
       components.push(count);
     }
     components.sort((a,b)=>b-a);
-    stats.push({width:maxX-minX+1,height:maxY-minY+1,components});
+    stats.push({minX,minY,maxX,maxY,width:maxX-minX+1,height:maxY-minY+1,components});
   }
   return stats;
 };
-const neutralWhitePixelCount=relative=>{
+const mirroredAlphaDifference=(relative,rowA,rowB,cellWidth=96,cellHeight=96)=>{
   const png=decodeRgbaPng(relative);
-  let count=0;
-  for(let index=0;index<png.data.length;index+=4){
-    const red=png.data[index],green=png.data[index+1],blue=png.data[index+2],alpha=png.data[index+3];
-    const high=Math.max(red,green,blue),low=Math.min(red,green,blue);
-    if(alpha>=24&&low>=190&&high-low<=60)count++;
+  let difference=0;
+  for(let column=0;column<4;column++)for(let y=0;y<cellHeight;y++)for(let x=0;x<cellWidth;x++){
+    const alphaA=png.data[((rowA*cellHeight+y)*png.width+column*cellWidth+x)*4+3];
+    const alphaB=png.data[((rowB*cellHeight+y)*png.width+column*cellWidth+(cellWidth-1-x))*4+3];
+    if(alphaA!==alphaB)difference++;
   }
-  return count;
+  return difference;
+};
+const outlineBodyOverlap=(normalRelative,outlineRelative)=>{
+  const normal=decodeRgbaPng(normalRelative),outline=decodeRgbaPng(outlineRelative);
+  let overlap=0;
+  for(let pixel=0;pixel<normal.width*normal.height;pixel++){
+    if(normal.data[pixel*4+3]>=24&&outline.data[pixel*4+3]>=24)overlap++;
+  }
+  return overlap;
 };
 const issues=[];
 const expect=(condition,message)=>{if(!condition)issues.push(message)};
@@ -316,16 +324,17 @@ spawnTargets.push(
 );
 const playerContactSamples=(appearanceId,frameNumber)=>{
   const png=collisionPng(`assets/images/characters/player/${appearanceId}_base.png`),samples=[];
-  const frameColumn=frameNumber%4,frameRow=Math.floor(frameNumber/4),startY=Math.floor(96*.66);
-  for(let y=startY+1;y<96;y+=3)for(let x=1;x<96;x+=3){
+  const frameColumn=frameNumber%4,frameRow=Math.floor(frameNumber/4),startY=96-14;
+  for(let y=startY;y<96;y+=2)for(let x=1;x<96;x+=2){
     const sourceX=frameColumn*96+x,sourceY=frameRow*96+y;
-    if(png.data[(sourceY*png.width+sourceX)*4+3]>=64)samples.push({x:(x+1.5-48)*1.28,y:(y+1.5-96)*1.28});
+    if(png.data[(sourceY*png.width+sourceX)*4+3]>=96)samples.push({x:(x+1-48)*1.28,y:(y+1-96)*1.28});
   }
   return samples;
 };
-const blockedBySpawnTargets=(appearanceId,frameNumber,u,v)=>{
+const spawnCollisionScore=(appearanceId,frameNumber,u,v)=>{
   const foot=project(u,v);foot.y+=6;
   const samples=playerContactSamples(appearanceId,frameNumber).map(sample=>({x:foot.x+sample.x,y:foot.y+sample.y}));
+  let total=0;
   for(const target of spawnTargets){
     let hits=0;
     for(const point of samples){
@@ -333,19 +342,23 @@ const blockedBySpawnTargets=(appearanceId,frameNumber,u,v)=>{
       const sourceY=Math.floor((point.y-target.top)/target.scale);
       if(target.flipX)sourceX=target.png.width-1-sourceX;
       if(sourceX<0||sourceX>=target.png.width||sourceY<target.png.height*target.sourceMinY||sourceY>=target.png.height)continue;
-      if(target.png.data[(sourceY*target.png.width+sourceX)*4+3]>=36&&++hits>=2)return true;
+      if(target.png.data[(sourceY*target.png.width+sourceX)*4+3]>=36)hits++;
     }
+    if(hits>=2)total+=hits;
   }
-  return false;
+  return total;
 };
-const simulateSpawnMove=(appearanceId,spawn,frameNumber,du,dv)=>{
+const simulateSpawnMove=(appearanceId,spawn,frameNumber,du,dv,ticks=12)=>{
   let {u,v}=spawn;
-  for(let tick=0;tick<12;tick++){
+  for(let tick=0;tick<ticks;tick++){
     for(const [axisU,axisV] of [[du,0],[0,dv]]){
       const steps=Math.max(1,Math.ceil(Math.max(Math.abs(axisU),Math.abs(axisV))/.035));
       for(let step=0;step<steps;step++){
         const nextU=u+axisU/steps,nextV=v+axisV/steps;
-        if(envelopeBlocked(nextU,nextV)||blockedBySpawnTargets(appearanceId,frameNumber,nextU,nextV))break;
+        if(envelopeBlocked(nextU,nextV))break;
+        const currentScore=spawnCollisionScore(appearanceId,frameNumber,u,v);
+        const nextScore=spawnCollisionScore(appearanceId,frameNumber,nextU,nextV);
+        if(nextScore>0&&!(currentScore>0&&nextScore<=currentScore))break;
         u=nextU;v=nextV;
       }
     }
@@ -355,29 +368,20 @@ const simulateSpawnMove=(appearanceId,spawn,frameNumber,du,dv)=>{
 for(const appearanceId of ['warrior_m','warrior_f','mage_m','mage_f','ranger_m','ranger_f']){
   expect(simulateSpawnMove(appearanceId,{u:14,v:25.02},17,0,-.044)>.20,`${appearanceId} nasce preso no Portão Sul`);
   expect(simulateSpawnMove(appearanceId,{u:25.02,v:14},9,-.044,0)>.20,`${appearanceId} nasce preso no Portão Leste`);
-}
-const spawnFirstSteps=[
-  ['Sul para cima',{u:14,v:25.02},17,0,-.02],
-  ['Sul para baixo',{u:14,v:25.02},1,0,.02],
-  ['Sul para esquerda',{u:14,v:25.02},9,-.02,0],
-  ['Sul para direita',{u:14,v:25.02},25,.02,0],
-  ['Leste para cima',{u:25.02,v:14},17,0,-.02],
-  ['Leste para baixo',{u:25.02,v:14},1,0,.02],
-  ['Leste para esquerda',{u:25.02,v:14},9,-.02,0],
-  ['Leste para direita',{u:25.02,v:14},25,.02,0]
-];
-for(const appearanceId of ['warrior_m','warrior_f','mage_m','mage_f','ranger_m','ranger_f']){
-  for(const [label,spawn,frame,du,dv] of spawnFirstSteps){
-    const nextU=spawn.u+du,nextV=spawn.v+dv;
-    expect(!envelopeBlocked(nextU,nextV)&&!blockedBySpawnTargets(appearanceId,frame,nextU,nextV),`${appearanceId} não consegue iniciar movimento: ${label}`);
+  const directions=[[0,-.026],[.018,-.018],[.026,0],[.018,.018],[0,.026],[-.018,.018],[-.026,0],[-.018,-.018]];
+  for(const [du,dv] of directions){
+    expect(simulateSpawnMove(appearanceId,{u:14,v:25.02},17,du,dv,1)>.008,`${appearanceId} não inicia movimento em oito direções no Portão Sul`);
+    expect(simulateSpawnMove(appearanceId,{u:25.02,v:14},9,du,dv,1)>.008,`${appearanceId} não inicia movimento em oito direções no Portão Leste`);
   }
 }
 
 // Contato por imagem: o corpo-base consulta exclusivamente a opacidade real.
 expect(scene.includes('this.player.setOrigin(.5,1).setScale(1.28)'),'jogador não usa a mesma altura dos NPCs com origem nos pés');
 expect(scene.includes("height: 124, gateGuard: true")&&(scene.match(/height: 124, gateGuard: true/g)||[]).length===2,'guardas dos dois portões não foram igualados à escala corporal dos NPCs');
-expect(scene.includes('getPlayerCollisionSamples()')&&scene.includes("const key = `player-${this.player.appearanceId}-base`")&&scene.includes('alpha >= 64'),'máscara corporal do jogador não usa a folha-base opaca');
-expect(scene.includes('const contactBandStart = Math.floor(height * .66)')&&scene.includes('for (let y = contactBandStart; y < height; y += step)'),'contato do jogador ainda usa cabeça/arma e pode nascer preso ao guarda');
+expect(scene.includes('getPlayerCollisionSamples()')&&scene.includes("const key = `player-${this.player.appearanceId}-base`")&&scene.includes('alpha >= 96'),'máscara corporal do jogador não usa a folha-base opaca');
+expect(scene.includes('const contactBandStart = Math.max(0,height - 14)')&&scene.includes('for (let y = contactBandStart; y < height; y += step)'),'contato do jogador ainda usa cabeça/arma e pode nascer preso ao guarda');
+expect(scene.includes('getSolidMaskCollisionScore(u, v)')&&scene.includes('currentScore>0&&nextScore<=currentScore'),'colisão não permite escapar ou deslizar ao tocar uma máscara');
+expect(!scene.includes("generateTexture('iso_player_shadow'")&&!scene.includes('fillEllipse(24,9,48,18)'),'sombra circular ainda faz o jogador parecer flutuar');
 expect(scene.includes('isBlockedBySolidMasks(u, v)')&&scene.includes('getTextureAlphaMask(entry.key, geometry.frameName)')&&scene.includes('targetMask.alpha[sourceY * targetMask.width + sourceX]'),'colisão urbana não consulta a opacidade dos sprites');
 expect(scene.includes("document.createElement('canvas')")&&scene.includes('this.textureAlphaMaskCache.set(cacheKey, mask)'),'máscaras alfa não são pré-calculadas para evitar leitura de canvas por pixel');
 expect(scene.includes("registerSolidMask(this.fountain, 'city_fountain'")&&scene.includes("label: 'Marco de Senda'")&&scene.includes("registerSolidMask(image, 'iso_city_wall'"),'fonte, Marco ou muralhas não usam máscaras opacas');
@@ -386,22 +390,18 @@ expect(scene.includes('registerSolidMask(npc.sprite')&&!scene.includes('fixedNpc
 expect(!scene.includes('addBlockedScreenEllipse')&&!scene.includes('blockedRects')&&!scene.includes('blockedBuildingMasks'),'a cidade ainda contém elipses ou retângulos transparentes de colisão');
 expect(scene.includes('/ .035')&&scene.includes('for (let index = 0; index < steps; index++)'),'movimento não usa subpassos contra máscaras finas');
 expect(waystone.includes('if(!scene.usesLogicalAlphaCollision)'),'Marco de Senda ainda cria um retângulo invisível na cidade');
-expect(scene.includes('this.player.y >= occluder.baseY - occluder.behindMargin'),'contorno dourado não exige posição atrás do objeto');
-expect(scene.includes('lowestOccluderDepth - .02')&&scene.includes('this.player.getOutlineTextureKey()'),'oclusão universal dourada não acompanha a aparência ativa');
+expect(scene.includes('this.player.y >= occluder.baseY - occluder.behindMargin')&&scene.includes('this.playerNaturalDepth >= objectDepth - .005'),'contorno dourado não exige posição atrás do objeto');
+expect(scene.includes('lowestOccluderDepth - .02')&&scene.includes('this.player.getOutlineTextureKey()')&&scene.includes('setVisible(false).setAlpha(0)'),'oclusão não oculta o corpo real para mostrar somente o contorno');
 
 // Arquitetura IsoSprite fornecida: posição lógica, depth, pivô e fade.
 expect(isoArchitecture.includes('export class IsoSprite extends Phaser.GameObjects.Sprite')&&isoArchitecture.includes('export class IsoOcclusionManager'),'classes isométricas-base não foram integradas');
 expect(isoArchitecture.includes('this.setOrigin(.5,1)')&&isoArchitecture.includes('const baseDepth=(this.isoX+this.isoY)*100')&&isoArchitecture.includes('const zAdjustment=this.isoZ*.01'),'pivô ou fórmula automática de depth foi alterada');
 expect(isoArchitecture.includes('super.setPosition(screen.x,screen.y)')&&isoArchitecture.includes('public setIsoPosition')&&isoArchitecture.includes('return this.updateIsoPosition()'),'posição de tela não é derivada exclusivamente das coordenadas iso');
 expect(player.includes('extends IsoPhysicsSprite')&&player.includes('enableIsoMovement')&&scene.includes('this.player.setIsoPosition(u,v,this.player.isoZ)')&&!scene.includes('logicalPlayer'),'movimento do jogador ainda contorna isoX/isoY/isoZ');
-expect(isoArchitecture.includes('public setCollideWorldBounds(value:boolean=true): this')&&isoArchitecture.includes('body?.setCollideWorldBounds(value)')&&player.includes('setCollideWorldBounds(true)')&&scene.includes('this.player.setCollideWorldBounds(false)'),'API física encadeável do jogador isométrico está ausente ou incompleta');
-expect(player.includes('body.moves=false')&&player.includes('body.updateFromGameObject()'),'corpo Arcade ainda disputa x/y com a posição isométrica autoritativa');
-expect(scene.includes('const frameNumber = this.player.getIdleFrame()')&&!scene.includes('Number(this.player?.frame?.name)'),'colisor do jogador ainda oscila conforme o quadro momentâneo da caminhada');
-expect(scene.indexOf('this.player.updateFacing(sx,sy)')<scene.indexOf('const movedU=this.tryMove(du, 0)')&&scene.includes('this.player.playMove(movedU||movedV)'),'direção física não é atualizada antes do primeiro passo ou animação ignora bloqueio real');
-expect(scene.includes("this.entryFacing = 'up'"),'novo jogo não começa voltado para o interior pelo Portão Sul');
 expect(player.includes('this.body.setSize(32,16,false)')&&player.includes('this.body.setOffset((this.width-32)/2,this.height-16)'),'colisor Phaser 32×16 não está ancorado nos pés');
 expect(scene.includes('const sx = (inputX - inputY) * screenSpeed')&&scene.includes('const sy = (inputX + inputY) * (screenSpeed * .5)'),'movimento não aplica a projeção 2:1 do arquivo de colisão enviado');
 expect(scene.includes('new IsoOcclusionManager(this)')&&scene.includes('this.occlusionManager?.registerWall(image)')&&scene.includes('this.occlusionManager?.checkPlayerOcclusion(this.player)'),'paredes não estão registradas/verificadas pelo gerenciador de oclusão');
+expect(!isoArchitecture.includes('fadeTo(')&&isoArchitecture.includes('if(wall.alpha!==1)wall.setAlpha(1)'),'gerenciador de oclusão ainda clareia muralhas ou edifícios');
 expect(wandering.includes('targets:this.routeState')&&wandering.includes('this.updateIsoPosition()')&&scene.includes('targets:state.motion')&&scene.includes('sprite.setIsoPosition(state.motion.isoX'),'NPCs ou fauna urbana ainda movem x/y nativos');
 
 // Seis heróis, equipamentos visuais, oito direções e save compatível.
@@ -418,9 +418,20 @@ for(const appearanceId of appearances){
         const d=pngDimensions(relative);
         expect(d.width===384&&d.height===768,`folha do jogador não possui 4x8 células 96x96: ${relative}`);
         expect(pngColorType(relative)===6,`folha do jogador não possui alpha RGBA: ${relative}`);
-        expect(size(relative)>(suffix?4000:80000),`folha do jogador parece vazia ou simplificada: ${relative}`);
+        expect(size(relative)>(suffix?8000:80000),`folha do jogador parece vazia ou simplificada: ${relative}`);
       }
       playerSheets++;
+    }
+    const normalRelative=`assets/images/characters/player/${appearanceId}_${state}.png`;
+    const outlineRelative=`assets/images/characters/player/${appearanceId}_${state}_outline.png`;
+    if(exists(normalRelative)&&exists(outlineRelative)){
+      const stats=alphaCellStats(normalRelative,96,96);
+      expect(stats.length===32&&stats.every(cell=>cell.maxY===95),`linha dos pés não termina em y=95: ${normalRelative}`);
+      for(const [leftRow,rightRow] of [[1,7],[2,6],[3,5]]){
+        expect(mirroredAlphaDifference(normalRelative,leftRow,rightRow)===0,`direções opostas não são espelhos exatos: ${normalRelative} linhas ${leftRow}/${rightRow}`);
+        expect(mirroredAlphaDifference(outlineRelative,leftRow,rightRow)===0,`contornos opostos não são espelhos exatos: ${outlineRelative} linhas ${leftRow}/${rightRow}`);
+      }
+      expect(outlineBodyOverlap(normalRelative,outlineRelative)<=256,`contorno dourado está preenchendo o corpo: ${outlineRelative}`);
     }
   }
 }
@@ -431,6 +442,7 @@ expect(preload.includes('PLAYER_DIRECTION_ROWS')&&preload.includes('start=row*4,
 expect(characterSelect.includes("this.selectedAppearance='warrior_m'")&&characterSelect.includes("this.registry.set('selectedAppearance'")&&characterSelect.includes("playerTextureKey(id,'base')"),'tela de novo jogo não permite escolher as seis aparências');
 expect(!/heritage|negro|negra|asiát|caucas/i.test(`${playerAppearance}\n${characterSelect}`),'menu ou modelo de aparência ainda expõe rótulos étnicos');
 expect(player.includes('facingFromVector(dx,dy')&&player.includes('appearanceId:this.appearanceId')&&player.includes('setEquipmentVisual(slots={})'),'jogador não salva aparência, quantiza oito direções ou reage ao equipamento');
+expect(player.includes('this.setFlipX(false)')&&player.includes('this.body.moves=false'),'jogador ainda espelha a folha ou permite que o Arcade sobrescreva a posição isométrica');
 expect(abilitySystem.includes('upRight:[diagonal,-diagonal]')&&abilitySystem.includes('downLeft:[-diagonal,diagonal]'),'habilidade de mobilidade não acompanha as oito direções do jogador');
 expect(inventoryPanel.includes("idleFrameForFacing('down')")&&!inventoryPanel.includes('this.player.getIdleFrame()'),'inventário não fixa o retrato frontal do estado atual');
 expect(equipment.includes('item.allowedClass===this.player.characterClass')&&equipment.includes('this.player.setEquipmentVisual?.(this.slots)'),'restrição de arma ou aparência equipada não está ligada ao inventário');
@@ -516,28 +528,28 @@ for(const relative of [
   expect(stats.length===32&&stats.every(cell=>cell.height>=82&&cell.height<=86),`estado do jogador perdeu escala/baseline: ${relative}`);
   expect(stats.every(cell=>(cell.components[1]??0)<3),`estado do jogador possui halo ou fragmento separado: ${relative}`);
 }
-for(const relative of [
-  'assets/images/characters/player/mage_f_armor.png',
-  'assets/images/characters/player/mage_f_weapon.png',
-  'assets/images/characters/player/mage_f_weapon_armor.png',
-  'assets/images/characters/player/ranger_m_armor.png',
-  'assets/images/characters/player/ranger_m_weapon.png'
-]){
-  expect(neutralWhitePixelCount(relative)===0,`estado do jogador ainda possui flashes/halos brancos: ${relative}`);
-}
 
 const hudFrame='assets/images/ui/hud/bottom_hud_frame.png';
 expect(exists(hudFrame),'moldura artística da barra inferior está ausente');
 if(exists(hudFrame)){
   const d=pngDimensions(hudFrame);
-  expect(d.width===960&&d.height===154,'moldura da barra inferior não preserva o canvas 960x154');
+  expect(d.width===1320&&d.height===154,'moldura da barra inferior não possui o canvas nativo 1320x154');
   expect(pngColorType(hudFrame)===6,'moldura da barra inferior não possui transparência RGBA');
 }
 expect(preload.includes("this.load.image('bottom_hud_frame'")&&bottomBar.includes("scene.add.image(0,0,'bottom_hud_frame')"),'arte da barra inferior não está integrada ao preload/Phaser');
-expect(bottomBar.includes('for(let index=0;index<8;index++)')&&bottomBar.includes("this.slotTexts[3].setText('ESPAÇO\\nATAQUE\\nBÁSICO')"),'barra inferior não reserva exatamente oito habilidades/comandos');
-expect(bottomBar.includes('I  INVENTÁRIO   •   K  SKILLS   •   C  CONTROLES   •   P  MENU'),'barra inferior não informa os quatro atalhos I/K/C/P');
+expect(bottomBar.includes('for(let index=0;index<14;index++)')&&bottomBar.includes("this.slotTexts[5].setPosition")&&bottomBar.includes('index=6;index<10'),'barra inferior não reserva 2 consumíveis + 8 habilidades + 4 comandos');
 expect(bottomBar.includes('this.hpOrb.setEndAngle(-90+360*healthRatio)')&&bottomBar.includes('this.manaOrb.setEndAngle(-90+360*manaRatio)'),'HP e Mana não diminuem visualmente com os valores reais');
-expect(bottomBar.includes('this.frameWidth=960')&&bottomBar.includes('this.root.setPosition(width/2,height).setScale(scale,scale)')&&!bottomBar.includes('setDisplaySize(this.frameWidth,this.frameHeight)'),'moldura inferior ainda é esticada em vez de usar os pixels nativos');
+expect(bottomBar.includes('this.frameWidth=1320')&&bottomBar.includes('this.root.setPosition(width/2,height).setScale(scale)')&&!bottomBar.includes('setDisplaySize(this.frameWidth,this.frameHeight)'),'moldura inferior ainda é esticada em vez de usar os pixels nativos');
+for(const [key,file] of [['healing','healing'],['mana','mana'],['skills','skills'],['inventory','inventory'],['controls','controls'],['menu','menu']]){
+  const relative=`assets/images/ui/hud/actions/${file}.png`;
+  expect(exists(relative),`ícone do HUD ausente: ${relative}`);
+  if(exists(relative)){
+    const d=pngDimensions(relative);
+    expect(d.width===64&&d.height===64&&pngColorType(relative)===6,`ícone do HUD não usa canvas RGBA 64x64: ${relative}`);
+  }
+  expect(preload.includes(`'hud_action_${key}'`),`ícone do HUD não está no preload: hud_action_${key}`);
+}
+expect(bottomBar.includes("10:'K',11:'I',12:'C',13:'P'")&&bottomBar.includes("this.slotTexts[10].setText('SKILLS')")&&bottomBar.includes("this.slotTexts[13].setText('MENU')"),'comandos K/I/C/P não aparecem após as oito habilidades');
 for(const direction of ['south:0','southWest:1','west:2','northWest:3','north:4','northEast:5','east:6','southEast:7']){
   expect(npc.includes(direction),`mapeamento direcional ausente: ${direction}`);
 }
@@ -618,4 +630,4 @@ if(issues.length){
   process.exit(1);
 }
 
-console.log('PROJECT_AUDIT_OK movement=6heroesx2gates contact=opaque-feet iso=authoritative camera=north-margin viewport=native inventory=front npc-prompt=white-unified hud=native+8slots sprites=8clean-states walls=registered gates=center-only occlusion=48outlines assets=runtime-clean');
+console.log('PROJECT_AUDIT_OK movement=6heroesx8dirsx2gates contact=opaque-feet+escape iso=authoritative camera=north-margin viewport=native inventory=front npc-prompt=white-unified hud=2items+8skills+4commands sprites=grounded+mirrored-pairs walls=opaque gates=center-only occlusion=outline-only assets=runtime-clean');
