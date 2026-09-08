@@ -1,2 +1,0 @@
-// @ts-nocheck
-import {className} from '../character/CharacterClass';export class HUD{constructor(scene,player){this.player=player;this.text=scene.add.text(16,16,'',{fontFamily:'Arial',fontSize:'13px',color:'#ecf0ff',backgroundColor:'#182033',padding:8}).setScrollFactor(0).setDepth(400)}update(){this.text.setText(`HP ${this.player.hp}/${this.player.maxHp} | MP ${this.player.mana}/${this.player.maxMana} | Lv ${this.player.level} | Ouro ${this.player.gold} | ${className(this.player.characterClass)}`)}}
