@@ -17,6 +17,11 @@ const SECTOR_NAMES={
   OUTSKIRTS_CAVE:'CAVERNA / FENDA',OUTSKIRTS_GREENWOODS_GATE:'ENTRADA DE GREENWOODS'
 };
 
+// Camadas estáveis para superfícies que nunca podem participar da oclusão
+// dinâmica. A ordenação de atores e objetos volumétricos continua usando a
+// base dos pés em depthAt(); somente o solo recebe esta classificação.
+export const AETHER_TERRITORY_RENDER_LAYERS=Object.freeze({TERRAIN:-80,ROAD:-70});
+
 /**
  * Culling e ativação por proximidade sem destruir estado persistente. Objetos
  * distantes deixam de renderizar/animar; entidades futuras podem registrar
@@ -67,6 +72,7 @@ export class AetherTerritory{
 
   project(u,v){return this.config.project(u,v)}
   depthAt(u,v,offset=0){return this.config.depthBase+(u+v)*100+offset}
+  groundDepth(layer=AETHER_TERRITORY_RENDER_LAYERS.TERRAIN){return this.config.depthBase+layer}
 
   track(object,u,v,options={}){
     if(!object)return object;this.objects.push(object);this.sectors.register(object,u,v,options);return object;
@@ -76,6 +82,16 @@ export class AetherTerritory{
     if(!this.scene.textures.exists(texture))return null;
     const p=this.project(u,v),image=this.scene.add.image(p.x,p.y,texture).setOrigin(.5).setScale(scale).setRotation(rotation).setDepth(this.depthAt(u,v,depthOffset));
     if(options.flipX)image.setFlipX(true);if(options.alpha!=null)image.setAlpha(options.alpha);if(options.tint)image.setTint(options.tint);
+    return this.track(image,u,v,{visibleRadius:options.visibleRadius??34,activeRadius:options.activeRadius??40});
+  }
+
+  // Ground não é um objeto oclusor: seu depth é estável e fica abaixo de
+  // qualquer ator cuja posição lógica esteja dentro do mundo jogável.
+  addGround(texture,u,v,scale=1,rotation=0,layer=AETHER_TERRITORY_RENDER_LAYERS.TERRAIN,options={}){
+    if(!this.scene.textures.exists(texture))return null;
+    const p=this.project(u,v),image=this.scene.add.image(p.x,p.y,texture).setOrigin(.5).setScale(scale).setRotation(rotation).setDepth(this.groundDepth(layer));
+    if(options.flipX)image.setFlipX(true);if(options.alpha!=null)image.setAlpha(options.alpha);if(options.tint)image.setTint(options.tint);
+    image.setData?.('aetherRenderClass','ground');image.setData?.('aetherGroundLayer',layer);
     return this.track(image,u,v,{visibleRadius:options.visibleRadius??34,activeRadius:options.activeRadius??40});
   }
 
@@ -125,7 +141,8 @@ export class AetherTerritory{
       const p=this.project(u,v),shade=[0xffffff,0xf5f8ed,0xf8f2df,0xeaf4e4][index%4];
       const tile=this.scene.add.image(p.x,p.y,'outskirts_ground_tile_v2').setOrigin(.5)
         .setScale(1.018+(index%3)*.006).setFlipX(index%3===1).setFlipY(index%5===0)
-        .setTint(shade).setDepth(this.config.depthBase-80);
+        .setTint(shade).setDepth(this.groundDepth(AETHER_TERRITORY_RENDER_LAYERS.TERRAIN));
+      tile.setData?.('aetherRenderClass','ground');tile.setData?.('aetherGroundLayer',AETHER_TERRITORY_RENDER_LAYERS.TERRAIN);
       this.track(tile,u,v,{visibleRadius:29,activeRadius:34});
       index++;
     }
@@ -148,7 +165,9 @@ export class AetherTerritory{
     });
   }
 
-  stampPolyline(points,scale,spacing=2.05){
+  stampPolyline(points,scale,spacing=2.05,asGround=false){
+    const add=asGround?this.addGround.bind(this):this.addFlat.bind(this);
+    const layerOrOffset=asGround?AETHER_TERRITORY_RENDER_LAYERS.ROAD:-43;
     for(let index=1;index<points.length;index++){
       const a=points[index-1],b=points[index],length=Math.hypot(b.u-a.u,b.v-a.v),steps=Math.max(1,Math.ceil(length/spacing));
       const screenA=this.project(a.u,a.v),screenB=this.project(b.u,b.v),rotation=Math.atan2(screenB.y-screenA.y,screenB.x-screenA.x);
@@ -158,13 +177,15 @@ export class AetherTerritory{
         // Variações discretas de recorte/espelhamento quebram a leitura de
         // "carimbos" idênticos sem escalar ou distorcer a arte.
         const stampIndex=index*97+step;
-        this.addFlat('outskirts_old_road_v2',u,v,scale*(.97+(stampIndex%3)*.018),rotation+(stampIndex%2?.018:-.018),-43,{visibleRadius:30,flipX:stampIndex%3===1,alpha:.94+(stampIndex%3)*.02});
+        add('outskirts_old_road_v2',u,v,scale*(.97+(stampIndex%3)*.018),rotation+(stampIndex%2?.018:-.018),layerOrOffset,{visibleRadius:30,flipX:stampIndex%3===1,alpha:.94+(stampIndex%3)*.02});
       }
     }
   }
 
   createRoadNetwork(){
-    this.stampPolyline(AETHER_OLD_ROAD,.53,2.25);
+    // A Estrada Velha é uma superfície contínua, nunca um oclusor. As demais
+    // rotas mantêm seu comportamento atual até suas etapas próprias.
+    this.stampPolyline(AETHER_OLD_ROAD,.53,2.25,true);
     this.stampPolyline(AETHER_SOUTH_MAIN_ROAD,.50,2.2);
     this.stampPolyline(AETHER_EAST_MAIN_ROAD,.50,2.2);
     Object.values(AETHER_SECONDARY_ROADS).forEach(points=>this.stampPolyline(points,.38,2));
