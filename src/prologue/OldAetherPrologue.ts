@@ -100,7 +100,10 @@ class PrologueCue{
 export class OldAetherPrologue{
   constructor(scene,{freshNewGame=false}={}){
     this.scene=scene;
-    const persisted=scene.worldFlags?.prologue;
+    // Mesmo que uma Scene anterior ainda esteja viva na sessão, Novo Jogo é
+    // sempre um estado narrativo novo. Isso impede flags velhas de ocultarem
+    // Lobo, Goblins, Patrulheiro ou a sequência da carroça.
+    const persisted=freshNewGame?null:scene.worldFlags?.prologue;
     this.enabled=!!freshNewGame||!!persisted?.started;
     if(!this.enabled)return;
 
@@ -223,6 +226,7 @@ export class OldAetherPrologue{
     const a=this.anchors.attackedWagon;
     this.wagon=add('abandoned_wagon_v3',a.u,a.v,142,.08,true);
     if(this.wagon){
+      this.wagon.setName?.('prologue-abandoned-wagon').setActive(true).setVisible(true).setAlpha(1);
       this.scene.registerOccluder?.(this.wagon,'abandoned_wagon_v3',this.wagon.y-7,{behindMargin:8});
       this.scene.registerSolidMask?.(this.wagon,'abandoned_wagon_v3',{
         label:'Carroça abandonada',mode:'footprint',footprintWidth:128,footprintHeight:27,footprintYOffset:-12,
@@ -286,7 +290,7 @@ export class OldAetherPrologue{
   spawnWolf(){
     const a=this.anchors.youngWolf;
     this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:82,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250});
-    this.hud?.hint('Um Lobo Jovem bloqueia a estrada. Use o ataque básico para se defender.');
+    if(this.wolf)this.hud?.hint('Um Lobo Jovem bloqueia a estrada. Use o ataque básico para se defender.');
   }
 
   spawnGoblinScouts(){
@@ -303,7 +307,8 @@ export class OldAetherPrologue{
     const p=this.scene.project(config.u,config.v);
     const enemy=new Enemy(this.scene,p.x,p.y,config.name,{hp:config.hp,speed:58,attackDamage:config.attack,aggroRange:190,xpReward:config.xp,attackCooldown:1050,scale:1,tint:0xffffff});
     const frame=this.scene.textures.get(config.texture).get(0);
-    enemy.setTexture(config.texture,0).setOrigin(.5,1).clearTint();
+    enemy.setName?.(`prologue-${config.id}`);
+    enemy.setTexture(config.texture,0).setOrigin(.5,1).clearTint().setActive(true).setVisible(true).setAlpha(1);
     enemy.setScale(config.height/(frame?.height||1)).setDepth(this.scene.depthAt(config.u,config.v,.16));
     // Walk/attack usam a folha 256 px do 9D-A. Os quadros de hit/morte v2
     // possuem 724 px e mantêm a mesma altura física ao alternar de textura.
@@ -592,6 +597,8 @@ export class OldAetherPrologue{
     patrol.isoBaseTexture='aether_patrolman';
     patrol.enableIsoPosition({...ISO_CONFIG,depthOffset:.07},a.u,a.v,0);
     patrol.isoLogical={u:a.u,v:a.v};
+    patrol.setName?.('prologue-patrolman');
+    patrol.setActive(true);patrol.setNpcVisible(true);
     this.scene.cityActors.push(patrol);
     this.scene.registerSolidMask(patrol.sprite,'aether_patrolman',{
       label:'Aedan Vale',mode:'footprint',footprintWidth:24,footprintHeight:12,footprintYOffset:-10,frame:()=>patrol.sprite?.frame?.name??0,

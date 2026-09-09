@@ -11,7 +11,15 @@ export class MenuScene extends Phaser.Scene{
   this.add.text(480,120,'Action RPG de navegador',{fontFamily:'Arial',fontSize:17,color:'#7ee0ff'}).setOrigin(.5);
   const save=this.sm.load();
   const continueBtn=this.addButton('CONTINUAR',220,()=>this.startExisting(save),!!save);
-  this.addButton('NOVO JOGO',285,()=>{this.sm.clear();this.fade.out(()=>this.scene.start('PrologueScene'))},true);
+  this.addButton('NOVO JOGO',285,()=>{
+   this.sm.clear();
+   // SaveManager limpa o localStorage, mas o Registry sobrevive enquanto o
+   // jogo continua aberto. Sem esta limpeza, um prólogo concluído podia ser
+   // reaproveitado por engano e impedir que os atores roteirizados nascessem
+   // numa nova jornada.
+   for(const key of ['worldFlags','aetherCityEntrance','aetherContinuousSpawn','transitionSpawn','aetherActiveSector'])this.registry.remove(key);
+   this.fade.out(()=>this.scene.start('PrologueScene'));
+  },true);
   this.addButton('OPÇÕES / SOBRE',350,()=>this.fade.out(()=>this.scene.start('OptionsScene')),true);
   if(save){
     this.add.text(480,430,`Save encontrado • Nível ${save.player.level} • ${save.lastScene||'WorldScene'}`,{fontFamily:'Arial',fontSize:12,color:'#9aa8c7'}).setOrigin(.5)

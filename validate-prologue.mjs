@@ -26,7 +26,7 @@ const preload=read('src/scenes/PreloadScene.ts');
 const menu=read('src/scenes/MenuScene.ts');
 
 // Novo jogo e cena contínua.
-assert(menu.includes("this.sm.clear();this.fade.out(()=>this.scene.start('PrologueScene'))"),'NOVO JOGO não limpa um save anterior.');
+assert(menu.includes('this.sm.clear();')&&menu.includes("['worldFlags','aetherCityEntrance','aetherContinuousSpawn','transitionSpawn','aetherActiveSector']"),'NOVO JOGO não limpa o estado transitório que poderia pular atores do prólogo.');
 assert(layout.includes("id:'old-aether-road-new-game',u:7.7,v:73.2"),'Novo Jogo não aponta para a Estrada Velha.');
 assert(scene.includes('this.prologue = new OldAetherPrologue'),'AetherCityScene não instala o prólogo na cena contínua.');
 assert(scene.includes('AETHER_NEW_GAME_SPAWN.u,AETHER_NEW_GAME_SPAWN.v'),'Novo Jogo não usa o spawn oficial da Estrada Velha.');
@@ -55,6 +55,9 @@ assert(prologue.includes('enemy.attackPendingAt=time+')&&prologue.includes('dist
 assert(prologue.includes('enemy.deathAnimationEndsAt')&&prologue.includes('enemy.corpseExpiresAt=time+3400'),'Morte não preserva feedback visual/cadáver temporário.');
 assert(prologue.includes("'Aedan Vale'")&&prologue.includes("role:'Patrulheiro de Aether'")&&prologue.includes("setIsometricSprite?.('aether_patrolman'"),'Patrulheiro não foi integrado com arte própria.');
 assert(prologue.includes("this.wagon=add('abandoned_wagon_v3'")&&prologue.includes("label:'Carroça abandonada'")&&prologue.includes("spriteKey:'abandoned_wagon_v3'"),'Carroça Abandonada não tem footprint e interação próprios.');
+assert(prologue.includes("freshNewGame?null:scene.worldFlags?.prologue"),'Novo Jogo ainda pode reutilizar flags de prólogo antigas.');
+assert(scene.includes("save ? this.registry.get('worldFlags') : {}"),'AetherCityScene ainda herda worldFlags transitórias em Novo Jogo.');
+assert(prologue.includes("'prologue-abandoned-wagon'")&&prologue.includes("'prologue-patrolman'")&&prologue.includes('setActive(true).setVisible(true).setAlpha(1)'),'Atores roteirizados não explicitam estado ativo/visível no runtime.');
 
 // Máquina de estados: cada troca exige o estágio anterior — coordenadas só
 // revelam a vista/entrada depois da cadeia efetivamente concluída.
