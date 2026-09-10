@@ -52,11 +52,41 @@ const OLD_ROAD_CONNECTOR_KIT=Object.freeze({
   yJunction:{
     texture:'old_road_connector_y_junction_v1',size:{width:1600,height:1600},
     connectors:{trunk:{x:800,y:1600},left:{x:157.6,y:490.6},right:{x:1442.4,y:490.6}}
+  },
+  gateTransition:{
+    texture:'old_road_connector_gate_transition_v1',size:{width:1024,height:1280},
+    // A boca inferior encaixa exatamente no tronco do Y. A extremidade
+    // superior entra sob o arco do Portão Sul, portanto é um terminal e não
+    // uma nova via ou um segundo sistema de conectores.
+    connectors:{from:{x:764,y:1280},to:{x:1023.21,y:674.10}}
   }
 });
-// Trecho curto deliberadamente isolado perto do spawn: ele valida somente o
-// kit técnico, sem redesenhar o prólogo nem a Estrada Velha inteira nesta fase.
-const OLD_ROAD_CONNECTOR_TEST=Object.freeze({u:15,v:55});
+// Prompt 9D-B3.8 — rota visual aprovada da Estrada Velha. Os módulos partem
+// do canto inferior esquerdo, passam pelos encontros do prólogo e chegam ao
+// Portão Sul. Cada ângulo abaixo representa uma curva suave de poucos graus
+// entre bocas idênticas; não há escala não uniforme nem remendo visual.
+const OLD_ROAD_ROUTE_START=Object.freeze({u:.5,v:80.8});
+const OLD_ROAD_ROUTE_SEGMENTS=Object.freeze([
+  {module:'straightLong',heading:7.99},{module:'straightLong',heading:.16},
+  {module:'straightLong',heading:-7.26},{module:'straightShort',heading:-12.19},
+  {module:'straightLong',heading:-16.21},{module:'straightLong',heading:-20.23},
+  {module:'straightShort',heading:-22.21},{module:'straightLong',heading:-23.18},
+  {module:'straightLong',heading:-23.17},{module:'straightLong',heading:-22.03},
+  {module:'straightShort',heading:-20.97},{module:'straightLong',heading:-19.80},
+  {module:'straightLong',heading:-18.14},{module:'straightShort',heading:-17.78},
+  {module:'straightLong',heading:-19.15},{module:'straightLong',heading:-20.21},
+  {module:'straightShort',heading:-20.00},{module:'straightLong',heading:-18.76}
+]);
+const OLD_ROAD_FINAL_Y=Object.freeze({
+  // A boca superior do Y encaixa no acesso preservado do Portão Sul. A
+  // rotação leva o ramo esquerdo exatamente à vista de Aether, que encerra o
+  // trajeto vermelho antes da entrada na cidade.
+  gate:{u:14,v:29.1},rotation:40.27311450169119*Math.PI/180
+});
+const OLD_ROAD_SOUTH_GATE=Object.freeze({u:14,v:26.03});
+const OLD_ROAD_MAIN_ROAD_STUB=Object.freeze([
+  {module:'straightLong',heading:95},{module:'straightShort',heading:91}
+]);
 
 /**
  * Culling e ativação por proximidade sem destruir estado persistente. Objetos
@@ -232,34 +262,62 @@ export class AetherTerritory{
   }
 
   /**
-   * Prompt 9D-B3.5: trecho técnico controlado.  O ground de toda a área já é
-   * contínuo por createGroundMosaic(); aqui entram somente os quatro módulos
-   * oficiais para validar os conectores, sem reconstruir o mapa ou alterar o
-   * fluxo do prólogo.  A Y usa flipY, que é a mesma orientação invertida usada
-   * quando a futura montagem encontrar o Portão Sul.
+   * Prompt 9D-B3.8: a Estrada Velha deixa de ser um teste isolado e passa a
+   * ligar o ponto inicial inferior esquerdo ao Portão Sul. O caminho é montado
+   * de trás para frente a partir da boca esquerda do Y: assim a conexão final
+   * é matematicamente a mesma coordenada, sem uma emenda aproximada no portão.
    */
   createOldRoadPrototype(){
-    const start=this.project(OLD_ROAD_CONNECTOR_TEST.u,OLD_ROAD_CONNECTOR_TEST.v);
-    const long=this.placeRoadConnectorModule('straightLong',start,'north');
-    const short=this.placeRoadConnectorModule('straightShort',long.connectors.south,'north');
-    const curve=this.placeRoadConnectorModule('curveRight',short.connectors.south,'south',{rotation:Math.PI});
-    const exitStraight=this.placeRoadConnectorModule('straightLong',curve.connectors.east,'north',{rotation:Math.PI/2});
-    const junction=this.placeRoadConnectorModule('yJunction',exitStraight.connectors.south,'trunk',{rotation:Math.PI/2,flipY:true});
+    const gateAnchor=this.project(OLD_ROAD_FINAL_Y.gate.u,OLD_ROAD_FINAL_Y.gate.v);
+    const junction=this.placeRoadConnectorModule('yJunction',gateAnchor,'trunk',{
+      rotation:OLD_ROAD_FINAL_Y.rotation,flipY:true,visibleRadius:29,activeRadius:34
+    });
+    const oldRoadModules=[];
+    let oldRoadAnchor=junction.connectors.left;
+    [...OLD_ROAD_ROUTE_SEGMENTS].reverse().forEach(segment=>{
+      const rotation=segment.heading*Math.PI/180-Math.PI/2;
+      const module=this.placeRoadConnectorModule(segment.module,oldRoadAnchor,'south',{
+        rotation,visibleRadius:29,activeRadius:34
+      });
+      oldRoadModules.unshift(module);
+      oldRoadAnchor=module.connectors.north;
+    });
+
+    // A curva de transição usa a mesma boca-mestra do Y e termina exatamente
+    // sob o arco existente. Isso substitui os três quadrados de pavimento que
+    // quebravam visualmente a chegada ao Portão Sul.
+    const southGate=this.placeRoadConnectorModule('gateTransition',junction.connectors.trunk,'from',{
+      rotation:OLD_ROAD_FINAL_Y.rotation,visibleRadius:29,activeRadius:34
+    });
+
+    // O ramo direito é propositalmente curto: apenas estabelece a saída da
+    // futura Estrada Principal, sem reconstruir o restante dos Arredores.
+    const mainRoadModules=[];
+    let mainRoadAnchor=junction.connectors.right;
+    OLD_ROAD_MAIN_ROAD_STUB.forEach(segment=>{
+      const rotation=segment.heading*Math.PI/180-Math.PI/2;
+      const module=this.placeRoadConnectorModule(segment.module,mainRoadAnchor,'north',{
+        rotation,visibleRadius:29,activeRadius:34
+      });
+      mainRoadModules.push(module);
+      mainRoadAnchor=module.connectors.south;
+    });
+
+    const requestedStart=this.project(OLD_ROAD_ROUTE_START.u,OLD_ROAD_ROUTE_START.v);
     this.scene.registry.set('oldRoadConnectorTest',{
-      standard:OLD_ROAD_CONNECTOR_STANDARD,
-      modules:[long,short,curve,exitStraight,junction].map(item=>({
-        module:item.moduleName,center:item.center,connectors:item.connectors,rotation:item.rotation,flipY:item.flipY
-      }))
+      standard:OLD_ROAD_CONNECTOR_STANDARD,route:'old-road-to-south-gate',
+      start:{requested:requestedStart,actual:oldRoadAnchor},gate:gateAnchor,
+      junction:{center:junction.center,connectors:junction.connectors,rotation:junction.rotation,flipY:true},
+      southGateTransition:{center:southGate.center,connectors:southGate.connectors,rotation:southGate.rotation,target:this.project(OLD_ROAD_SOUTH_GATE.u,OLD_ROAD_SOUTH_GATE.v)},
+      oldRoad:oldRoadModules.map(item=>({module:item.moduleName,center:item.center,connectors:item.connectors,rotation:item.rotation})),
+      mainRoad:mainRoadModules.map(item=>({module:item.moduleName,center:item.center,connectors:item.connectors,rotation:item.rotation}))
     });
   }
 
   createGateApproaches(){
-    // Só o prolongamento externo do Portão Sul fica visível. O Portão Leste
-    // e toda decoração de aproximação externa aguardam a reconstrução por
-    // setores; a Cidade e ambos os portões continuam preservados pela cena.
-    [[14,27.2],[14,29.1],[14,31]].forEach(([u,v])=>{
-      this.addGround('iso_pavement_tile_b',u,v,.72,OLD_ROAD_PROTOTYPE_LAYERS.ROAD,{visibleRadius:25});
-    });
+    // A entrada externa agora é concluída por gateTransition, com a mesma
+    // largura e boca dos módulos de estrada. Não adicionamos pavimento solto
+    // aqui: ele criava quadrados claros e costuras entre o Y e o arco.
   }
 
   nearCrossing(u,v,padding=.45){

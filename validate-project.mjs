@@ -1134,6 +1134,20 @@ for(const [name,width,height] of outskirtsAssets){
   const key=name.replace('.png','');expect(preload.includes(`'${key}'`),`asset dos Arredores fora do preload: ${key}`);
 }
 
+const southGateTransition='assets/images/environment/outskirts/old-road-v3/old_road_connector_gate_transition_v1.png';
+expect(exists(southGateTransition),'curva de transição da Estrada Velha para o Portão Sul está ausente');
+if(exists(southGateTransition)){
+  const dimensions=pngDimensions(southGateTransition);
+  expect(dimensions.width===1024&&dimensions.height===1280&&pngColorType(southGateTransition)===6,'curva do Portão Sul perdeu proporção ou alpha RGBA');
+}
+expect(
+  preload.includes("this.load.image('old_road_connector_gate_transition_v1'")&&
+  territory.includes("gateTransition:{")&&
+  territory.includes("placeRoadConnectorModule('gateTransition',junction.connectors.trunk,'from'")&&
+  territory.includes('old-road-to-south-gate'),
+  'Estrada Velha não fecha por uma transição modular real até o Portão Sul'
+);
+
 expect(territoryMap.includes("export const AETHER_TERRITORY_MAP_KEY='aether_territory_map_v2'")&&territoryMap.includes('width:1024,height:768')&&territoryMap.includes("x:.5+(u-v)/span*.41")&&territoryMap.includes("y:.22+(u+v)/(span*2)*.56"),'mapa completo não compartilha a projeção isométrica 2:1 do território');
 expect(territoryMap.includes('const scale=Math.min((maxX-minX)/crop.width,(maxY-minY)/crop.height)')&&territoryMap.includes('context.clip()'),'cidade aprovada não foi encaixada proporcionalmente no mapa completo');
 expect(territory.includes('this.worldFlags.discoveredLandmarks??={}')&&territory.includes('landmark.discoveryRadius**2')&&mapHud.includes('refreshMapMarkers()'),'descoberta de landmarks não é persistente ou não atualiza o mapa');
