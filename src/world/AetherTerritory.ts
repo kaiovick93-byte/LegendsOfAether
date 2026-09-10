@@ -175,17 +175,14 @@ export class AetherTerritory{
   }
 
   createGroundMosaic(){
-    // Base única e contínua dos Arredores. O alcance ultrapassa meia célula
-    // de cada world bound para que nem bordas de PNG transparentes nem a
-    // câmera revelem o fundo preto nas extremidades do território externo.
-    // Todos os módulos usam a mesma escala/tinta: não há manchas de terreno
-    // ou "quadrados" de grass com tratamento visual diferente nesta fase.
-    // Duas células e meia além do limite lógico cobrem a folga da câmera
-    // quando o jogador chega à borda caminhável do losango, não apenas o
-    // footprint do último tile.
-    const bounds=AETHER_LOGICAL_BOUNDS,spacing=7.8,margin=spacing*2.5;
+    // A base de grama cobre somente o footprint do território lógico.  A
+    // malha começa e termina meia célula dentro do limite para que os PNGs
+    // 8×8 se sobreponham levemente nas bordas, sem estender visualmente os
+    // Arredores além do mundo físico.
+    const bounds=AETHER_LOGICAL_BOUNDS,spacing=7.8,
+      firstU=bounds.minU+spacing/2,firstV=bounds.minV+spacing/2;
     let index=0;
-    for(let u=bounds.minU-margin;u<=bounds.maxU+margin;u+=spacing)for(let v=bounds.minV-margin;v<=bounds.maxV+margin;v+=spacing){
+    for(let u=firstU;u<=bounds.maxU;u+=spacing)for(let v=firstV;v<=bounds.maxV;v+=spacing){
       const p=this.project(u,v);
       const tile=this.scene.add.image(p.x,p.y,'outskirts_ground_tile_v2').setOrigin(.5)
         .setScale(1.025).setFlipX(index%2===1).setFlipY(index%4===0)
