@@ -160,28 +160,37 @@ export class AetherTerritory{
   }
 
   build(){
+    // Prompt 9D-B3.6A — reset visual provisório dos Arredores.  A geografia
+    // lógica, os setores, colisões, marcos, spawns e estados continuam vivos
+    // para a reconstrução posterior; somente a composição desenhada é
+    // reduzida a grama contínua + protótipo da Estrada Velha + acesso sul.
     this.createGroundMosaic();
     this.createOldRoadPrototype();
     this.createGateApproaches();
-    this.createRoadNetwork();
-    this.createWaterSystem();
-    this.createFarmReserve();
-    this.createOldRoadIdentity();
-    this.createLandmarks();
-    this.createVegetation();
+    this.scene.registry.set('aetherOutskirtsVisualResetV1',{
+      mode:'grass-old-road-south-gate',
+      suppressed:['road-network','water','farm','old-road-props','landmarks','vegetation']
+    });
     this.scene.registry.set('aetherFutureNewGameSpawn',{...AETHER_FUTURE_NEW_GAME_SPAWN});
   }
 
   createGroundMosaic(){
-    // Cada módulo preserva a proporção nativa 2:1 (768×384 = 8×8 tiles).
-    // Espelhamento, matiz muito sutil e fase deslocada eliminam a grade de
-    // cópias exatamente iguais sem jamais esticar os módulos.
+    // Base única e contínua dos Arredores. O alcance ultrapassa meia célula
+    // de cada world bound para que nem bordas de PNG transparentes nem a
+    // câmera revelem o fundo preto nas extremidades do território externo.
+    // Todos os módulos usam a mesma escala/tinta: não há manchas de terreno
+    // ou "quadrados" de grass com tratamento visual diferente nesta fase.
+    // Duas células e meia além do limite lógico cobrem a folga da câmera
+    // quando o jogador chega à borda caminhável do losango, não apenas o
+    // footprint do último tile.
+    const bounds=AETHER_LOGICAL_BOUNDS,spacing=7.8,margin=spacing*2.5;
     let index=0;
-    for(let u=3.9;u<=82;u+=7.8)for(let v=3.9;v<=82;v+=7.8){
-      const p=this.project(u,v),shade=[0xffffff,0xf5f8ed,0xf8f2df,0xeaf4e4][index%4];
+    for(let u=bounds.minU-margin;u<=bounds.maxU+margin;u+=spacing)for(let v=bounds.minV-margin;v<=bounds.maxV+margin;v+=spacing){
+      const p=this.project(u,v);
       const tile=this.scene.add.image(p.x,p.y,'outskirts_ground_tile_v2').setOrigin(.5)
-        .setScale(1.018+(index%3)*.006).setFlipX(index%3===1).setFlipY(index%5===0)
-        .setTint(shade).setDepth(this.config.depthBase-80);
+        .setScale(1.025).setFlipX(index%2===1).setFlipY(index%4===0)
+        .setDepth(this.groundDepth(OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN));
+      tile.setData?.('aetherRenderClass','ground');
       this.track(tile,u,v,{visibleRadius:29,activeRadius:34});
       index++;
     }
@@ -248,17 +257,12 @@ export class AetherTerritory{
   }
 
   createGateApproaches(){
-    // Pedra bem cuidada prolonga-se para fora e se mistura aos poucos à terra.
-    [[14,27.2],[14,29.1],[14,31],[27.2,14],[29.1,14],[31,14]].forEach(([u,v],index)=>{
-      const key=index<3?'iso_pavement_tile_b':'iso_pavement_tile_c';
-      // O acesso sul encerra o protótipo da Estrada Velha. Como é chão, fica
-      // na camada estável do road overlay e jamais encobre o jogador no vão.
-      if(index<3)this.addGround(key,u,v,.72,OLD_ROAD_PROTOTYPE_LAYERS.ROAD,{visibleRadius:25});
-      else this.addFlat(key,u,v,.72,Math.PI/2,-45,{visibleRadius:25});
+    // Só o prolongamento externo do Portão Sul fica visível. O Portão Leste
+    // e toda decoração de aproximação externa aguardam a reconstrução por
+    // setores; a Cidade e ambos os portões continuam preservados pela cena.
+    [[14,27.2],[14,29.1],[14,31]].forEach(([u,v])=>{
+      this.addGround('iso_pavement_tile_b',u,v,.72,OLD_ROAD_PROTOTYPE_LAYERS.ROAD,{visibleRadius:25});
     });
-    // A borda sul permanece limpa neste teste: estrada e ground são os únicos
-    // elementos novos até o portão. O acabamento do Portão Leste não muda.
-    [[29.5,10.8],[31.4,17.7]].forEach(([u,v],index)=>this.addFlat(index?'outskirts_bush_cluster':'outskirts_grass_patch',u,v,.72,0,-38,{alpha:.9,visibleRadius:25}));
   }
 
   nearCrossing(u,v,padding=.45){

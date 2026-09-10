@@ -1,7 +1,6 @@
 // @ts-nocheck
 import {
-  AETHER_EAST_MAIN_ROAD,AETHER_LAKE,AETHER_LOGICAL_BOUNDS,AETHER_OLD_ROAD,
-  AETHER_SECONDARY_ROADS,AETHER_SOUTH_MAIN_ROAD,AETHER_STREAM
+  AETHER_LOGICAL_BOUNDS,AETHER_OLD_ROAD
 } from './AetherTerritoryLayout';
 
 export const AETHER_TERRITORY_MAP_KEY='aether_territory_map_v2';
@@ -85,32 +84,10 @@ function drawCityPlate(scene,context){
 }
 
 function drawTerritoryFeatures(scene,context){
-  // Reserva agrícola: geografia visível, mas nenhum conteúdo de quest.
-  const farm=[{u:18,v:45},{u:33,v:47},{u:34,v:59},{u:18,v:60}].map(mapPoint);
-  context.save();context.fillStyle='rgba(142,122,54,.32)';context.strokeStyle='rgba(217,188,99,.42)';context.lineWidth=1.5;
-  context.beginPath();context.moveTo(farm[0].x,farm[0].y);for(let i=1;i<farm.length;i++)context.lineTo(farm[i].x,farm[i].y);context.closePath();context.fill();context.stroke();context.restore();
-
-  // Hidrografia é desenhada antes das pontes/estradas.
-  context.save();context.lineCap='round';context.lineJoin='round';
-  traceLogicalPath(context,AETHER_STREAM.points);context.strokeStyle='rgba(24,74,84,.9)';context.lineWidth=15;context.stroke();
-  traceLogicalPath(context,AETHER_STREAM.points);context.strokeStyle='rgba(91,175,190,.9)';context.lineWidth=10;context.stroke();
-  traceLogicalPath(context,AETHER_STREAM.points);context.strokeStyle='rgba(207,238,225,.42)';context.lineWidth=2;context.stroke();context.restore();
-  ellipseFromLogical(context,AETHER_LAKE.u,AETHER_LAKE.v,AETHER_LAKE.radiusU,AETHER_LAKE.radiusV,'rgba(61,141,158,.96)','rgba(179,225,213,.54)');
-
+  // Prompt 9D-B3.6A: o mapa completo espelha o reset visual físico. A base
+  // já foi desenhada por drawDeterministicGround; apenas a Estrada Velha e a
+  // Cidade preservada continuam visíveis nos Arredores durante esta fase.
   drawRoad(context,AETHER_OLD_ROAD,12);
-  drawRoad(context,AETHER_SOUTH_MAIN_ROAD,11);
-  drawRoad(context,AETHER_EAST_MAIN_ROAD,11);
-  Object.values(AETHER_SECONDARY_ROADS).forEach(points=>drawRoad(context,points,7));
-
-  // Floresta densa no limite leste; é terreno, não um ícone de descoberta.
-  context.save();let seed=0x19a52f;
-  const random=()=>{seed=(seed*1103515245+12345)>>>0;return seed/0xffffffff};
-  for(let index=0;index<74;index++){
-    const u=66+random()*16,v=34+random()*31,point=mapPoint({u,v});
-    context.fillStyle=index%3?'rgba(20,66,41,.55)':'rgba(45,91,49,.62)';
-    context.beginPath();context.arc(point.x,point.y,2.3+random()*3.5,0,Math.PI*2);context.fill();
-  }
-  context.restore();
   drawCityPlate(scene,context);
 }
 
