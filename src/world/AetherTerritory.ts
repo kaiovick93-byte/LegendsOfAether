@@ -3,7 +3,7 @@ import {IsoSprite} from '../isometric/IsoOcclusion';
 import {
   AETHER_EAST_MAIN_ROAD,AETHER_FUTURE_NEW_GAME_SPAWN,AETHER_GREENWOODS_BLOCK,AETHER_LAKE,AETHER_LANDMARKS,
   AETHER_LOGICAL_BOUNDS,AETHER_SECONDARY_ROADS,AETHER_SOUTH_MAIN_ROAD,
-  AETHER_NEW_GAME_SPAWN,AETHER_PROLOGUE_ANCHORS,AETHER_STREAM,distanceToSegmentSquared,getAetherSector,isAetherWaterBlocked
+  AETHER_NEW_GAME_SPAWN,AETHER_STREAM,distanceToSegmentSquared,getAetherSector,isAetherWaterBlocked
 } from './AetherTerritoryLayout';
 import {ensureAetherTerritoryMap} from './AetherTerritoryMap';
 
@@ -19,36 +19,44 @@ const SECTOR_NAMES={
 
 // Camadas estáveis: chão nunca participa da oclusão por pés dos atores.
 const OLD_ROAD_PROTOTYPE_LAYERS=Object.freeze({TERRAIN:-80,ROAD:-70});
-const OLD_ROAD_PROTOTYPE_KIT=Object.freeze({
-  ground:'old_road_prototype_ground_v1',
-  straight:'old_road_prototype_straight_v1',
-  curve:'old_road_prototype_curve_v1',
-  junction:'old_road_prototype_y_junction_v1'
-});
 /**
- * Prompt 9D-B3.3 — somente o traçado principal experimental da Estrada Velha.
- * As coordenadas continuam no mesmo espaço lógico usado por spawn, atores e
- * Portão Sul. A junção gira apenas o necessário para que a saída superior
- * alcance fisicamente o acesso do portão; não há escala não uniforme.
+ * Prompt 9D-B3.5 — contrato único de conectores da Estrada Velha.
+ * As medidas são de mundo; os PNGs foram publicados em 4x para entrarem todos
+ * com a mesma escala uniforme de 0.25.  Nenhum encaixe depende de stretch,
+ * squash, profundidade dinâmica ou compensação visual escondida.
  */
-const OLD_ROAD_PROTOTYPE=Object.freeze({
-  scale:.42,
-  // O passo menor cria sobreposição real entre os recortes transparentes das
-  // peças; assim Straight → Curve não revela costura em curvas suaves.
-  pieceSpacing:100,
-  groundStride:2,
-  // A saída superior da Y invertida encontra o acesso externo do Portão Sul.
-  finalJunction:{u:14.115,v:30.344,rotation:1.06,flipY:true},
-  // Offsets da configuração B3.2, agora rotacionados como um conjunto. Isso
-  // preserva exatamente os conectores nativos Straight → Straight → Curve → Y.
-  finalSequence:Object.freeze([
-    ['straight',-88.2,523],['straight',-88.2,378],['curve',-43.7,180]
-  ]),
-  // A curva de conexão fica na sequência final, onde seus conectores nativos
-  // encontram a Y. O restante usa Straight sobre uma curva de trajetória
-  // suave, sem tentar forçar rotação de peças curvas fora do seu encaixe.
-  curveRatios:Object.freeze([])
+const OLD_ROAD_CONNECTOR_STANDARD=Object.freeze({
+  scale:.25,
+  roadWidth:96,
+  walkableWidth:64,
+  edgeWidth:16,
+  stableRun:32,
+  cleanSeam:12,
+  curveRadius:128,
+  yTrunk:48,
+  yBranchAngle:35*Math.PI/180
 });
+const OLD_ROAD_CONNECTOR_KIT=Object.freeze({
+  straightLong:{
+    texture:'old_road_connector_straight_long_v1',size:{width:512,height:768},
+    connectors:{north:{x:255.5,y:0},south:{x:255.5,y:768}}
+  },
+  straightShort:{
+    texture:'old_road_connector_straight_short_v1',size:{width:512,height:384},
+    connectors:{north:{x:255.5,y:0},south:{x:255.5,y:384}}
+  },
+  curveRight:{
+    texture:'old_road_connector_curve_right_v1',size:{width:1408,height:1408},
+    connectors:{south:{x:704,y:1408},east:{x:1408,y:704}}
+  },
+  yJunction:{
+    texture:'old_road_connector_y_junction_v1',size:{width:1600,height:1600},
+    connectors:{trunk:{x:800,y:1600},left:{x:157.6,y:490.6},right:{x:1442.4,y:490.6}}
+  }
+});
+// Trecho curto deliberadamente isolado perto do spawn: ele valida somente o
+// kit técnico, sem redesenhar o prólogo nem a Estrada Velha inteira nesta fase.
+const OLD_ROAD_CONNECTOR_TEST=Object.freeze({u:15,v:55});
 
 /**
  * Culling e ativação por proximidade sem destruir estado persistente. Objetos
@@ -185,92 +193,57 @@ export class AetherTerritory{
     return {u:localX+localY,v:localY-localX};
   }
 
-  sampleRoadPolyline(points,spacing){
-    const screenPoints=points.map(point=>this.project(point.u,point.v));
-    const smooth=[];
-    const catmull=(p0,p1,p2,p3,t)=>{
-      const t2=t*t,t3=t2*t;
-      return {
-        x:.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
-        y:.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
-      };
-    };
-    for(let index=0;index<screenPoints.length-1;index++){
-      const p0=screenPoints[Math.max(0,index-1)],p1=screenPoints[index],p2=screenPoints[index+1],p3=screenPoints[Math.min(screenPoints.length-1,index+2)];
-      for(let step=0;step<12;step++)smooth.push(catmull(p0,p1,p2,p3,step/12));
-    }
-    smooth.push(screenPoints[screenPoints.length-1]);
-    const samples=[{x:smooth[0].x,y:smooth[0].y,angle:0}];
-    let travelled=0,nextSample=spacing;
-    for(let index=1;index<smooth.length;index++){
-      const from=smooth[index-1],to=smooth[index],length=Math.hypot(to.x-from.x,to.y-from.y)||1;
-      while(nextSample<=travelled+length){
-        const t=(nextSample-travelled)/length;
-        samples.push({x:Phaser.Math.Linear(from.x,to.x,t),y:Phaser.Math.Linear(from.y,to.y,t),angle:Math.atan2(to.y-from.y,to.x-from.x)});
-        nextSample+=spacing;
-      }
-      travelled+=length;
-    }
-    const last=smooth[smooth.length-1],previous=smooth[smooth.length-2],tail=samples[samples.length-1];
-    if(Math.hypot(tail.x-last.x,tail.y-last.y)>4)samples.push({x:last.x,y:last.y,angle:Math.atan2(last.y-previous.y,last.x-previous.x)});
-    else tail.angle=Math.atan2(last.y-previous.y,last.x-previous.x);
-    samples[0].angle=Math.atan2(smooth[1].y-smooth[0].y,smooth[1].x-smooth[0].x);
-    return samples;
+  connectorVector(spec,connector,rotation=0,flipX=false,flipY=false){
+    const point=spec.connectors[connector],scale=OLD_ROAD_CONNECTOR_STANDARD.scale;
+    let x=(point.x-spec.size.width/2)*scale,y=(point.y-spec.size.height/2)*scale;
+    if(flipX)x=-x;if(flipY)y=-y;
+    const cos=Math.cos(rotation),sin=Math.sin(rotation);
+    return{x:x*cos-y*sin,y:x*sin+y*cos};
   }
 
   /**
-   * Prompt 9D-B3.3: o trecho experimental deixa o spawn, atravessa os pontos
-   * do prólogo e chega à Y invertida do Portão Sul. O resto da região fica
-   * somente no ground base já contínuo, sem novo road stamp ou prop adicional.
+   * Posiciona uma peça pelo centro lógico de uma boca. Esse é o ponto crucial
+   * do contrato: peças consecutivas compartilham a mesma coordenada de boca,
+   * em vez de dependerem de overlap arbitrário de PNG, escala diferente ou
+   * correção manual por olho.
+   */
+  placeRoadConnectorModule(moduleName,anchorScreen,connector,options={}){
+    const spec=OLD_ROAD_CONNECTOR_KIT[moduleName];
+    if(!spec||!spec.connectors[connector])return null;
+    const rotation=options.rotation??0,flipX=!!options.flipX,flipY=!!options.flipY;
+    const anchorVector=this.connectorVector(spec,connector,rotation,flipX,flipY);
+    const center={x:anchorScreen.x-anchorVector.x,y:anchorScreen.y-anchorVector.y};
+    const point=this.screenToLogical(center.x,center.y);
+    const sprite=this.addGround(spec.texture,point.u,point.v,OLD_ROAD_CONNECTOR_STANDARD.scale,OLD_ROAD_PROTOTYPE_LAYERS.ROAD,{
+      rotation,flipX,flipY,visibleRadius:options.visibleRadius??24,activeRadius:options.activeRadius??28
+    });
+    const connectors={};
+    Object.keys(spec.connectors).forEach(name=>{
+      const vector=this.connectorVector(spec,name,rotation,flipX,flipY);
+      connectors[name]={x:center.x+vector.x,y:center.y+vector.y};
+    });
+    return{sprite,center,connectors,moduleName,rotation,flipX,flipY};
+  }
+
+  /**
+   * Prompt 9D-B3.5: trecho técnico controlado.  O ground de toda a área já é
+   * contínuo por createGroundMosaic(); aqui entram somente os quatro módulos
+   * oficiais para validar os conectores, sem reconstruir o mapa ou alterar o
+   * fluxo do prólogo.  A Y usa flipY, que é a mesma orientação invertida usada
+   * quando a futura montagem encontrar o Portão Sul.
    */
   createOldRoadPrototype(){
-    const prototype=OLD_ROAD_PROTOTYPE,kit=OLD_ROAD_PROTOTYPE_KIT,anchors=AETHER_PROLOGUE_ANCHORS;
-    const junction=prototype.finalJunction,junctionScreen=this.project(junction.u,junction.v);
-    const rotateOffset=(x,y)=>({
-      x:junctionScreen.x+x*Math.cos(junction.rotation)-y*Math.sin(junction.rotation),
-      y:junctionScreen.y+x*Math.sin(junction.rotation)+y*Math.cos(junction.rotation)
-    });
-    const finalPieces=prototype.finalSequence.map(([piece,x,y])=>({piece,...rotateOffset(x,y)}));
-    const finalStart=this.screenToLogical(finalPieces[0].x,finalPieces[0].y);
-    const oldRoadPath=[
-      AETHER_NEW_GAME_SPAWN,{u:7.6,v:69.9},anchors.roadSign,{u:10.21,v:64.38},anchors.youngWolf,
-      {u:10.73,v:55.94},anchors.goblinScouts[0],anchors.goblinScouts[1],{u:12.5,v:48.33},
-      anchors.attackedWagon,{u:12.5,v:43.75},anchors.patrol,{u:13.65,v:41.77},
-      finalStart
-    ];
-    const samples=this.sampleRoadPolyline(oldRoadPath,prototype.pieceSpacing);
-    const renderedSamples=samples.slice(0,-1);
-    const curveIndices=new Set(prototype.curveRatios.map(ratio=>Math.round((renderedSamples.length-1)*ratio)));
-    renderedSamples.forEach((sample,index)=>{
-      const point=this.screenToLogical(sample.x,sample.y);
-      // Sobreposição do Ground Base elimina qualquer costura; o mosaico geral
-      // permanece abaixo dele e cobre as extremidades transparentes do módulo.
-      if(index%prototype.groundStride===0||index===samples.length-1){
-        this.addGround(kit.ground,point.u,point.v,prototype.scale,OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN);
-      }
-      const texture=curveIndices.has(index)?kit.curve:kit.straight;
-      // A peça preserva a escala original. A rotação somente acompanha a
-      // tangente real da estrada, sem stretch/squash ou profundidade dinâmica.
-      this.addGround(texture,point.u,point.v,prototype.scale,OLD_ROAD_PROTOTYPE_LAYERS.ROAD,{rotation:sample.angle+Math.PI/2});
-    });
-
-    finalPieces.forEach(({piece,x,y})=>{
-      const point=this.screenToLogical(x,y);
-      this.addGround(kit.ground,point.u,point.v,prototype.scale,OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN);
-      this.addGround(kit[piece],point.u,point.v,prototype.scale,OLD_ROAD_PROTOTYPE_LAYERS.ROAD,{rotation:junction.rotation});
-    });
-    this.addGround(kit.ground,junction.u,junction.v,prototype.scale,OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN);
-    this.addGround(kit.junction,junction.u,junction.v,prototype.scale,OLD_ROAD_PROTOTYPE_LAYERS.ROAD,{rotation:junction.rotation,flipY:junction.flipY});
-
-    // Braço direito: início visual da Estrada Principal. Fica propositalmente
-    // curto; o restante dos Arredores mantém seu ground provisório nesta etapa.
-    const branchAngle=junction.rotation+.646;
-    [82,220].forEach(distance=>{
-      const x=junctionScreen.x+Math.cos(branchAngle)*distance;
-      const y=junctionScreen.y+Math.sin(branchAngle)*distance;
-      const point=this.screenToLogical(x,y);
-      this.addGround(kit.ground,point.u,point.v,prototype.scale,OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN);
-      this.addGround(kit.straight,point.u,point.v,prototype.scale,OLD_ROAD_PROTOTYPE_LAYERS.ROAD,{rotation:branchAngle-Math.PI/2});
+    const start=this.project(OLD_ROAD_CONNECTOR_TEST.u,OLD_ROAD_CONNECTOR_TEST.v);
+    const long=this.placeRoadConnectorModule('straightLong',start,'north');
+    const short=this.placeRoadConnectorModule('straightShort',long.connectors.south,'north');
+    const curve=this.placeRoadConnectorModule('curveRight',short.connectors.south,'south',{rotation:Math.PI});
+    const exitStraight=this.placeRoadConnectorModule('straightLong',curve.connectors.east,'north',{rotation:Math.PI/2});
+    const junction=this.placeRoadConnectorModule('yJunction',exitStraight.connectors.south,'trunk',{rotation:Math.PI/2,flipY:true});
+    this.scene.registry.set('oldRoadConnectorTest',{
+      standard:OLD_ROAD_CONNECTOR_STANDARD,
+      modules:[long,short,curve,exitStraight,junction].map(item=>({
+        module:item.moduleName,center:item.center,connectors:item.connectors,rotation:item.rotation,flipY:item.flipY
+      }))
     });
   }
 
