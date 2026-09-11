@@ -53,12 +53,18 @@ const OLD_ROAD_CONNECTOR_KIT=Object.freeze({
     texture:'old_road_connector_y_junction_v1',size:{width:1600,height:1600},
     connectors:{trunk:{x:800,y:1600},left:{x:157.6,y:490.6},right:{x:1442.4,y:490.6}}
   },
+  // Prompt 9D-B3.8A: substitui somente os quatro primeiros retos, que tinham
+  // variações angulares pequenas demais para esconder as emendas. As bocas
+  // mantêm os mesmos pontos de mundo do trajeto já aprovado.
+  startRun:{
+    texture:'old_road_connector_start_run_v1',size:{width:3200,height:1280},
+    connectors:{start:{x:256,y:704},end:{x:2921.726260,y:634.759872}}
+  },
   gateTransition:{
-    texture:'old_road_connector_gate_transition_v1',size:{width:1024,height:1280},
-    // A boca inferior encaixa exatamente no tronco do Y. A extremidade
-    // superior entra sob o arco do Portão Sul, portanto é um terminal e não
-    // uma nova via ou um segundo sistema de conectores.
-    connectors:{from:{x:764,y:1280},to:{x:1023.21,y:674.10}}
+    texture:'old_road_connector_gate_transition_v2',size:{width:1280,height:1280},
+    // A boca inferior encaixa no tronco do Y; a superior chega ao centro
+    // visual do vão do arco, não ao centro lógico atrás do Portão Sul.
+    connectors:{from:{x:640,y:1280},to:{x:946.913502,y:780.900709}}
   }
 });
 // Prompt 9D-B3.8 — rota visual aprovada da Estrada Velha. Os módulos partem
@@ -66,6 +72,7 @@ const OLD_ROAD_CONNECTOR_KIT=Object.freeze({
 // Portão Sul. Cada ângulo abaixo representa uma curva suave de poucos graus
 // entre bocas idênticas; não há escala não uniforme nem remendo visual.
 const OLD_ROAD_ROUTE_START=Object.freeze({u:.5,v:80.8});
+const OLD_ROAD_START_RUN_SEGMENTS=4;
 const OLD_ROAD_ROUTE_SEGMENTS=Object.freeze([
   {module:'straightLong',heading:7.99},{module:'straightLong',heading:.16},
   {module:'straightLong',heading:-7.26},{module:'straightShort',heading:-12.19},
@@ -83,7 +90,9 @@ const OLD_ROAD_FINAL_Y=Object.freeze({
   // trajeto vermelho antes da entrada na cidade.
   gate:{u:14,v:29.1},rotation:40.27311450169119*Math.PI/180
 });
-const OLD_ROAD_SOUTH_GATE=Object.freeze({u:14,v:26.03});
+// O centro lógico do portão continua em 14,26.03 para a cidade e colisões.
+// Esta referência cai no centro visual da abertura isométrica do arco.
+const OLD_ROAD_SOUTH_GATE=Object.freeze({u:14.5,v:26.7});
 const OLD_ROAD_MAIN_ROAD_STUB=Object.freeze([
   {module:'straightLong',heading:95},{module:'straightShort',heading:91}
 ]);
@@ -274,7 +283,9 @@ export class AetherTerritory{
     });
     const oldRoadModules=[];
     let oldRoadAnchor=junction.connectors.left;
-    [...OLD_ROAD_ROUTE_SEGMENTS].reverse().forEach(segment=>{
+    // O começo é uma única corrida contínua; todos os módulos posteriores
+    // preservam as mesmas bocas e posições da rota B3.8.
+    [...OLD_ROAD_ROUTE_SEGMENTS.slice(OLD_ROAD_START_RUN_SEGMENTS)].reverse().forEach(segment=>{
       const rotation=segment.heading*Math.PI/180-Math.PI/2;
       const module=this.placeRoadConnectorModule(segment.module,oldRoadAnchor,'south',{
         rotation,visibleRadius:29,activeRadius:34
@@ -282,10 +293,14 @@ export class AetherTerritory{
       oldRoadModules.unshift(module);
       oldRoadAnchor=module.connectors.north;
     });
+    const startRun=this.placeRoadConnectorModule('startRun',oldRoadAnchor,'end',{
+      visibleRadius:29,activeRadius:34
+    });
+    oldRoadModules.unshift(startRun);
+    oldRoadAnchor=startRun.connectors.start;
 
-    // A curva de transição usa a mesma boca-mestra do Y e termina exatamente
-    // sob o arco existente. Isso substitui os três quadrados de pavimento que
-    // quebravam visualmente a chegada ao Portão Sul.
+    // A aproximação curta usa a mesma boca-mestra do Y e termina na soleira
+    // externa do arco. Ela corrige a leitura visual sem reposicionar o portão.
     const southGate=this.placeRoadConnectorModule('gateTransition',junction.connectors.trunk,'from',{
       rotation:OLD_ROAD_FINAL_Y.rotation,visibleRadius:29,activeRadius:34
     });

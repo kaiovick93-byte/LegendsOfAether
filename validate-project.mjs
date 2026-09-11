@@ -1134,18 +1134,26 @@ for(const [name,width,height] of outskirtsAssets){
   const key=name.replace('.png','');expect(preload.includes(`'${key}'`),`asset dos Arredores fora do preload: ${key}`);
 }
 
-const southGateTransition='assets/images/environment/outskirts/old-road-v3/old_road_connector_gate_transition_v1.png';
-expect(exists(southGateTransition),'curva de transição da Estrada Velha para o Portão Sul está ausente');
+const oldRoadStartRun='assets/images/environment/outskirts/old-road-v3/old_road_connector_start_run_v1.png';
+expect(exists(oldRoadStartRun),'corrida contínua do início da Estrada Velha está ausente');
+if(exists(oldRoadStartRun)){
+  const dimensions=pngDimensions(oldRoadStartRun);
+  expect(dimensions.width===3200&&dimensions.height===1280&&pngColorType(oldRoadStartRun)===6,'corrida inicial perdeu proporção ou alpha RGBA');
+}
+const southGateTransition='assets/images/environment/outskirts/old-road-v3/old_road_connector_gate_transition_v2.png';
+expect(exists(southGateTransition),'curva de transição corrigida da Estrada Velha para o Portão Sul está ausente');
 if(exists(southGateTransition)){
   const dimensions=pngDimensions(southGateTransition);
-  expect(dimensions.width===1024&&dimensions.height===1280&&pngColorType(southGateTransition)===6,'curva do Portão Sul perdeu proporção ou alpha RGBA');
+  expect(dimensions.width===1280&&dimensions.height===1280&&pngColorType(southGateTransition)===6,'curva do Portão Sul perdeu proporção ou alpha RGBA');
 }
 expect(
-  preload.includes("this.load.image('old_road_connector_gate_transition_v1'")&&
-  territory.includes("gateTransition:{")&&
+  preload.includes("this.load.image('old_road_connector_start_run_v1'")&&
+  preload.includes("this.load.image('old_road_connector_gate_transition_v2'")&&
+  territory.includes("startRun:{")&&territory.includes("gateTransition:{")&&
+  territory.includes("placeRoadConnectorModule('startRun',oldRoadAnchor,'end'")&&
   territory.includes("placeRoadConnectorModule('gateTransition',junction.connectors.trunk,'from'")&&
   territory.includes('old-road-to-south-gate'),
-  'Estrada Velha não fecha por uma transição modular real até o Portão Sul'
+  'Estrada Velha não usa correções modulares reais no início e no Portão Sul'
 );
 
 expect(territoryMap.includes("export const AETHER_TERRITORY_MAP_KEY='aether_territory_map_v2'")&&territoryMap.includes('width:1024,height:768')&&territoryMap.includes("x:.5+(u-v)/span*.41")&&territoryMap.includes("y:.22+(u+v)/(span*2)*.56"),'mapa completo não compartilha a projeção isométrica 2:1 do território');

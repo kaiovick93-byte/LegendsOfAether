@@ -117,7 +117,9 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('old_road_connector_straight_short_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_straight_short_v1.png');
     this.load.image('old_road_connector_curve_right_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_curve_right_v1.png');
     this.load.image('old_road_connector_y_junction_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_y_junction_v1.png');
-    this.load.image('old_road_connector_gate_transition_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_gate_transition_v1.png');
+    // 9D-B3.8A: módulos localizados, ground sem collider e escala uniforme.
+    this.load.image('old_road_connector_start_run_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_start_run_v1.png');
+    this.load.image('old_road_connector_gate_transition_v2','assets/images/environment/outskirts/old-road-v3/old_road_connector_gate_transition_v2.png');
     this.load.image('outskirts_stream_v2','assets/images/environment/outskirts/v2/outskirts_stream_v2.png');
     this.load.image('outskirts_bridge_v2','assets/images/environment/outskirts/v2/outskirts_bridge_v2.png');
     this.load.image('outskirts_shrine_v2','assets/images/environment/outskirts/v2/outskirts_shrine_v2.png');
