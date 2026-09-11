@@ -1134,26 +1134,40 @@ for(const [name,width,height] of outskirtsAssets){
   const key=name.replace('.png','');expect(preload.includes(`'${key}'`),`asset dos Arredores fora do preload: ${key}`);
 }
 
-const oldRoadStartRun='assets/images/environment/outskirts/old-road-v3/old_road_connector_start_run_v1.png';
-expect(exists(oldRoadStartRun),'corrida contínua do início da Estrada Velha está ausente');
-if(exists(oldRoadStartRun)){
-  const dimensions=pngDimensions(oldRoadStartRun);
-  expect(dimensions.width===3200&&dimensions.height===1280&&pngColorType(oldRoadStartRun)===6,'corrida inicial perdeu proporção ou alpha RGBA');
+const oldRoadB4References=[
+  ['assets/images/environment/outskirts/old-road-v3/reference/folha_de_tiles_de_estrada_e_vegetacao.png',1448,1086],
+  ['assets/images/environment/outskirts/old-road-v3/reference/grade_de_nove_terrenos_gramados.png',1448,1086]
+];
+for(const [relative,width,height] of oldRoadB4References){
+  expect(exists(relative),`referência B4.0A ausente: ${relative}`);
+  if(exists(relative)){const dimensions=pngDimensions(relative);expect(dimensions.width===width&&dimensions.height===height&&pngColorType(relative)===6,`referência B4.0A perdeu proporção ou alpha RGBA: ${relative}`)}
 }
-const southGateTransition='assets/images/environment/outskirts/old-road-v3/old_road_connector_gate_transition_v2.png';
-expect(exists(southGateTransition),'curva de transição corrigida da Estrada Velha para o Portão Sul está ausente');
-if(exists(southGateTransition)){
-  const dimensions=pngDimensions(southGateTransition);
-  expect(dimensions.width===1280&&dimensions.height===1280&&pngColorType(southGateTransition)===6,'curva do Portão Sul perdeu proporção ou alpha RGBA');
+const oldRoadB4Assets=[
+  ['old_road_connector_straight_long_v2.png',512,768,'old_road_connector_straight_long_v2'],
+  ['old_road_connector_straight_short_v2.png',512,384,'old_road_connector_straight_short_v2'],
+  ['old_road_connector_curve_right_v2.png',1408,1408,'old_road_connector_curve_right_v2'],
+  ['old_road_connector_y_junction_v2.png',1600,1600,'old_road_connector_y_junction_v2'],
+  ['old_road_connector_start_run_v2.png',3200,1280,'old_road_connector_start_run_v2'],
+  ['old_road_connector_gate_transition_v3.png',1280,1280,'old_road_connector_gate_transition_v3']
+];
+for(const [name,width,height,key] of oldRoadB4Assets){
+  const relative=`assets/images/environment/outskirts/old-road-v3/${name}`;
+  expect(exists(relative),`conector visual B4.0A ausente: ${name}`);
+  if(exists(relative)){const dimensions=pngDimensions(relative);expect(dimensions.width===width&&dimensions.height===height&&pngColorType(relative)===6,`conector B4.0A perdeu proporção ou alpha RGBA: ${name}`)}
+  expect(preload.includes(`this.load.image('${key}'`),`conector B4.0A fora do preload: ${key}`);
 }
 expect(
-  preload.includes("this.load.image('old_road_connector_start_run_v1'")&&
-  preload.includes("this.load.image('old_road_connector_gate_transition_v2'")&&
+  territory.includes("texture:'old_road_connector_straight_long_v2'")&&
+  territory.includes("texture:'old_road_connector_straight_short_v2'")&&
+  territory.includes("texture:'old_road_connector_curve_right_v2'")&&
+  territory.includes("texture:'old_road_connector_y_junction_v2'")&&
+  territory.includes("texture:'old_road_connector_start_run_v2'")&&
+  territory.includes("texture:'old_road_connector_gate_transition_v3'")&&
   territory.includes("startRun:{")&&territory.includes("gateTransition:{")&&
   territory.includes("placeRoadConnectorModule('startRun',oldRoadAnchor,'end'")&&
   territory.includes("placeRoadConnectorModule('gateTransition',junction.connectors.trunk,'from'")&&
   territory.includes('old-road-to-south-gate'),
-  'Estrada Velha não usa correções modulares reais no início e no Portão Sul'
+  'Estrada Velha não usa a arte B4.0A sobre os conectores modulares aprovados'
 );
 
 expect(territoryMap.includes("export const AETHER_TERRITORY_MAP_KEY='aether_territory_map_v2'")&&territoryMap.includes('width:1024,height:768')&&territoryMap.includes("x:.5+(u-v)/span*.41")&&territoryMap.includes("y:.22+(u+v)/(span*2)*.56"),'mapa completo não compartilha a projeção isométrica 2:1 do território');

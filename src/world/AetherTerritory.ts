@@ -38,30 +38,29 @@ const OLD_ROAD_CONNECTOR_STANDARD=Object.freeze({
 });
 const OLD_ROAD_CONNECTOR_KIT=Object.freeze({
   straightLong:{
-    texture:'old_road_connector_straight_long_v1',size:{width:512,height:768},
+    texture:'old_road_connector_straight_long_v2',size:{width:512,height:768},
     connectors:{north:{x:255.5,y:0},south:{x:255.5,y:768}}
   },
   straightShort:{
-    texture:'old_road_connector_straight_short_v1',size:{width:512,height:384},
+    texture:'old_road_connector_straight_short_v2',size:{width:512,height:384},
     connectors:{north:{x:255.5,y:0},south:{x:255.5,y:384}}
   },
   curveRight:{
-    texture:'old_road_connector_curve_right_v1',size:{width:1408,height:1408},
+    texture:'old_road_connector_curve_right_v2',size:{width:1408,height:1408},
     connectors:{south:{x:704,y:1408},east:{x:1408,y:704}}
   },
   yJunction:{
-    texture:'old_road_connector_y_junction_v1',size:{width:1600,height:1600},
+    texture:'old_road_connector_y_junction_v2',size:{width:1600,height:1600},
     connectors:{trunk:{x:800,y:1600},left:{x:157.6,y:490.6},right:{x:1442.4,y:490.6}}
   },
-  // Prompt 9D-B3.8A: substitui somente os quatro primeiros retos, que tinham
-  // variações angulares pequenas demais para esconder as emendas. As bocas
-  // mantêm os mesmos pontos de mundo do trajeto já aprovado.
+  // B4.0A troca somente o material pintado; as bocas e os pontos de mundo
+  // aprovados no B3.8A permanecem idênticos.
   startRun:{
-    texture:'old_road_connector_start_run_v1',size:{width:3200,height:1280},
+    texture:'old_road_connector_start_run_v2',size:{width:3200,height:1280},
     connectors:{start:{x:256,y:704},end:{x:2921.726260,y:634.759872}}
   },
   gateTransition:{
-    texture:'old_road_connector_gate_transition_v2',size:{width:1280,height:1280},
+    texture:'old_road_connector_gate_transition_v3',size:{width:1280,height:1280},
     // A boca inferior encaixa no tronco do Y; a superior chega ao centro
     // visual do vão do arco, não ao centro lógico atrás do Portão Sul.
     connectors:{from:{x:640,y:1280},to:{x:946.913502,y:780.900709}}

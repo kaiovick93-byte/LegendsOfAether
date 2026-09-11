@@ -112,14 +112,14 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('old_road_prototype_straight_v1','assets/images/environment/outskirts/old-road-v3/old_road_prototype_straight_v1.png');
     this.load.image('old_road_prototype_curve_v1','assets/images/environment/outskirts/old-road-v3/old_road_prototype_curve_v1.png');
     this.load.image('old_road_prototype_y_junction_v1','assets/images/environment/outskirts/old-road-v3/old_road_prototype_y_junction_v1.png');
-    // 9D-B3.5: conectores técnicos de 96px, todos em escala uniforme 0.25.
-    this.load.image('old_road_connector_straight_long_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_straight_long_v1.png');
-    this.load.image('old_road_connector_straight_short_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_straight_short_v1.png');
-    this.load.image('old_road_connector_curve_right_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_curve_right_v1.png');
-    this.load.image('old_road_connector_y_junction_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_y_junction_v1.png');
-    // 9D-B3.8A: módulos localizados, ground sem collider e escala uniforme.
-    this.load.image('old_road_connector_start_run_v1','assets/images/environment/outskirts/old-road-v3/old_road_connector_start_run_v1.png');
-    this.load.image('old_road_connector_gate_transition_v2','assets/images/environment/outskirts/old-road-v3/old_road_connector_gate_transition_v2.png');
+    // 9D-B4.0A: a arte nova usa as mesmas bocas técnicas de 96px e a mesma
+    // escala uniforme 0.25 do kit validado no B3.8A.
+    this.load.image('old_road_connector_straight_long_v2','assets/images/environment/outskirts/old-road-v3/old_road_connector_straight_long_v2.png');
+    this.load.image('old_road_connector_straight_short_v2','assets/images/environment/outskirts/old-road-v3/old_road_connector_straight_short_v2.png');
+    this.load.image('old_road_connector_curve_right_v2','assets/images/environment/outskirts/old-road-v3/old_road_connector_curve_right_v2.png');
+    this.load.image('old_road_connector_y_junction_v2','assets/images/environment/outskirts/old-road-v3/old_road_connector_y_junction_v2.png');
+    this.load.image('old_road_connector_start_run_v2','assets/images/environment/outskirts/old-road-v3/old_road_connector_start_run_v2.png');
+    this.load.image('old_road_connector_gate_transition_v3','assets/images/environment/outskirts/old-road-v3/old_road_connector_gate_transition_v3.png');
     this.load.image('outskirts_stream_v2','assets/images/environment/outskirts/v2/outskirts_stream_v2.png');
     this.load.image('outskirts_bridge_v2','assets/images/environment/outskirts/v2/outskirts_bridge_v2.png');
     this.load.image('outskirts_shrine_v2','assets/images/environment/outskirts/v2/outskirts_shrine_v2.png');
