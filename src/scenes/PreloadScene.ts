@@ -103,9 +103,14 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('farm_crop_wheat','assets/images/environment/outskirts/farm/crop_wheat.png');
     this.load.image('farm_crop_cabbage','assets/images/environment/outskirts/farm/crop_cabbage.png');
     this.load.image('farm_crop_vegetables','assets/images/environment/outskirts/farm/crop_vegetables.png');
-    // Round 67 v12.9: módulos autorais 2,5D do território contínuo. Todos são
-    // carregados em proporção nativa e escalados uniformemente em runtime.
-    this.load.image('outskirts_ground_tile_v2','assets/images/environment/outskirts/v2/outskirts_ground_tile_v2.png');
+    // 9D-B4.0B: um material contínuo e tileable fica mascarado exatamente no
+    // território lógico dos Arredores. Os detalhes abaixo são transparentes e
+    // discretos; a Estrada Velha permanece na camada modular acima do chão.
+    this.load.image('outskirts_ground_b4_surface','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_surface.png');
+    this.load.image('outskirts_ground_b4_detail_0','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_0.png');
+    this.load.image('outskirts_ground_b4_detail_1','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_1.png');
+    this.load.image('outskirts_ground_b4_detail_2','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_2.png');
+    this.load.image('outskirts_ground_b4_detail_3','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_3.png');
     this.load.image('outskirts_old_road_v2','assets/images/environment/outskirts/v2/outskirts_old_road_v2.png');
     // 9D-B3.2: quatro peças extraídas da prancha fornecida, sem labels.
     this.load.image('old_road_prototype_ground_v1','assets/images/environment/outskirts/old-road-v3/old_road_prototype_ground_v1.png');

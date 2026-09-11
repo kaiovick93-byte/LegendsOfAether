@@ -1131,8 +1131,31 @@ for(const [name,width,height] of outskirtsAssets){
   const relative=`assets/images/environment/outskirts/v2/${name}`;
   expect(exists(relative),`asset 2,5D dos Arredores ausente: ${name}`);
   if(exists(relative)){const dimensions=pngDimensions(relative);expect(dimensions.width===width&&dimensions.height===height&&pngColorType(relative)===6,`asset dos Arredores perdeu proporção/RGBA: ${name}`)}
-  const key=name.replace('.png','');expect(preload.includes(`'${key}'`),`asset dos Arredores fora do preload: ${key}`);
+  const key=name.replace('.png','');
+  // B4.0B mantém o PNG v2 apenas como legado de projeto; a base realmente
+  // renderizada passa a ser o material contínuo em terrain-b4.
+  if(key!=='outskirts_ground_tile_v2')expect(preload.includes(`'${key}'`),`asset dos Arredores fora do preload: ${key}`);
 }
+
+const outskirtsB4GroundAssets=[
+  ['assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_surface.png',2048,1024,'outskirts_ground_b4_surface'],
+  ['assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_0.png',768,384,'outskirts_ground_b4_detail_0'],
+  ['assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_1.png',768,384,'outskirts_ground_b4_detail_1'],
+  ['assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_2.png',768,384,'outskirts_ground_b4_detail_2'],
+  ['assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_3.png',768,384,'outskirts_ground_b4_detail_3']
+];
+for(const [relative,width,height,key] of outskirtsB4GroundAssets){
+  expect(exists(relative),`asset de terreno B4.0B ausente: ${relative}`);
+  if(exists(relative)){const dimensions=pngDimensions(relative);expect(dimensions.width===width&&dimensions.height===height&&pngColorType(relative)===6,`asset de terreno B4.0B perdeu proporção/RGBA: ${relative}`)}
+  expect(preload.includes(`'${key}'`),`asset de terreno B4.0B fora do preload: ${key}`);
+}
+expect(
+  territory.includes("OUTSKIRTS_B4_GROUND_SURFACE='outskirts_ground_b4_surface'")&&
+  territory.includes('this.scene.add.tileSprite(center.x,center.y,width,height,OUTSKIRTS_B4_GROUND_SURFACE)')&&
+  territory.includes('ground.setMask(maskShape.createGeometryMask())')&&
+  !territory.includes("'outskirts_ground_tile_v2'"),
+  'base contínua B4.0B não substituiu corretamente a grama provisória'
+);
 
 const oldRoadB4References=[
   ['assets/images/environment/outskirts/old-road-v3/reference/folha_de_tiles_de_estrada_e_vegetacao.png',1448,1086],

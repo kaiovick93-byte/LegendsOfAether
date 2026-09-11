@@ -19,6 +19,14 @@ const SECTOR_NAMES={
 
 // Camadas estáveis: chão nunca participa da oclusão por pés dos atores.
 const OLD_ROAD_PROTOTYPE_LAYERS=Object.freeze({TERRAIN:-80,ROAD:-70});
+// Prompt 9D-B4.0B — somente a base dos Arredores muda. Uma superfície
+// contínua é mascarada no mesmo losango lógico do terreno provisório, logo os
+// bounds e qualquer boca da Estrada Velha ficam matematicamente inalterados.
+const OUTSKIRTS_B4_GROUND_SURFACE='outskirts_ground_b4_surface';
+const OUTSKIRTS_B4_GROUND_DETAILS=Object.freeze([
+  'outskirts_ground_b4_detail_0','outskirts_ground_b4_detail_1',
+  'outskirts_ground_b4_detail_2','outskirts_ground_b4_detail_3'
+]);
 /**
  * Prompt 9D-B3.5 — contrato único de conectores da Estrada Velha.
  * As medidas são de mundo; os PNGs foram publicados em 4x para entrarem todos
@@ -213,21 +221,37 @@ export class AetherTerritory{
   }
 
   createGroundMosaic(){
-    // A base de grama cobre somente o footprint do território lógico.  A
-    // malha começa e termina meia célula dentro do limite para que os PNGs
-    // 8×8 se sobreponham levemente nas bordas, sem estender visualmente os
-    // Arredores além do mundo físico.
-    const bounds=AETHER_LOGICAL_BOUNDS,spacing=7.8,
-      firstU=bounds.minU+spacing/2,firstV=bounds.minV+spacing/2;
-    let index=0;
-    for(let u=firstU;u<=bounds.maxU;u+=spacing)for(let v=firstV;v<=bounds.maxV;v+=spacing){
-      const p=this.project(u,v);
-      const tile=this.scene.add.image(p.x,p.y,'outskirts_ground_tile_v2').setOrigin(.5)
-        .setScale(1.025).setFlipX(index%2===1).setFlipY(index%4===0)
-        .setDepth(this.groundDepth(OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN));
-      tile.setData?.('aetherRenderClass','ground');
-      this.track(tile,u,v,{visibleRadius:29,activeRadius:34});
-      index++;
+    // B4.0B: em vez de losangos de arte diferentes lado a lado, um material
+    // contínuo cobre a mesma área lógica e recebe um mask no losango exato
+    // U/V 0…82. Isso elimina o desenho de grade sem expandir o terreno.
+    const bounds=AETHER_LOGICAL_BOUNDS;
+    const top=this.project(bounds.minU,bounds.minV),right=this.project(bounds.maxU,bounds.minV),
+      bottom=this.project(bounds.maxU,bounds.maxV),left=this.project(bounds.minU,bounds.maxV),
+      center=this.project((bounds.minU+bounds.maxU)/2,(bounds.minV+bounds.maxV)/2);
+    const width=right.x-left.x,height=bottom.y-top.y;
+    const ground=this.scene.add.tileSprite(center.x,center.y,width,height,OUTSKIRTS_B4_GROUND_SURFACE)
+      .setOrigin(.5).setDepth(this.groundDepth(OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN));
+    const maskShape=this.scene.make.graphics({x:0,y:0,add:false});
+    maskShape.fillStyle(0xffffff,1).beginPath();
+    maskShape.moveTo(top.x,top.y).lineTo(right.x,right.y).lineTo(bottom.x,bottom.y).lineTo(left.x,left.y).closePath().fillPath();
+    ground.setMask(maskShape.createGeometryMask());
+    ground.setData?.('aetherRenderClass','ground');
+    this.groundMask=maskShape;this.groundSurface=ground;
+
+    // Detalhes transparentes leves: não são árvores, placas, rochas grandes
+    // nem props narrativos. Eles só reduzem a leitura de repetição no solo.
+    const spacing=7.8,firstU=bounds.minU+spacing/2,firstV=bounds.minV+spacing/2;
+    let row=0;
+    for(let u=firstU;u<=bounds.maxU;u+=spacing,row++){
+      let column=0;
+      for(let v=firstV;v<=bounds.maxV;v+=spacing,column++){
+        const hash=(row*37+column*53+row*column*11)>>>0;
+        if(hash%9>=2)continue;
+        const detail=OUTSKIRTS_B4_GROUND_DETAILS[(hash>>>3)%OUTSKIRTS_B4_GROUND_DETAILS.length];
+        this.addGround(detail,u,v,1.026,OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN+.15,{
+          flipX:(hash&1)===1,flipY:(hash%5)===0,alpha:.82,visibleRadius:29,activeRadius:34
+        });
+      }
     }
   }
 
@@ -482,5 +506,5 @@ export class AetherTerritory{
     return caveU*caveU+caveV*caveV<=1;
   }
 
-  destroy(){this.sectors.destroy();this.objects.length=0;this.waterSprites.length=0}
+  destroy(){this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0;this.waterSprites.length=0}
 }
