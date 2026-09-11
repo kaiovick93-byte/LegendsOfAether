@@ -27,6 +27,38 @@ const OUTSKIRTS_B4_GROUND_DETAILS=Object.freeze([
   'outskirts_ground_b4_detail_0','outskirts_ground_b4_detail_1',
   'outskirts_ground_b4_detail_2','outskirts_ground_b4_detail_3'
 ]);
+// B4.0C acrescenta somente camadas transparentes ao mesmo TileSprite mascarado
+// do B4.0B. Tamanhos e fases diferentes evitam que um único período se leia
+// como uma grade em áreas grandes, sem ampliar o losango U/V 0…82.
+const OUTSKIRTS_B4_GROUND_VARIATIONS=Object.freeze([
+  {texture:'outskirts_ground_b4_variation_0',alpha:.76,tileX:143,tileY:-89},
+  {texture:'outskirts_ground_b4_variation_1',alpha:.68,tileX:-367,tileY:217},
+  {texture:'outskirts_ground_b4_variation_2',alpha:.64,tileX:521,tileY:41}
+]);
+// Espalhamento irregular deliberado: detalhes baixos de chão, nunca props,
+// ficam sob a estrada e só quebram áreas amplas de grama repetida.
+const OUTSKIRTS_B4_GROUND_DETAIL_LAYOUT=Object.freeze([
+  {u:5.7,v:13.9,detail:0,scale:1.02,rotation:.03,flipX:false,flipY:true,alpha:.70},
+  {u:8.8,v:47.2,detail:2,scale:.94,rotation:-.04,flipX:true,flipY:false,alpha:.64},
+  {u:12.6,v:28.1,detail:1,scale:1.04,rotation:.02,flipX:false,flipY:false,alpha:.70},
+  {u:16.1,v:68.3,detail:3,scale:.96,rotation:-.03,flipX:true,flipY:true,alpha:.60},
+  {u:19.8,v:8.2,detail:2,scale:.93,rotation:.05,flipX:false,flipY:false,alpha:.62},
+  {u:23.9,v:42.8,detail:0,scale:1.03,rotation:-.02,flipX:true,flipY:false,alpha:.68},
+  {u:28.4,v:21.3,detail:3,scale:.96,rotation:.03,flipX:false,flipY:true,alpha:.61},
+  {u:31.7,v:59.6,detail:1,scale:1.01,rotation:-.05,flipX:true,flipY:true,alpha:.69},
+  {u:35.2,v:4.8,detail:0,scale:.95,rotation:.04,flipX:false,flipY:false,alpha:.65},
+  {u:39.8,v:34.7,detail:2,scale:1.04,rotation:-.01,flipX:true,flipY:false,alpha:.63},
+  {u:43.1,v:73.2,detail:3,scale:.97,rotation:.03,flipX:false,flipY:true,alpha:.60},
+  {u:46.5,v:16.7,detail:1,scale:1.02,rotation:-.04,flipX:true,flipY:false,alpha:.68},
+  {u:50.9,v:50.3,detail:0,scale:.95,rotation:.02,flipX:false,flipY:false,alpha:.66},
+  {u:54.2,v:29.5,detail:2,scale:1.03,rotation:-.03,flipX:true,flipY:true,alpha:.62},
+  {u:58.8,v:64.4,detail:3,scale:.98,rotation:.05,flipX:false,flipY:false,alpha:.61},
+  {u:62.1,v:10.9,detail:1,scale:1.01,rotation:-.02,flipX:true,flipY:false,alpha:.68},
+  {u:66.7,v:39.1,detail:0,scale:.96,rotation:.04,flipX:false,flipY:true,alpha:.65},
+  {u:70.4,v:75.8,detail:2,scale:1.03,rotation:-.05,flipX:true,flipY:false,alpha:.63},
+  {u:74.6,v:23.6,detail:3,scale:.94,rotation:.01,flipX:false,flipY:false,alpha:.60},
+  {u:77.3,v:54.2,detail:1,scale:1.02,rotation:-.03,flipX:true,flipY:true,alpha:.68}
+]);
 /**
  * Prompt 9D-B3.5 — contrato único de conectores da Estrada Velha.
  * As medidas são de mundo; os PNGs foram publicados em 4x para entrarem todos
@@ -73,6 +105,17 @@ const OLD_ROAD_CONNECTOR_KIT=Object.freeze({
     // visual do vão do arco, não ao centro lógico atrás do Portão Sul.
     connectors:{from:{x:640,y:1280},to:{x:946.913502,y:780.900709}}
   }
+});
+// B4.0C: cada PNG é um companheiro transparente e tem o MESMO canvas do
+// conector correspondente. Nada abaixo altera a tabela de bocas, a largura,
+// a escala ou o traçado da estrada.
+const OLD_ROAD_POLISH_OVERLAY_KIT=Object.freeze({
+  straightLong:['old_road_polish_straight_long_a_v1','old_road_polish_straight_long_b_v1','old_road_polish_straight_long_c_v1'],
+  straightShort:['old_road_polish_straight_short_a_v1','old_road_polish_straight_short_b_v1'],
+  curveRight:['old_road_polish_curve_right_a_v1','old_road_polish_curve_right_b_v1'],
+  yJunction:['old_road_polish_y_junction_a_v1'],
+  startRun:['old_road_polish_start_run_a_v1'],
+  gateTransition:['old_road_polish_gate_transition_a_v1']
 });
 // Prompt 9D-B3.8 — rota visual aprovada da Estrada Velha. Os módulos partem
 // do canto inferior esquerdo, passam pelos encontros do prólogo e chegam ao
@@ -145,7 +188,7 @@ export class TerritorySectorManager{
 /** Construtor visual/físico da expansão integrada à própria AetherCityScene. */
 export class AetherTerritory{
   constructor(scene,config){
-    this.scene=scene;this.config=config;this.objects=[];this.waterSprites=[];
+    this.scene=scene;this.config=config;this.objects=[];this.waterSprites=[];this.groundVariationLayers=[];this.roadPolishCursor=0;
     this.worldFlags=config.worldFlags??{};this.worldFlags.discoveredLandmarks??={};
     this.sectors=new TerritorySectorManager(scene,this.worldFlags);
     this.mapKey=ensureAetherTerritoryMap(scene);
@@ -238,21 +281,24 @@ export class AetherTerritory{
     ground.setData?.('aetherRenderClass','ground');
     this.groundMask=maskShape;this.groundSurface=ground;
 
+    this.groundVariationLayers=OUTSKIRTS_B4_GROUND_VARIATIONS.map(spec=>{
+      const variation=this.scene.add.tileSprite(center.x,center.y,width,height,spec.texture)
+        .setOrigin(.5).setDepth(this.groundDepth(OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN+.04))
+        .setAlpha(spec.alpha).setTilePosition(spec.tileX,spec.tileY);
+      variation.setMask(maskShape.createGeometryMask());
+      variation.setData?.('aetherRenderClass','ground');
+      return variation;
+    });
+
     // Detalhes transparentes leves: não são árvores, placas, rochas grandes
-    // nem props narrativos. Eles só reduzem a leitura de repetição no solo.
-    const spacing=7.8,firstU=bounds.minU+spacing/2,firstV=bounds.minV+spacing/2;
-    let row=0;
-    for(let u=firstU;u<=bounds.maxU;u+=spacing,row++){
-      let column=0;
-      for(let v=firstV;v<=bounds.maxV;v+=spacing,column++){
-        const hash=(row*37+column*53+row*column*11)>>>0;
-        if(hash%9>=2)continue;
-        const detail=OUTSKIRTS_B4_GROUND_DETAILS[(hash>>>3)%OUTSKIRTS_B4_GROUND_DETAILS.length];
-        this.addGround(detail,u,v,1.026,OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN+.15,{
-          flipX:(hash&1)===1,flipY:(hash%5)===0,alpha:.82,visibleRadius:29,activeRadius:34
-        });
-      }
-    }
+    // nem props narrativos. Uma distribuição irregular substitui a grade
+    // provisória, sem mudar qualquer objeto estrutural dos Arredores.
+    OUTSKIRTS_B4_GROUND_DETAIL_LAYOUT.forEach(spec=>{
+      const detail=OUTSKIRTS_B4_GROUND_DETAILS[spec.detail];
+      this.addGround(detail,spec.u,spec.v,spec.scale,OLD_ROAD_PROTOTYPE_LAYERS.TERRAIN+.15,{
+        rotation:spec.rotation,flipX:spec.flipX,flipY:spec.flipY,alpha:spec.alpha,visibleRadius:29,activeRadius:34
+      });
+    });
   }
 
   screenToLogical(x,y){
@@ -285,12 +331,19 @@ export class AetherTerritory{
     const sprite=this.addGround(spec.texture,point.u,point.v,OLD_ROAD_CONNECTOR_STANDARD.scale,OLD_ROAD_PROTOTYPE_LAYERS.ROAD,{
       rotation,flipX,flipY,visibleRadius:options.visibleRadius??24,activeRadius:options.activeRadius??28
     });
+    const polishVariants=OLD_ROAD_POLISH_OVERLAY_KIT[moduleName]??[];
+    const polishTexture=polishVariants.length?polishVariants[this.roadPolishCursor%polishVariants.length]:null;
+    this.roadPolishCursor++;
+    const polishSprite=polishTexture?this.addGround(polishTexture,point.u,point.v,OLD_ROAD_CONNECTOR_STANDARD.scale,OLD_ROAD_PROTOTYPE_LAYERS.ROAD+.12,{
+      rotation,flipX,flipY,visibleRadius:options.visibleRadius??24,activeRadius:options.activeRadius??28
+    }):null;
+    polishSprite?.setData?.('aetherRenderClass','road-polish');
     const connectors={};
     Object.keys(spec.connectors).forEach(name=>{
       const vector=this.connectorVector(spec,name,rotation,flipX,flipY);
       connectors[name]={x:center.x+vector.x,y:center.y+vector.y};
     });
-    return{sprite,center,connectors,moduleName,rotation,flipX,flipY};
+    return{sprite,polishSprite,center,connectors,moduleName,rotation,flipX,flipY};
   }
 
   /**
@@ -300,6 +353,7 @@ export class AetherTerritory{
    * é matematicamente a mesma coordenada, sem uma emenda aproximada no portão.
    */
   createOldRoadPrototype(){
+    this.roadPolishCursor=0;
     const gateAnchor=this.project(OLD_ROAD_FINAL_Y.gate.u,OLD_ROAD_FINAL_Y.gate.v);
     const junction=this.placeRoadConnectorModule('yJunction',gateAnchor,'trunk',{
       rotation:OLD_ROAD_FINAL_Y.rotation,flipY:true,visibleRadius:29,activeRadius:34
@@ -506,5 +560,5 @@ export class AetherTerritory{
     return caveU*caveU+caveV*caveV<=1;
   }
 
-  destroy(){this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0;this.waterSprites.length=0}
+  destroy(){this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0;this.waterSprites.length=0}
 }

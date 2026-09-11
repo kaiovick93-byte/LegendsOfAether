@@ -111,6 +111,11 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('outskirts_ground_b4_detail_1','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_1.png');
     this.load.image('outskirts_ground_b4_detail_2','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_2.png');
     this.load.image('outskirts_ground_b4_detail_3','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_3.png');
+    // 9D-B4.0C: variações transparentes e independentes reduzem a repetição
+    // do material sem mudar o tamanho, bounds ou máscara dos Arredores.
+    this.load.image('outskirts_ground_b4_variation_0','assets/images/environment/outskirts/terrain-b4/polish-b4c/outskirts_ground_b4_variation_0.png');
+    this.load.image('outskirts_ground_b4_variation_1','assets/images/environment/outskirts/terrain-b4/polish-b4c/outskirts_ground_b4_variation_1.png');
+    this.load.image('outskirts_ground_b4_variation_2','assets/images/environment/outskirts/terrain-b4/polish-b4c/outskirts_ground_b4_variation_2.png');
     this.load.image('outskirts_old_road_v2','assets/images/environment/outskirts/v2/outskirts_old_road_v2.png');
     // 9D-B3.2: quatro peças extraídas da prancha fornecida, sem labels.
     this.load.image('old_road_prototype_ground_v1','assets/images/environment/outskirts/old-road-v3/old_road_prototype_ground_v1.png');
@@ -125,6 +130,19 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('old_road_connector_y_junction_v2','assets/images/environment/outskirts/old-road-v3/old_road_connector_y_junction_v2.png');
     this.load.image('old_road_connector_start_run_v2','assets/images/environment/outskirts/old-road-v3/old_road_connector_start_run_v2.png');
     this.load.image('old_road_connector_gate_transition_v3','assets/images/environment/outskirts/old-road-v3/old_road_connector_gate_transition_v3.png');
+    // 9D-B4.0C: overlays transparentes, do mesmo canvas dos conectores B4.0A.
+    // Eles são desenhados acima da arte aprovada, mas não substituem nenhuma
+    // boca técnica, não participam de colisão e ficam abaixo dos atores.
+    this.load.image('old_road_polish_straight_long_a_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_straight_long_a_v1.png');
+    this.load.image('old_road_polish_straight_long_b_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_straight_long_b_v1.png');
+    this.load.image('old_road_polish_straight_long_c_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_straight_long_c_v1.png');
+    this.load.image('old_road_polish_straight_short_a_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_straight_short_a_v1.png');
+    this.load.image('old_road_polish_straight_short_b_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_straight_short_b_v1.png');
+    this.load.image('old_road_polish_curve_right_a_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_curve_right_a_v1.png');
+    this.load.image('old_road_polish_curve_right_b_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_curve_right_b_v1.png');
+    this.load.image('old_road_polish_y_junction_a_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_y_junction_a_v1.png');
+    this.load.image('old_road_polish_start_run_a_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_start_run_a_v1.png');
+    this.load.image('old_road_polish_gate_transition_a_v1','assets/images/environment/outskirts/old-road-v3/polish-b4c/old_road_polish_gate_transition_a_v1.png');
     this.load.image('outskirts_stream_v2','assets/images/environment/outskirts/v2/outskirts_stream_v2.png');
     this.load.image('outskirts_bridge_v2','assets/images/environment/outskirts/v2/outskirts_bridge_v2.png');
     this.load.image('outskirts_shrine_v2','assets/images/environment/outskirts/v2/outskirts_shrine_v2.png');

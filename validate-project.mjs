@@ -1156,6 +1156,23 @@ expect(
   !territory.includes("'outskirts_ground_tile_v2'"),
   'base contínua B4.0B não substituiu corretamente a grama provisória'
 );
+const outskirtsB4cVariationAssets=[
+  ['assets/images/environment/outskirts/terrain-b4/polish-b4c/outskirts_ground_b4_variation_0.png',1152,576,'outskirts_ground_b4_variation_0'],
+  ['assets/images/environment/outskirts/terrain-b4/polish-b4c/outskirts_ground_b4_variation_1.png',1344,672,'outskirts_ground_b4_variation_1'],
+  ['assets/images/environment/outskirts/terrain-b4/polish-b4c/outskirts_ground_b4_variation_2.png',1536,768,'outskirts_ground_b4_variation_2']
+];
+for(const [relative,width,height,key] of outskirtsB4cVariationAssets){
+  expect(exists(relative),`variação de terreno B4.0C ausente: ${relative}`);
+  if(exists(relative)){const dimensions=pngDimensions(relative);expect(dimensions.width===width&&dimensions.height===height&&pngColorType(relative)===6,`variação de terreno B4.0C perdeu proporção/RGBA: ${relative}`)}
+  expect(preload.includes(`'${key}'`),`variação de terreno B4.0C fora do preload: ${key}`);
+}
+expect(
+  territory.includes('OUTSKIRTS_B4_GROUND_VARIATIONS')&&
+  territory.includes('OUTSKIRTS_B4_GROUND_DETAIL_LAYOUT')&&
+  territory.includes('variation.setMask(maskShape.createGeometryMask())')&&
+  !territory.includes('const spacing=7.8'),
+  'B4.0C não removeu a repetição regular nem mascarou as novas variações de terreno'
+);
 
 const oldRoadB4References=[
   ['assets/images/environment/outskirts/old-road-v3/reference/folha_de_tiles_de_estrada_e_vegetacao.png',1448,1086],
@@ -1179,6 +1196,31 @@ for(const [name,width,height,key] of oldRoadB4Assets){
   if(exists(relative)){const dimensions=pngDimensions(relative);expect(dimensions.width===width&&dimensions.height===height&&pngColorType(relative)===6,`conector B4.0A perdeu proporção ou alpha RGBA: ${name}`)}
   expect(preload.includes(`this.load.image('${key}'`),`conector B4.0A fora do preload: ${key}`);
 }
+const oldRoadB4cPolishAssets=[
+  ['old_road_polish_straight_long_a_v1.png',512,768,'old_road_polish_straight_long_a_v1'],
+  ['old_road_polish_straight_long_b_v1.png',512,768,'old_road_polish_straight_long_b_v1'],
+  ['old_road_polish_straight_long_c_v1.png',512,768,'old_road_polish_straight_long_c_v1'],
+  ['old_road_polish_straight_short_a_v1.png',512,384,'old_road_polish_straight_short_a_v1'],
+  ['old_road_polish_straight_short_b_v1.png',512,384,'old_road_polish_straight_short_b_v1'],
+  ['old_road_polish_curve_right_a_v1.png',1408,1408,'old_road_polish_curve_right_a_v1'],
+  ['old_road_polish_curve_right_b_v1.png',1408,1408,'old_road_polish_curve_right_b_v1'],
+  ['old_road_polish_y_junction_a_v1.png',1600,1600,'old_road_polish_y_junction_a_v1'],
+  ['old_road_polish_start_run_a_v1.png',3200,1280,'old_road_polish_start_run_a_v1'],
+  ['old_road_polish_gate_transition_a_v1.png',1280,1280,'old_road_polish_gate_transition_a_v1']
+];
+for(const [name,width,height,key] of oldRoadB4cPolishAssets){
+  const relative=`assets/images/environment/outskirts/old-road-v3/polish-b4c/${name}`;
+  expect(exists(relative),`overlay visual B4.0C ausente: ${name}`);
+  if(exists(relative)){const dimensions=pngDimensions(relative);expect(dimensions.width===width&&dimensions.height===height&&pngColorType(relative)===6,`overlay B4.0C perdeu o canvas do conector: ${name}`)}
+  expect(preload.includes(`this.load.image('${key}'`),`overlay B4.0C fora do preload: ${key}`);
+}
+expect(
+  territory.includes('OLD_ROAD_POLISH_OVERLAY_KIT')&&
+  territory.includes('OLD_ROAD_PROTOTYPE_LAYERS.ROAD+.12')&&
+  territory.includes('this.roadPolishCursor=0')&&
+  territory.includes('polishSprite?.setData?.(\'aetherRenderClass\',\'road-polish\')'),
+  'B4.0C não integra overlays visuais sem alterar a camada técnica da estrada'
+);
 expect(
   territory.includes("texture:'old_road_connector_straight_long_v2'")&&
   territory.includes("texture:'old_road_connector_straight_short_v2'")&&
