@@ -1,0 +1,2 @@
+// @ts-nocheck
+export class SfxManager{constructor(scene){this.scene=scene}beep(freq=440,d=.08){const c=this.scene.sound?.context;if(!c)return;try{const o=c.createOscillator(),g=c.createGain();o.frequency.value=freq;g.gain.setValueAtTime(.025,c.currentTime);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch{}}pickup(){this.beep(880,.09)}hit(){this.beep(180,.06)}confirm(){this.beep(620,.08)}levelUp(){this.beep(1040,.18)}}
