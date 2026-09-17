@@ -88,7 +88,7 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('city_chicken_fence','assets/images/environment/city/props/city_chicken_fence.png');
     this.load.image('iso_grass_patch','assets/images/environment/isometric/isometric_grass_patch.png');
     this.load.spritesheet('iso_grass_tufts','assets/images/environment/isometric/isometric_grass_tufts.png',{frameWidth:96,frameHeight:96});
-    this.load.image('iso_city_wall','assets/images/environment/isometric/isometric_city_wall_v3.png');
+    this.load.image('iso_city_wall','assets/images/environment/isometric/isometric_city_wall_v2_aligned.png');
     this.load.image('iso_city_wall_side_corner','assets/images/environment/isometric/isometric_city_wall_side_corner.png');
     this.load.image('iso_city_gate','assets/images/environment/isometric/isometric_city_gate_v3.png');
     this.load.image('iso_city_gate_east','assets/images/environment/isometric/isometric_city_gate_east_v3.png');

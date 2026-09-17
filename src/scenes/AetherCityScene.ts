@@ -502,22 +502,19 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   addWallRun(fixedAxis, fixed, start, end, flip) {
-    // ROUND91: módulo reto normalizado para a perspectiva 2:1 real do mapa.
-    // Um único PNG ocupa 8 tiles, reduzindo emendas e eliminando a repetição
-    // de pilares altos que quebrava a linha superior da muralha.
-    const tileSpan = 8;
-    const wallSource=this.textures.get('iso_city_wall').getSourceImage();
-    const wallScale=(tileSpan*AetherCityScene.TILE_WIDTH/2)/wallSource.width;
-    // O V3 usa como pivot a linha física de contato com o terreno, não o
-    // fundo do canvas. Por isso não há mais compensação vertical artificial.
-    const wallBaseIsoZ=0;
-    const wallOriginX=.499655;
-    const wallOriginY=.714644;
+    // Round92: mantém EXATAMENTE a arte v2 aprovada. O PNG foi apenas
+    // normalizado geometricamente para o 2:1 real do mapa; nenhuma troca de
+    // estilo/asset foi feita. Os conectores terminais agora coincidem com o
+    // passo lógico de 4 tiles (192 x 96 px), eliminando degraus no topo/base.
+    const tileSpan = 4;
+    const wallScale = 192 / 650; // vetor real entre os conectores do mesmo v2
+    const wallOriginY = 0.705423803; // centro real da linha de chão após normalização
+    const wallBaseIsoZ = 0;
     const count = Math.floor((end - start) / tileSpan + 1e-6);
     for (let index = 0; index < count; index++) {
-      const segStart=start+tileSpan*index;
-      const segEnd=segStart+tileSpan;
-      const middle=(segStart+segEnd)/2;
+      const segStart = start + tileSpan * index;
+      const segEnd = segStart + tileSpan;
+      const middle = (segStart + segEnd) / 2;
       const u = fixedAxis === 'u' ? fixed : middle;
       const v = fixedAxis === 'v' ? fixed : middle;
       const image = new IsoSprite({
@@ -525,10 +522,14 @@ export class AetherCityScene extends Phaser.Scene {
         texture:'iso_city_wall',tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
         screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
         depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.08
-      }).setOrigin(wallOriginX,wallOriginY).setFlipX(flip).setScale(wallScale);
+      });
+      // O ponto de origem passa pela metade exata da linha de contato do módulo.
+      // Como originX=0.5, o flip horizontal mantém o mesmo pivô nos dois eixos.
+      image.setOrigin(.5, wallOriginY).setFlipX(flip).setScale(wallScale);
+      image.updateIsoPosition();
       this.wallSprites.push(image);
 
-      // A colisão continua independente dos pixels do PNG.
+      // Colisão permanece lógica e independente do PNG.
       const thickness=.36;
       const rect=fixedAxis==='u'
         ?{u1:fixed-thickness,v1:segStart,u2:fixed+thickness,v2:segEnd,corner:.08}
