@@ -502,29 +502,22 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   addWallRun(fixedAxis, fixed, start, end, flip) {
-    // A arte nova nasceu como um trecho longo de fortificação. Em vez de
-    // espremê-la no antigo módulo de 2 tiles, cada sprite ocupa 4 tiles. Isso
-    // preserva pedra, contrafortes, vegetação e escala visual.
-    const tileSpan = 4;
-    // A largura total do PNG inclui transparência e folhagem. Escalar pela
-    // largura do canvas (192 / source.width) abre uma costura entre módulos.
-    // 0.285 alinha os pilares terminais ao passo isométrico real de 4 tiles
-    // (192 px x 96 px) e produz uma muralha contínua sem alterar a colisão.
-    const wallScale=0.285;
-    // No PNG do muro v2, o centro real da linha de contato com o terreno fica
-    // perto de y=771 (canvas 1093). Com scale 0.285, o anchor precisa descer
-    // ~92 px para que essa linha — e não o fundo transparente do canvas — caia
-    // exatamente no plano isométrico do chão.
-    const wallBaseIsoZ=-92;
+    // ROUND91: módulo reto normalizado para a perspectiva 2:1 real do mapa.
+    // Um único PNG ocupa 8 tiles, reduzindo emendas e eliminando a repetição
+    // de pilares altos que quebrava a linha superior da muralha.
+    const tileSpan = 8;
+    const wallSource=this.textures.get('iso_city_wall').getSourceImage();
+    const wallScale=(tileSpan*AetherCityScene.TILE_WIDTH/2)/wallSource.width;
+    // O V3 usa como pivot a linha física de contato com o terreno, não o
+    // fundo do canvas. Por isso não há mais compensação vertical artificial.
+    const wallBaseIsoZ=0;
+    const wallOriginX=.499655;
+    const wallOriginY=.714644;
     const count = Math.floor((end - start) / tileSpan + 1e-6);
     for (let index = 0; index < count; index++) {
       const segStart=start+tileSpan*index;
       const segEnd=segStart+tileSpan;
-      const logicalMiddle=(segStart+segEnd)/2;
-      // O sprite fica exatamente no centro lógico do módulo. O avanço visual
-      // de 0.40 tile usado no Round89 deslocava os módulos terminais para fora
-      // da linha geométrica do portão e criava a sensação de emenda torta.
-      const middle=logicalMiddle;
+      const middle=(segStart+segEnd)/2;
       const u = fixedAxis === 'u' ? fixed : middle;
       const v = fixedAxis === 'v' ? fixed : middle;
       const image = new IsoSprite({
@@ -532,18 +525,17 @@ export class AetherCityScene extends Phaser.Scene {
         texture:'iso_city_wall',tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
         screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
         depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.08
-      }).setFlipX(flip).setScale(wallScale);
+      }).setOrigin(wallOriginX,wallOriginY).setFlipX(flip).setScale(wallScale);
       this.wallSprites.push(image);
 
-      // Nesta etapa a colisão é lógica e independente dos pixels do PNG. Isso
-      // deixa a nova arquitetura livre sem reintroduzir o problema do alpha.
+      // A colisão continua independente dos pixels do PNG.
       const thickness=.36;
       const rect=fixedAxis==='u'
         ?{u1:fixed-thickness,v1:segStart,u2:fixed+thickness,v2:segEnd,corner:.08}
         :{u1:segStart,v1:fixed-thickness,u2:segEnd,v2:fixed+thickness,corner:.08};
       this.addIsoGroundContact(rect,.10);
       this.registerSolidMask(image,'iso_city_wall',{label:'muralha',mode:'isoRect',isoRect:rect});
-      // Oclusão fica intencionalmente desativada até a etapa específica.
+      // Oclusão continua intencionalmente fora desta etapa.
     }
   }
 
