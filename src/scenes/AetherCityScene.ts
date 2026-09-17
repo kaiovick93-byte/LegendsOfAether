@@ -309,6 +309,29 @@ export class AetherCityScene extends Phaser.Scene {
     return AetherCityScene.ISO_DEPTH_BASE+(u+v)*100+offset;
   }
 
+  addIsoGroundContact(rect, alpha = .11) {
+    // Sombra de contato puramente visual: não altera colisão nem oclusão.
+    // Ela reforça o peso da muralha/torres no terreno e elimina a leitura de
+    // sprite "flutuando" sem depender da textura do chão.
+    const polygon = (r) => [
+      this.project(r.u1,r.v1),
+      this.project(r.u2,r.v1),
+      this.project(r.u2,r.v2),
+      this.project(r.u1,r.v2)
+    ];
+    const outer={u1:rect.u1-.10,v1:rect.v1-.10,u2:rect.u2+.10,v2:rect.v2+.10};
+    const g=this.add.graphics();
+    g.fillStyle(0x11150d,alpha*.45);
+    g.fillPoints(polygon(outer),true);
+    g.fillStyle(0x090c08,alpha);
+    g.fillPoints(polygon(rect),true);
+    const u=(rect.u1+rect.u2)/2;
+    const v=(rect.v1+rect.v2)/2;
+    g.setDepth(this.depthAt(u,v,-1.5));
+    this.wallGroundShadows?.push(g);
+    return g;
+  }
+
   getBuildingPlan() {
     const healerRestored = this.isHealerFaithRestored();
     // Uma única planta alimenta arte, gramado, colisão e posição dos NPCs.
@@ -409,6 +432,7 @@ export class AetherCityScene extends Phaser.Scene {
   createWallsAndGates() {
     const C = AetherCityScene;
     this.wallSprites = [];
+    this.wallGroundShadows = [];
     this.addWallRun('u', C.CITY_MIN, C.CITY_MIN, C.CITY_MAX, false);
     this.addWallRun('v', C.CITY_MIN, C.CITY_MIN, C.CITY_MAX, true);
     // As extensões redundantes foram removidas dos PNGs dos portões. Os
@@ -462,6 +486,7 @@ export class AetherCityScene extends Phaser.Scene {
       {id:'east-south-tower',u:26.03,v:16.35,label:'torre sul do Portão Leste',rect:{u1:25.55,v1:15.6,u2:26.45,v2:18.0,corner:.16}}
     ];
     for(const tower of towers){
+      this.addIsoGroundContact(tower.rect,.12);
       const p=this.project(tower.u,tower.v);
       const anchor=this.add.zone(p.x,p.y,1,1).setOrigin(.5,1).setVisible(false);
       anchor.name=tower.id;
@@ -482,14 +507,21 @@ export class AetherCityScene extends Phaser.Scene {
     // 0.285 alinha os pilares terminais ao passo isométrico real de 4 tiles
     // (192 px x 96 px) e produz uma muralha contínua sem alterar a colisão.
     const wallScale=0.285;
-    // Mantém a mesma linha de base do muro anterior; a altura extra cresce
-    // apenas para cima e não desloca a planta da cidade.
-    const wallBaseIsoZ=-55;
+    // A base desce 6 px em relação ao Round87 para assentar a vegetação e
+    // as pedras inferiores diretamente no terreno; a colisão lógica não muda.
+    const wallBaseIsoZ=-61; // 6 px mais baixo: base visual assentada no terreno
     const count = Math.floor((end - start) / tileSpan + 1e-6);
     for (let index = 0; index < count; index++) {
       const segStart=start+tileSpan*index;
       const segEnd=segStart+tileSpan;
-      const middle=(segStart+segEnd)/2;
+      const logicalMiddle=(segStart+segEnd)/2;
+      let middle=logicalMiddle;
+      // Só os módulos terminais junto aos portões avançam visualmente 0.4
+      // tile para dentro das torres. A colisão continua no retângulo lógico
+      // original, então o vão jogável não muda e a emenda deixa de parecer
+      // duas peças apenas encostadas.
+      if(fixed===AetherCityScene.CITY_MAX && end===10 && index===count-1) middle+=.40;
+      if(fixed===AetherCityScene.CITY_MAX && start===18 && index===0) middle-=.40;
       const u = fixedAxis === 'u' ? fixed : middle;
       const v = fixedAxis === 'v' ? fixed : middle;
       const image = new IsoSprite({
@@ -506,6 +538,11 @@ export class AetherCityScene extends Phaser.Scene {
       const rect=fixedAxis==='u'
         ?{u1:fixed-thickness,v1:segStart,u2:fixed+thickness,v2:segEnd,corner:.08}
         :{u1:segStart,v1:fixed-thickness,u2:segEnd,v2:fixed+thickness,corner:.08};
+      const visualShift=middle-logicalMiddle;
+      const contactRect=fixedAxis==='u'
+        ?{u1:rect.u1,v1:rect.v1+visualShift,u2:rect.u2,v2:rect.v2+visualShift}
+        :{u1:rect.u1+visualShift,v1:rect.v1,u2:rect.u2+visualShift,v2:rect.v2};
+      this.addIsoGroundContact(contactRect,.10);
       this.registerSolidMask(image,'iso_city_wall',{label:'muralha',mode:'isoRect',isoRect:rect});
       // Oclusão fica intencionalmente desativada até a etapa específica.
     }
