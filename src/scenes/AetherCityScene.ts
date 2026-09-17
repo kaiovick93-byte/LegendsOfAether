@@ -444,9 +444,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.addWallRun('u', C.CITY_MAX, 18, C.CITY_MAX, false);
     this.addWallRun('v', C.CITY_MAX, C.CITY_MIN, 10, true);
     this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true);
-    // Os antigos pilares laterais marrons ficam fora desta etapa. Os próprios
-    // pilares terminais dos novos módulos cobrem os encontros. As torres de
-    // canto definitivas entram em uma etapa posterior.
+    this.createCornerTowers();
 
     const gateTargetWidth = 432;
     const eastGateSource = this.textures.get('iso_city_gate_east').getSourceImage();
@@ -498,6 +496,36 @@ export class AetherCityScene extends Phaser.Scene {
       this.registerSolidMask(anchor,'iso_city_wall',{
         label:tower.label,mode:'isoRect',isoRect:tower.rect,active:()=>anchor.active
       });
+    }
+  }
+
+  createCornerTowers() {
+    const key='iso_city_corner_tower';
+    const source=this.textures.get(key).getSourceImage();
+    const scale=228/source.width;
+    const originY=1417/source.height;
+    const corners=[
+      {id:'north-west',u:AetherCityScene.CITY_MIN,v:AetherCityScene.CITY_MIN,label:'torre de arqueiros noroeste'},
+      {id:'north-east',u:AetherCityScene.CITY_MAX,v:AetherCityScene.CITY_MIN,label:'torre de arqueiros nordeste'},
+      {id:'south-west',u:AetherCityScene.CITY_MIN,v:AetherCityScene.CITY_MAX,label:'torre de arqueiros sudoeste'},
+      {id:'south-east',u:AetherCityScene.CITY_MAX,v:AetherCityScene.CITY_MAX,label:'torre de arqueiros sudeste'}
+    ];
+    this.cornerTowerSprites=[];
+    for(const tower of corners){
+      const sprite=new IsoSprite({
+        scene:this,isoX:tower.u,isoY:tower.v,isoZ:0,
+        texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
+        screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
+        depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.32
+      });
+      sprite.setOrigin(.5,originY).setScale(scale);
+      sprite.updateIsoPosition();
+      sprite.name=tower.id;
+      this.wallSprites.push(sprite);
+      this.cornerTowerSprites.push(sprite);
+      const footprint={u1:tower.u-.72,v1:tower.v-.72,u2:tower.u+.72,v2:tower.v+.72,corner:.22};
+      this.addIsoGroundContact(footprint,.12);
+      this.registerSolidMask(sprite,key,{label:tower.label,mode:'isoRect',isoRect:footprint});
     }
   }
 
