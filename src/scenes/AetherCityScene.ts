@@ -451,7 +451,11 @@ export class AetherCityScene extends Phaser.Scene {
     const gateTargetWidth = 432;
     const eastGateSource = this.textures.get('iso_city_gate_east').getSourceImage();
     const eastGateScale=gateTargetWidth/eastGateSource.width;
-    const gateBaseIsoZ=-126; // mantém a linha de base aprovada do Round86
+    // A arte v3 tem a linha real de contato com o chão no centro do PNG em
+    // aproximadamente 661 px de 862. Com escala 432/1152 = 0.375, o
+    // deslocamento correto do anchor dos pés é ~75 px, não os 126 px herdados
+    // do portão antigo. Isso alinha o rodapé do portão ao mesmo plano dos muros.
+    const gateBaseIsoZ=-75;
     this.eastGateSprite = new IsoSprite({
       scene:this,isoX:26.03,isoY:14,isoZ:gateBaseIsoZ,
       texture:'iso_city_gate_east',tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
@@ -507,21 +511,20 @@ export class AetherCityScene extends Phaser.Scene {
     // 0.285 alinha os pilares terminais ao passo isométrico real de 4 tiles
     // (192 px x 96 px) e produz uma muralha contínua sem alterar a colisão.
     const wallScale=0.285;
-    // A base desce 6 px em relação ao Round87 para assentar a vegetação e
-    // as pedras inferiores diretamente no terreno; a colisão lógica não muda.
-    const wallBaseIsoZ=-61; // 6 px mais baixo: base visual assentada no terreno
+    // No PNG do muro v2, o centro real da linha de contato com o terreno fica
+    // perto de y=771 (canvas 1093). Com scale 0.285, o anchor precisa descer
+    // ~92 px para que essa linha — e não o fundo transparente do canvas — caia
+    // exatamente no plano isométrico do chão.
+    const wallBaseIsoZ=-92;
     const count = Math.floor((end - start) / tileSpan + 1e-6);
     for (let index = 0; index < count; index++) {
       const segStart=start+tileSpan*index;
       const segEnd=segStart+tileSpan;
       const logicalMiddle=(segStart+segEnd)/2;
-      let middle=logicalMiddle;
-      // Só os módulos terminais junto aos portões avançam visualmente 0.4
-      // tile para dentro das torres. A colisão continua no retângulo lógico
-      // original, então o vão jogável não muda e a emenda deixa de parecer
-      // duas peças apenas encostadas.
-      if(fixed===AetherCityScene.CITY_MAX && end===10 && index===count-1) middle+=.40;
-      if(fixed===AetherCityScene.CITY_MAX && start===18 && index===0) middle-=.40;
+      // O sprite fica exatamente no centro lógico do módulo. O avanço visual
+      // de 0.40 tile usado no Round89 deslocava os módulos terminais para fora
+      // da linha geométrica do portão e criava a sensação de emenda torta.
+      const middle=logicalMiddle;
       const u = fixedAxis === 'u' ? fixed : middle;
       const v = fixedAxis === 'v' ? fixed : middle;
       const image = new IsoSprite({
@@ -538,11 +541,7 @@ export class AetherCityScene extends Phaser.Scene {
       const rect=fixedAxis==='u'
         ?{u1:fixed-thickness,v1:segStart,u2:fixed+thickness,v2:segEnd,corner:.08}
         :{u1:segStart,v1:fixed-thickness,u2:segEnd,v2:fixed+thickness,corner:.08};
-      const visualShift=middle-logicalMiddle;
-      const contactRect=fixedAxis==='u'
-        ?{u1:rect.u1,v1:rect.v1+visualShift,u2:rect.u2,v2:rect.v2+visualShift}
-        :{u1:rect.u1+visualShift,v1:rect.v1,u2:rect.u2+visualShift,v2:rect.v2};
-      this.addIsoGroundContact(contactRect,.10);
+      this.addIsoGroundContact(rect,.10);
       this.registerSolidMask(image,'iso_city_wall',{label:'muralha',mode:'isoRect',isoRect:rect});
       // Oclusão fica intencionalmente desativada até a etapa específica.
     }
