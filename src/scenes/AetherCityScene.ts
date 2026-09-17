@@ -443,7 +443,10 @@ export class AetherCityScene extends Phaser.Scene {
     this.addWallRun('u', C.CITY_MAX, C.CITY_MIN, 10, false);
     this.addWallRun('u', C.CITY_MAX, 18, C.CITY_MAX, false);
     this.addWallRun('v', C.CITY_MAX, C.CITY_MIN, 10, true);
-    this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true);
+    // Round94: o trecho entre a torre sudeste e o Portão Leste recebe uma
+    // versão destruída contínua, com brecha e destroços, mantendo a lógica
+    // do muro no mesmo envelope isométrico da lateral direita.
+    this.addBrokenWallSection('v', C.CITY_MAX, 18, C.CITY_MAX, true);
     this.createCornerTowers();
 
     const gateTargetWidth = 432;
@@ -527,6 +530,36 @@ export class AetherCityScene extends Phaser.Scene {
       this.addIsoGroundContact(footprint,.12);
       this.registerSolidMask(sprite,key,{label:tower.label,mode:'isoRect',isoRect:footprint});
     }
+  }
+
+
+  addBrokenWallSection(fixedAxis, fixed, start, end, flip) {
+    const key='iso_city_wall_broken';
+    const source=this.textures.get(key).getSourceImage();
+    const tileSpan=end-start;
+    const targetWidth=48*tileSpan; // 8 tiles => 384 px no plano 2:1 do mapa.
+    const scale=targetWidth/source.width;
+    const originY=0.968; // ancora os destroços no chão sem suspender a base.
+    const middle=(start+end)/2;
+    const u=fixedAxis==='u'?fixed:middle;
+    const v=fixedAxis==='v'?fixed:middle;
+    const image=new IsoSprite({
+      scene:this,isoX:u,isoY:v,isoZ:0,
+      texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
+      screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
+      depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.09
+    });
+    image.setOrigin(.5,originY).setFlipX(flip).setScale(scale);
+    image.updateIsoPosition();
+    this.wallSprites.push(image);
+
+    // Mantém a contenção lógica da muralha nesta etapa; a brecha é visual.
+    const thickness=.36;
+    const rect=fixedAxis==='u'
+      ?{u1:fixed-thickness,v1:start,u2:fixed+thickness,v2:end,corner:.08}
+      :{u1:start,v1:fixed-thickness,u2:end,v2:fixed+thickness,corner:.08};
+    this.addIsoGroundContact(rect,.10);
+    this.registerSolidMask(image,key,{label:'trecho destruído da muralha',mode:'isoRect',isoRect:rect});
   }
 
   addWallRun(fixedAxis, fixed, start, end, flip) {
