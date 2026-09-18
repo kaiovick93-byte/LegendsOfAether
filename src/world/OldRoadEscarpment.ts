@@ -137,7 +137,7 @@ export class OldRoadEscarpment{
       version:'B4.1E-natural',side:'right-towards-city',reference:'ef888e75-2916-4a6a-b7a2-e1a3f543641d (1).png',
       pieces:this.pieces.map(({sprite,...piece})=>piece),footprints:this.footprints,
       roadGuide:this.route,roadModulesPreserved:19,
-      collisionMode:'existing-grounded-footprints',looseBlockers:0
+      collisionMode:'road-facing-lip-polyline',occlusionMode:'disabled',looseBlockers:0
     });
   }
 
@@ -148,6 +148,25 @@ export class OldRoadEscarpment{
     }
     const slope=(b.y-a.y)/(b.x-a.x||1);
     return {x,y:a.y+(x-a.x)*slope,slope};
+  }
+
+  isBlocked(u,v,radius=.27){
+    // Round96: a colisão da escarpa é uma única borda contínua no lábio
+    // voltado para a Estrada Velha. Isso substitui os footprints individuais
+    // das pedras, que criavam bloqueios irregulares e distantes da borda visual.
+    if(!this.route?.length)return false;
+    const p=this.territory.project(u,v);
+    const minX=Math.min(...this.route.map(point=>point.x));
+    const maxX=Math.max(...this.route.map(point=>point.x));
+    const horizontalMargin=18;
+    if(p.x<minX-horizontalMargin||p.x>maxX+horizontalMargin)return false;
+    const road=this.roadAt(p.x);
+    // O mesmo afastamento de 50 px usado para manter a arte fora da pista
+    // define o lábio visual da escarpa. Multiplicar pelo comprimento da normal
+    // mantém o limite estável nas mudanças de inclinação da Estrada Velha.
+    const lipY=road.y+50*Math.sqrt(1+road.slope*road.slope);
+    const playerMargin=Math.max(5,radius*34);
+    return p.y+playerMargin>=lipY;
   }
 
   place(id,x,scale,options={}){
@@ -171,15 +190,13 @@ export class OldRoadEscarpment{
       role:options.role??'approved-front',parent:options.parent??null});
     // A persistent barrier must not lose its collision when culling updates.
     this.territory.track(sprite,logical.u,logical.v,{alwaysActive:true});
-    this.territory.config.registerOccluder?.(sprite,key,y,{behindMargin:7});
-    const feet=options.solid===false?[]:asset.feet.map(f=>{
+    // Round96: nenhuma peça deste trecho participa da oclusão do jogador.
+    // A escarpa permanece visível, mas não dispara contorno/fragmento dourado.
+    // Os pés ainda são calculados para apoiar a composição da arte, porém não
+    // registram colisões individuais. A barreira contínua vem de isBlocked().
+    const feet=asset.feet.map(f=>{
       const foot={x:x+(width/2-f.x)*scale,y:y+(f.y-height)*scale,
         width:f.width*scale,height:f.height*scale,asset:id,piece:pieceId};
-      this.territory.config.registerSolidMask?.(sprite,key,{
-        label:`Escarpa da Estrada Velha: ${pieceId}`,mode:'footprint',
-        worldX:foot.x,worldY:foot.y,originY:.5,
-        footprintWidth:foot.width,footprintHeight:foot.height,footprintYOffset:0
-      });
       this.footprints.push(foot);return foot;
     });
     this.pieces.push({id:pieceId,asset:id,key,x,y,scale,flipX:true,rotation:0,

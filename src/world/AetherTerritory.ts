@@ -563,6 +563,9 @@ export class AetherTerritory{
   isLogicalBarrierBlocked(u,v,radius=.27){
     const bounds=AETHER_LOGICAL_BOUNDS;
     if(u<bounds.minU+radius||v<bounds.minV+radius||u>bounds.maxU-radius||v>bounds.maxV-radius)return true;
+    // Round96: a borda da escarpa ao lado da Estrada Velha é a barreira
+    // autoritativa deste trecho; não dependemos mais dos footprints da arte.
+    if(this.oldRoadEscarpment?.isBlocked?.(u,v,radius))return true;
     if(isAetherWaterBlocked(u,v,radius))return true;
     // O bloqueio usa somente raízes/troncos na base; a copa ampla segue sendo
     // decorativa e não cria uma parede invisível distante.
