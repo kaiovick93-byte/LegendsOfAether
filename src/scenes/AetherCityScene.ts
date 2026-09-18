@@ -441,12 +441,14 @@ export class AetherCityScene extends Phaser.Scene {
     // trechos restantes têm 8 tiles cada e recebem dois módulos longos de 4
     // tiles, evitando comprimir a nova arte em peças minúsculas.
     this.addWallRun('u', C.CITY_MAX, C.CITY_MIN, 10, false);
-    this.addWallRun('u', C.CITY_MAX, 18, C.CITY_MAX, false);
+    // Round99: o trecho quebrado pertence à muralha Leste, entre o Portão
+    // Leste (vão até v=18) e a torre sudeste (v=26). Usa a mesma orientação
+    // do muro normal deste lado para encaixar corretamente nos dois extremos.
+    this.addBrokenWallSection('u', C.CITY_MAX, 18, C.CITY_MAX, false);
     this.addWallRun('v', C.CITY_MAX, C.CITY_MIN, 10, true);
-    // Round94: o trecho entre a torre sudeste e o Portão Leste recebe uma
-    // versão destruída contínua, com brecha e destroços, mantendo a lógica
-    // do muro no mesmo envelope isométrico da lateral direita.
-    this.addBrokenWallSection('v', C.CITY_MAX, 18, C.CITY_MAX, true);
+    // O trecho Sul entre o Portão Sul e a torre sudeste volta a ser muralha
+    // íntegra; o muro quebrado estava aqui por engano nas versões anteriores.
+    this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true);
     this.createCornerTowers();
 
     const gateTargetWidth = 432;
