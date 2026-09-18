@@ -123,10 +123,6 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('outskirts_ground_b4_detail_3','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_3.png');
     this.load.image('outskirts_old_road_v2','assets/images/environment/outskirts/v2/outskirts_old_road_v2.png');
     // 9D-B3.2: quatro peças extraídas da prancha fornecida, sem labels.
-    this.load.image('old_road_prototype_ground_v1','assets/images/environment/outskirts/old-road-v3/old_road_prototype_ground_v1.png');
-    this.load.image('old_road_prototype_straight_v1','assets/images/environment/outskirts/old-road-v3/old_road_prototype_straight_v1.png');
-    this.load.image('old_road_prototype_curve_v1','assets/images/environment/outskirts/old-road-v3/old_road_prototype_curve_v1.png');
-    this.load.image('old_road_prototype_y_junction_v1','assets/images/environment/outskirts/old-road-v3/old_road_prototype_y_junction_v1.png');
     this.load.image('outskirts_stream_v2','assets/images/environment/outskirts/v2/outskirts_stream_v2.png');
     this.load.image('outskirts_bridge_v2','assets/images/environment/outskirts/v2/outskirts_bridge_v2.png');
     this.load.image('outskirts_shrine_v2','assets/images/environment/outskirts/v2/outskirts_shrine_v2.png');

@@ -663,6 +663,7 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   addWallRun(fixedAxis, fixed, start, end, flip, heightMultiplier = 1) {
+    const source=this.textures.get('iso_city_wall').getSourceImage();
     // Round92: mantém EXATAMENTE a arte v2 aprovada. O PNG foi apenas
     // normalizado geometricamente para o 2:1 real do mapa; nenhuma troca de
     // estilo/asset foi feita. Os conectores terminais agora coincidem com o
