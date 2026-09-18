@@ -457,7 +457,7 @@ export class AetherCityScene extends Phaser.Scene {
     // A metade sudeste da muralha Sul usa uma peça longa única. Isso elimina
     // o degrau/dobra visual criado pela sobreposição de dois terminais no meio
     // do trecho e mantém a torre sudeste à frente da junção.
-    this.addSouthWallLongSection(18, C.CITY_MAX, .10);
+    this.addSouthWallLongSection(18, C.CITY_MAX, .28);
     this.createCornerTowers();
 
     const gateTargetWidth = 432;
@@ -493,8 +493,8 @@ export class AetherCityScene extends Phaser.Scene {
     // O aríete permanece apontado para a brecha, mas é deslocado para fora da
     // muralha o suficiente para não atravessar a parede. Continua o mais
     // próximo possível do trecho quebrado sem invadi-lo visualmente.
-    const ram = this.addIsoImage('iso_goblin_battering_ram_broken', 27.78, 19.65, 164, .055, 6);
-    const footprint = {u1:27.15,v1:18.82,u2:28.65,v2:20.58,corner:.18};
+    const ram = this.addIsoImage('iso_goblin_battering_ram_broken', 29.15, 19.65, 164, .055, 6);
+    const footprint = {u1:28.52,v1:18.82,u2:30.02,v2:20.58,corner:.18};
     this.addIsoGroundContact(footprint,.09);
     this.registerSolidMask(ram,'iso_goblin_battering_ram_broken',{
       label:'aríete goblin destruído',
