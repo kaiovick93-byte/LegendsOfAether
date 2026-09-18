@@ -19,7 +19,7 @@ const STATIONS=[
 export class OldRoadEscarpment{
   constructor(territory){
     this.territory=territory;this.scene=territory.scene;
-    this.pieces=[];this.footprints=[];
+    this.pieces=[];this.footprints=[];this.roadLipSamples=[];this.roadLip=[];
     const road=this.scene.registry.get('oldRoadConnectorTest'),start=road.oldRoad[0];
     this.route=ESCARPMENT_START_GUIDE.map(([x,y])=>({x:start.center.x+x,y:start.center.y+y}));
     for(const module of road.oldRoad.slice(1))this.route.push(module.connectors.south);
@@ -37,7 +37,7 @@ export class OldRoadEscarpment{
     for(const [id,x,scale] of STATIONS){
       const previous=this.pieces.at(-1);
       const footY=id==='terminal_02'?previous.feet.reduce((sum,f)=>sum+f.y,0)/previous.feet.length:undefined;
-      this.place(id,x,scale,{footY});
+      this.place(id,x,scale,{footY,collisionLip:true});
     }
     const main=[...this.pieces];
     const joins=['rocks_large_01','rocks_medium_02','rocks_large_02','bush_01','rocks_medium_01','roots_01','bush_02'];
@@ -133,11 +133,12 @@ export class OldRoadEscarpment{
         footY:footY+outset,role:'ground-detail',solid:false
       });
     }
+    this.buildRoadFacingLip();
     this.scene.registry.set('oldRoadEscarpment',{
       version:'B4.1E-natural',side:'right-towards-city',reference:'ef888e75-2916-4a6a-b7a2-e1a3f543641d (1).png',
       pieces:this.pieces.map(({sprite,...piece})=>piece),footprints:this.footprints,
-      roadGuide:this.route,roadModulesPreserved:19,
-      collisionMode:'road-facing-lip-polyline',occlusionMode:'disabled',looseBlockers:0
+      roadGuide:this.route,roadLip:this.roadLip,roadModulesPreserved:19,
+      collisionMode:'visible-escarpment-lip-polyline',occlusionMode:'disabled',looseBlockers:0
     });
   }
 
@@ -150,22 +151,73 @@ export class OldRoadEscarpment{
     return {x,y:a.y+(x-a.x)*slope,slope};
   }
 
+  buildRoadFacingLip(){
+    // Round98: a barreira é extraída da SILHUETA REAL das peças estruturais
+    // visíveis da escarpa. Não deriva mais da rota da estrada nem de um offset
+    // constante. Isso faz a colisão acompanhar as pequenas subidas, descidas e
+    // irregularidades do lábio rochoso exibido na tela.
+    const samples=(this.roadLipSamples||[])
+      .filter(point=>Number.isFinite(point.x)&&Number.isFinite(point.y))
+      .sort((a,b)=>a.x-b.x);
+    if(samples.length<2){this.roadLip=[];return}
+
+    // Consolida sobreposições entre módulos. Para cada faixa horizontal usamos
+    // o ponto mais alto (menor Y), que é a borda visível voltada para a estrada.
+    const binSize=6;
+    const bins=new Map();
+    for(const point of samples){
+      const bin=Math.round(point.x/binSize);
+      const current=bins.get(bin);
+      if(!current||point.y<current.y)bins.set(bin,{x:point.x,y:point.y});
+    }
+    const sparse=[...bins.values()].sort((a,b)=>a.x-b.x);
+    if(sparse.length<2){this.roadLip=sparse;return}
+
+    // Reamostra em passos curtos para que a checagem de colisão nunca crie uma
+    // reta longa atravessando uma curva visível da formação.
+    const result=[];
+    const step=6;
+    for(let i=1;i<sparse.length;i++){
+      const a=sparse[i-1],b=sparse[i];
+      const dx=b.x-a.x;
+      if(dx<=0)continue;
+      // Descontinuidades maiores pertencem a peças que não formam o mesmo
+      // lábio; não inventamos colisão atravessando espaço sem arte.
+      if(dx>48)continue;
+      const count=Math.max(1,Math.ceil(dx/step));
+      for(let n=0;n<count;n++){
+        const t=n/count;
+        result.push({x:Phaser.Math.Linear(a.x,b.x,t),y:Phaser.Math.Linear(a.y,b.y,t)});
+      }
+    }
+    result.push(sparse.at(-1));
+    this.roadLip=result;
+  }
+
+  lipAt(x){
+    const lip=this.roadLip;
+    if(!lip?.length)return null;
+    if(x<lip[0].x||x>lip.at(-1).x)return null;
+    let low=0,high=lip.length-1;
+    while(high-low>1){
+      const mid=(low+high)>>1;
+      if(lip[mid].x<=x)low=mid;else high=mid;
+    }
+    const a=lip[low],b=lip[high];
+    const span=b.x-a.x;
+    if(span<=0||span>48)return null;
+    const t=Phaser.Math.Clamp((x-a.x)/span,0,1);
+    return Phaser.Math.Linear(a.y,b.y,t);
+  }
+
   isBlocked(u,v,radius=.27){
-    // Round96: a colisão da escarpa é uma única borda contínua no lábio
-    // voltado para a Estrada Velha. Isso substitui os footprints individuais
-    // das pedras, que criavam bloqueios irregulares e distantes da borda visual.
-    if(!this.route?.length)return false;
+    // Round98: colisão exatamente no lábio visual da escarpa. A área da
+    // estrada permanece livre até o corpo do jogador tocar a silhueta rochosa.
+    if(!this.roadLip?.length)return false;
     const p=this.territory.project(u,v);
-    const minX=Math.min(...this.route.map(point=>point.x));
-    const maxX=Math.max(...this.route.map(point=>point.x));
-    const horizontalMargin=18;
-    if(p.x<minX-horizontalMargin||p.x>maxX+horizontalMargin)return false;
-    const road=this.roadAt(p.x);
-    // O mesmo afastamento de 50 px usado para manter a arte fora da pista
-    // define o lábio visual da escarpa. Multiplicar pelo comprimento da normal
-    // mantém o limite estável nas mudanças de inclinação da Estrada Velha.
-    const lipY=road.y+50*Math.sqrt(1+road.slope*road.slope);
-    const playerMargin=Math.max(5,radius*34);
+    const lipY=this.lipAt(p.x);
+    if(lipY===null)return false;
+    const playerMargin=Math.max(4,radius*30);
     return p.y+playerMargin>=lipY;
   }
 
@@ -194,6 +246,18 @@ export class OldRoadEscarpment{
     // A escarpa permanece visível, mas não dispara contorno/fragmento dourado.
     // Os pés ainda são calculados para apoiar a composição da arte, porém não
     // registram colisões individuais. A barreira contínua vem de isBlocked().
+    if(options.collisionLip){
+      // `upper` é o primeiro pixel opaco de cada coluna do PNG aprovado. Como
+      // a arte é flipX, usamos a mesma transformação horizontal aplicada aos
+      // pés. Esses pontos são a fonte autoritativa da colisão da escarpa.
+      for(const [px,py] of asset.upper){
+        this.roadLipSamples.push({
+          x:x+(width/2-px)*scale,
+          y:y+(py-height)*scale,
+          asset:id,piece:pieceId
+        });
+      }
+    }
     const feet=asset.feet.map(f=>{
       const foot={x:x+(width/2-f.x)*scale,y:y+(f.y-height)*scale,
         width:f.width*scale,height:f.height*scale,asset:id,piece:pieceId};
