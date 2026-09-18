@@ -483,14 +483,16 @@ export class AetherCityScene extends Phaser.Scene {
     // Colisão lógica independente da arte. O centro do arco permanece livre;
     // apenas as duas torres de cada portão bloqueiam passagem.
     this.gateCollisionAnchors ??= [];
+    // Round100: pelo lado externo, a colisão começa somente junto ao pé
+    // visível das torres do portão. A faixa normal à muralha é propositalmente
+    // estreita; os intervalos ao longo do muro continuam sobrepostos aos
+    // módulos vizinhos para não criar frestas laterais.
+    const gateBaseHalfThickness=.08;
     const towers=[
-      // Os footprints se sobrepõem levemente aos trechos normais de muro
-      // (10.0/18.0). Isso elimina frestas físicas nos ombros dos portões sem
-      // estreitar o vão central jogável.
-      {id:'south-west-tower',u:11.65,v:26.03,label:'torre oeste do Portão Sul',rect:{u1:10.0,v1:25.55,u2:12.4,v2:26.45,corner:.16}},
-      {id:'south-east-tower',u:16.35,v:26.03,label:'torre leste do Portão Sul',rect:{u1:15.6,v1:25.55,u2:18.0,v2:26.45,corner:.16}},
-      {id:'east-north-tower',u:26.03,v:11.65,label:'torre norte do Portão Leste',rect:{u1:25.55,v1:10.0,u2:26.45,v2:12.4,corner:.16}},
-      {id:'east-south-tower',u:26.03,v:16.35,label:'torre sul do Portão Leste',rect:{u1:25.55,v1:15.6,u2:26.45,v2:18.0,corner:.16}}
+      {id:'south-west-tower',u:11.65,v:26.03,label:'torre oeste do Portão Sul',rect:{u1:10.0,v1:26.03-gateBaseHalfThickness,u2:12.4,v2:26.03+gateBaseHalfThickness,corner:.08}},
+      {id:'south-east-tower',u:16.35,v:26.03,label:'torre leste do Portão Sul',rect:{u1:15.6,v1:26.03-gateBaseHalfThickness,u2:18.0,v2:26.03+gateBaseHalfThickness,corner:.08}},
+      {id:'east-north-tower',u:26.03,v:11.65,label:'torre norte do Portão Leste',rect:{u1:26.03-gateBaseHalfThickness,v1:10.0,u2:26.03+gateBaseHalfThickness,v2:12.4,corner:.08}},
+      {id:'east-south-tower',u:26.03,v:16.35,label:'torre sul do Portão Leste',rect:{u1:26.03-gateBaseHalfThickness,v1:15.6,u2:26.03+gateBaseHalfThickness,v2:18.0,corner:.08}}
     ];
     for(const tower of towers){
       this.addIsoGroundContact(tower.rect,.12);
@@ -558,9 +560,19 @@ export class AetherCityScene extends Phaser.Scene {
       sprite.name=tower.id;
       this.wallSprites.push(sprite);
       this.cornerTowerSprites.push(sprite);
-      const footprint={u1:tower.anchorU-.78,v1:tower.anchorV-.78,u2:tower.anchorU+.78,v2:tower.anchorV+.78,corner:.24};
-      this.addIsoGroundContact(footprint,.12);
-      this.registerSolidMask(sprite,key,{label:tower.label,mode:'isoRect',isoRect:footprint});
+      // A sombra continua cobrindo a base completa, mas a colisão usa um
+      // footprint de pés em tela, centrado no rodapé real do sprite. Isso evita
+      // bloquear o jogador pela caixa lógica antiga antes de ele encostar na
+      // pedra visível da torre.
+      const shadowFootprint={u1:tower.anchorU-.78,v1:tower.anchorV-.78,u2:tower.anchorU+.78,v2:tower.anchorV+.78,corner:.24};
+      this.addIsoGroundContact(shadowFootprint,.12);
+      this.registerSolidMask(sprite,key,{
+        label:tower.label,
+        mode:'footprint',
+        footprintWidth:118,
+        footprintHeight:46,
+        footprintYOffset:-18
+      });
     }
   }
 
@@ -586,7 +598,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.wallSprites.push(image);
 
     // Mantém a contenção lógica da muralha nesta etapa; a brecha é visual.
-    const thickness=.36;
+    const thickness=.06;
     const rect=fixedAxis==='u'
       ?{u1:fixed-thickness,v1:start,u2:fixed+thickness,v2:end,corner:.08}
       :{u1:start,v1:fixed-thickness,u2:end,v2:fixed+thickness,corner:.08};
@@ -623,7 +635,7 @@ export class AetherCityScene extends Phaser.Scene {
       this.wallSprites.push(image);
 
       // Colisão permanece lógica e independente do PNG.
-      const thickness=.36;
+      const thickness=.06;
       const rect=fixedAxis==='u'
         ?{u1:fixed-thickness,v1:segStart,u2:fixed+thickness,v2:segEnd,corner:.08}
         :{u1:segStart,v1:fixed-thickness,u2:segEnd,v2:fixed+thickness,corner:.08};
