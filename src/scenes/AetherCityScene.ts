@@ -363,6 +363,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.createGround();
     this.createCollisionPlan();
     this.createWallsAndGates();
+    this.addBrokenGoblinRamOutsideCity();
     this.createBuildings();
     this.createPlazaAndStreets();
   }
@@ -476,6 +477,22 @@ export class AetherCityScene extends Phaser.Scene {
       depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.15
     }).setScale(southGateScale);
     this.registerGateTowerFootprints();
+  }
+
+
+  addBrokenGoblinRamOutsideCity() {
+    // Round103: aríete goblin destruído do lado de fora da cidade, próximo
+    // ao trecho já destruído da muralha. É um elemento cênico de pós-cerco,
+    // sem interferir no fluxo interno da cidade.
+    const ram = this.addIsoImage('iso_goblin_battering_ram_broken', 22.15, 28.45, 168, .055, 6);
+    const footprint = {u1:21.10,v1:27.90,u2:23.35,v2:29.20,corner:.18};
+    this.addIsoGroundContact(footprint,.09);
+    this.registerSolidMask(ram,'iso_goblin_battering_ram_broken',{
+      label:'aríete goblin destruído',
+      mode:'foundation',
+      sourceMinY:.64,
+      minHits:1
+    });
   }
 
   registerGateTowerFootprints() {
