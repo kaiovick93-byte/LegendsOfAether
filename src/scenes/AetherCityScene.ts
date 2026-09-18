@@ -505,28 +505,58 @@ export class AetherCityScene extends Phaser.Scene {
   createCornerTowers() {
     const key='iso_city_corner_tower';
     const source=this.textures.get(key).getSourceImage();
-    const scale=228/source.width;
+    // Round94 hotfix: usa a torre final aprovada como peça real de junção.
+    // Cada canto é deslocado para FORA do perímetro para que os muros sumam
+    // dentro da torre, como no canto aprovado pelo usuário. A colisão lógica
+    // permanece ancorada na quina original, evitando abrir frestas jogáveis.
+    const scale=250/source.width;
     const originY=1417/source.height;
+    const topBottomOffset=.58;
+    const sideOffset=.38;
     const corners=[
-      {id:'north-west',u:AetherCityScene.CITY_MIN,v:AetherCityScene.CITY_MIN,label:'torre de arqueiros noroeste'},
-      {id:'north-east',u:AetherCityScene.CITY_MAX,v:AetherCityScene.CITY_MIN,label:'torre de arqueiros nordeste'},
-      {id:'south-west',u:AetherCityScene.CITY_MIN,v:AetherCityScene.CITY_MAX,label:'torre de arqueiros sudoeste'},
-      {id:'south-east',u:AetherCityScene.CITY_MAX,v:AetherCityScene.CITY_MAX,label:'torre de arqueiros sudeste'}
+      {
+        id:'north-west',label:'torre de arqueiros norte',
+        anchorU:AetherCityScene.CITY_MIN,anchorV:AetherCityScene.CITY_MIN,
+        spriteU:AetherCityScene.CITY_MIN-topBottomOffset,
+        spriteV:AetherCityScene.CITY_MIN-topBottomOffset,
+        flipX:false
+      },
+      {
+        id:'north-east',label:'torre de arqueiros leste',
+        anchorU:AetherCityScene.CITY_MAX,anchorV:AetherCityScene.CITY_MIN,
+        spriteU:AetherCityScene.CITY_MAX+sideOffset,
+        spriteV:AetherCityScene.CITY_MIN-sideOffset,
+        flipX:false
+      },
+      {
+        id:'south-west',label:'torre de arqueiros oeste',
+        anchorU:AetherCityScene.CITY_MIN,anchorV:AetherCityScene.CITY_MAX,
+        spriteU:AetherCityScene.CITY_MIN-sideOffset,
+        spriteV:AetherCityScene.CITY_MAX+sideOffset,
+        flipX:true
+      },
+      {
+        id:'south-east',label:'torre de arqueiros sul',
+        anchorU:AetherCityScene.CITY_MAX,anchorV:AetherCityScene.CITY_MAX,
+        spriteU:AetherCityScene.CITY_MAX+topBottomOffset,
+        spriteV:AetherCityScene.CITY_MAX+topBottomOffset,
+        flipX:true
+      }
     ];
     this.cornerTowerSprites=[];
     for(const tower of corners){
       const sprite=new IsoSprite({
-        scene:this,isoX:tower.u,isoY:tower.v,isoZ:0,
+        scene:this,isoX:tower.spriteU,isoY:tower.spriteV,isoZ:0,
         texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
         screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
         depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.32
       });
-      sprite.setOrigin(.5,originY).setScale(scale);
+      sprite.setOrigin(.5,originY).setScale(scale).setFlipX(!!tower.flipX);
       sprite.updateIsoPosition();
       sprite.name=tower.id;
       this.wallSprites.push(sprite);
       this.cornerTowerSprites.push(sprite);
-      const footprint={u1:tower.u-.72,v1:tower.v-.72,u2:tower.u+.72,v2:tower.v+.72,corner:.22};
+      const footprint={u1:tower.anchorU-.78,v1:tower.anchorV-.78,u2:tower.anchorU+.78,v2:tower.anchorV+.78,corner:.24};
       this.addIsoGroundContact(footprint,.12);
       this.registerSolidMask(sprite,key,{label:tower.label,mode:'isoRect',isoRect:footprint});
     }

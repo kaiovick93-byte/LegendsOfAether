@@ -215,25 +215,12 @@ export class OldAetherPrologue{
   }
 
   createRoadSetDressing(){
-    const add=(key,u,v,height,offset=.02,flipX=false)=>{
-      if(!this.scene.textures.exists(key))return null;
-      const p=this.scene.project(u,v),source=this.scene.textures.get(key).getSourceImage();
-      return this.scene.add.image(p.x,p.y,key).setOrigin(.5,1).setScale(height/source.height).setFlipX(flipX).setDepth(this.scene.depthAt(u,v,offset));
-    };
-    const a=this.anchors.attackedWagon;
-    this.wagon=add('abandoned_wagon_v3',a.u,a.v,142,.08,true);
-    if(this.wagon){
-      this.scene.registerOccluder?.(this.wagon,'abandoned_wagon_v3',this.wagon.y-7,{behindMargin:8});
-      this.scene.registerSolidMask?.(this.wagon,'abandoned_wagon_v3',{
-        label:'Carroça abandonada',mode:'footprint',footprintWidth:128,footprintHeight:27,footprintYOffset:-12,
-        originX:.5,originY:1,active:()=>this.wagon?.active&&this.wagon.visible
-      });
-    }
-    this.cartDecor=[
-      add('street_crates',a.u-.62,a.v+.35,43,.11),
-      add('street_logs',a.u+.82,a.v+.62,37,.105,true),
-      add('outskirts_fence_segment',a.u-1.02,a.v+.98,45,-.02,true)
-    ].filter(Boolean);
+    // Round94 v14.19: remove do mapa da Estrada Velha o conjunto visual da
+    // carroça atacada que estava aparecendo como acampamento/entulho: carroça,
+    // caixas, pilha de madeira e cerca. O marco narrativo/âncora do prólogo é
+    // preservado para não alterar a máquina de estados nesta etapa.
+    this.wagon=null;
+    this.cartDecor=[];
   }
 
   createCollectible(){
