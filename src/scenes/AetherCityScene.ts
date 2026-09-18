@@ -361,7 +361,9 @@ export class AetherCityScene extends Phaser.Scene {
 
   createWorld() {
     this.createGround();
-    this.createOuterPerimeterTerrainPass();
+    // Hotfix externo: remove completamente a ponte, o riacho e os overlays
+    // experimentais adicionados fora da muralha. Nesta etapa o terreno
+    // externo volta ao estado base até receber uma revisão apropriada.
     this.createCollisionPlan();
     this.createWallsAndGates();
     this.addBrokenGoblinRamOutsideCity();
@@ -396,148 +398,8 @@ export class AetherCityScene extends Phaser.Scene {
 
 
   createOuterPerimeterTerrainPass() {
-    this.createSouthGateOuterStream();
-    this.createEastOuterGroundUpgrade();
-  }
-
-  addFlatTerrainImage(key, u, v, scale = 1, options = {}) {
-    if (!this.textures.exists(key)) return null;
-    const p = this.project(u, v);
-    const image = this.add.image(p.x, p.y, key)
-      .setOrigin(.5)
-      .setScale(scale)
-      .setDepth(options.depth ?? (AetherCityScene.ISO_DEPTH_BASE - 58.35));
-    if (options.rotation) image.setRotation(options.rotation);
-    if (options.flipX) image.setFlipX(true);
-    if (options.flipY) image.setFlipY(true);
-    if (options.alpha != null) image.setAlpha(options.alpha);
-    if (options.tint != null) image.setTint(options.tint);
-    image.setData?.('aetherRenderClass', 'ground');
-    return image;
-  }
-
-  createSouthGateOuterStream() {
-    const segments = [
-      [{u:2.6,v:28.55},{u:5.7,v:28.25}],
-      [{u:5.7,v:28.25},{u:9.6,v:27.96}],
-      [{u:9.6,v:27.96},{u:12.6,v:27.76}],
-      [{u:12.6,v:27.76},{u:14.18,v:27.60}]
-    ];
-    let stampIndex = 0;
-    for (const [a,b] of segments) {
-      const pa = this.project(a.u, a.v);
-      const pb = this.project(b.u, b.v);
-      const rotation = Math.atan2(pb.y - pa.y, pb.x - pa.x);
-      const length = Math.hypot(b.u - a.u, b.v - a.v);
-      const steps = Math.max(1, Math.ceil(length / 1.45));
-      for (let step = 0; step < steps; step++) {
-        const t = (step + .5) / steps;
-        const u = Phaser.Math.Linear(a.u, b.u, t);
-        const v = Phaser.Math.Linear(a.v, b.v, t);
-        this.addFlatTerrainImage('outskirts_stream_v2', u, v, .31 + (stampIndex % 3) * .012, {
-          depth: AetherCityScene.ISO_DEPTH_BASE - 58.10,
-          rotation: rotation + (stampIndex % 2 ? .018 : -.014),
-          flipX: stampIndex % 2 === 0,
-          alpha: .95
-        });
-        stampIndex++;
-      }
-    }
-
-    const southApproachBlend = [
-      {key:'outskirts_ground_b4_detail_0',u:5.0,v:27.55,scale:.36,rotation:.02,alpha:.74},
-      {key:'outskirts_ground_b4_detail_2',u:8.6,v:27.52,scale:.38,rotation:-.03,alpha:.78},
-      {key:'outskirts_ground_b4_detail_1',u:11.9,v:27.40,scale:.34,rotation:.03,alpha:.76},
-      {key:'outskirts_ground_b4_detail_3',u:14.9,v:27.18,scale:.32,rotation:-.02,alpha:.74}
-    ];
-    for (const detail of southApproachBlend) {
-      this.addFlatTerrainImage(detail.key, detail.u, detail.v, detail.scale, {
-        depth: AetherCityScene.ISO_DEPTH_BASE - 58.55,
-        rotation: detail.rotation,
-        alpha: detail.alpha,
-        flipX: detail.u > 10
-      });
-    }
-
-    const banks = [
-      ['outskirts_reeds',3.2,28.00,.58,.18],['outskirts_rock_cluster',4.8,28.06,.58,-.10],
-      ['outskirts_reeds',7.1,27.95,.56,-.16],['outskirts_rock_cluster',9.6,27.70,.62,.14],
-      ['outskirts_reeds',11.6,27.70,.54,.12],['outskirts_rock_cluster',13.15,27.52,.52,-.08]
-    ];
-    for (const [key,u,v,scale,rotation] of banks) {
-      this.addFlatTerrainImage(key, u, v, scale, {
-        depth: AetherCityScene.ISO_DEPTH_BASE - 57.95,
-        rotation,
-        alpha: .96
-      });
-    }
-
-    const bridge = this.addIsoImage('outskirts_bridge_v2', 14.18, 27.28, 176, .07, 0);
-    bridge?.setFlipX(true);
-    this.addIsoGroundContact({u1:13.10,v1:26.88,u2:15.22,v2:27.62,corner:.20}, .08);
-
-    const streamRects = [
-      {u1:2.15,v1:27.74,u2:12.72,v2:28.58,corner:.14},
-      {u1:12.72,v1:27.68,u2:13.08,v2:28.16,corner:.10}
-    ];
-    for (const rect of streamRects) {
-      this.addIsoGroundContact(rect,.05);
-      const p = this.project((rect.u1 + rect.u2) / 2, (rect.v1 + rect.v2) / 2);
-      const anchor = this.add.zone(p.x, p.y, 1, 1).setOrigin(.5, 1).setVisible(false);
-      this.registerSolidMask(anchor, 'iso_city_wall', {
-        label: 'riacho externo do Portão Sul',
-        mode: 'isoRect',
-        isoRect: rect,
-        active: () => anchor.active
-      });
-    }
-  }
-
-  createEastOuterGroundUpgrade() {
-    const baseOverlays = [
-      {u:30.6,v:16.4,scale:.25,rotation:.02,alpha:.42,flipX:false},
-      {u:30.2,v:20.3,scale:.24,rotation:-.03,alpha:.38,flipX:true},
-      {u:29.3,v:23.6,scale:.21,rotation:.04,alpha:.34,flipX:false}
-    ];
-    for (const overlay of baseOverlays) {
-      this.addFlatTerrainImage('outskirts_ground_b4_surface', overlay.u, overlay.v, overlay.scale, {
-        depth: AetherCityScene.ISO_DEPTH_BASE - 58.85,
-        rotation: overlay.rotation,
-        alpha: overlay.alpha,
-        flipX: overlay.flipX
-      });
-    }
-
-    const details = [
-      {key:'outskirts_ground_b4_detail_0',u:27.9,v:12.9,scale:.34,rotation:.02,alpha:.78},
-      {key:'outskirts_ground_b4_detail_2',u:29.0,v:15.2,scale:.38,rotation:-.04,alpha:.80},
-      {key:'outskirts_ground_b4_detail_1',u:29.7,v:17.6,scale:.39,rotation:.03,alpha:.78},
-      {key:'outskirts_ground_b4_detail_3',u:30.2,v:20.0,scale:.37,rotation:-.03,alpha:.78},
-      {key:'outskirts_ground_b4_detail_0',u:29.9,v:22.5,scale:.36,rotation:.05,alpha:.76},
-      {key:'outskirts_ground_b4_detail_2',u:29.1,v:24.9,scale:.32,rotation:-.02,alpha:.74}
-    ];
-    for (const detail of details) {
-      this.addFlatTerrainImage(detail.key, detail.u, detail.v, detail.scale, {
-        depth: AetherCityScene.ISO_DEPTH_BASE - 58.50,
-        rotation: detail.rotation,
-        alpha: detail.alpha,
-        flipX: detail.u > 29.5
-      });
-    }
-
-    const props = [
-      ['outskirts_bush_cluster',27.75,13.55,.56,.08],['outskirts_rock_cluster',28.62,15.05,.60,-.18],
-      ['outskirts_grass_patch',28.98,16.92,.70,.00],['outskirts_bush_cluster',29.42,18.65,.54,-.12],
-      ['outskirts_rock_cluster',29.95,20.45,.56,.10],['outskirts_grass_patch',29.72,21.75,.68,.00],
-      ['outskirts_bush_cluster',29.24,23.25,.50,.15],['outskirts_rock_cluster',28.72,24.72,.52,-.08]
-    ];
-    for (const [key,u,v,scale,rotation] of props) {
-      this.addFlatTerrainImage(key, u, v, scale, {
-        depth: AetherCityScene.ISO_DEPTH_BASE - 57.92,
-        rotation,
-        alpha: .97
-      });
-    }
+    // Intencionalmente vazio neste hotfix. O riacho, a ponte e os patches
+    // externos temporários foram removidos a pedido do usuário.
   }
 
   createAnimatedGrassDetails() {
@@ -587,15 +449,13 @@ export class AetherCityScene extends Phaser.Scene {
     // trechos restantes têm 8 tiles cada e recebem dois módulos longos de 4
     // tiles, evitando comprimir a nova arte em peças minúsculas.
     this.addWallRun('u', C.CITY_MAX, C.CITY_MIN, 10, false);
-    // O trecho Sul entre o Portão Sul e a torre sudeste permanece íntegro.
-    // O muro quebrado não pertence a esta lateral.
-    this.addWallRun('u', C.CITY_MAX, 18, C.CITY_MAX, false);
+    // Hotfix: o lado Leste da cidade precisa receber o trecho destruído
+    // entre a torre sudeste e o Portão Leste. Portanto o segmento leste
+    // inferior deixa de ser intacto e passa a usar a peça de muro quebrado.
+    this.addBrokenWallSection('u', C.CITY_MAX, 18, C.CITY_MAX, false);
     this.addWallRun('v', C.CITY_MAX, C.CITY_MIN, 10, true);
-    // Round101: o trecho quebrado fica na muralha Leste, entre o Portão
-    // Leste (vão até u=18) e a torre sudeste (u=26), exatamente na lateral à
-    // direita da torre quando vista no mapa. Assim o encontro com a torre
-    // fica correto e o muro destruído sai do lado Sul, onde estava errado.
-    this.addBrokenWallSection('v', C.CITY_MAX, 18, C.CITY_MAX, true);
+    // O lado Sul volta a ficar íntegro entre o Portão Sul e a torre sudeste.
+    this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true);
     this.createCornerTowers();
 
     const gateTargetWidth = 432;
@@ -628,11 +488,10 @@ export class AetherCityScene extends Phaser.Scene {
 
 
   addBrokenGoblinRamOutsideCity() {
-    // Round103: aríete goblin destruído do lado de fora da cidade, próximo
-    // ao trecho já destruído da muralha. É um elemento cênico de pós-cerco,
-    // sem interferir no fluxo interno da cidade.
-    const ram = this.addIsoImage('iso_goblin_battering_ram_broken', 22.15, 28.45, 168, .055, 6);
-    const footprint = {u1:21.10,v1:27.90,u2:23.35,v2:29.20,corner:.18};
+    // Hotfix: o aríete destruído fica do lado de fora do trecho quebrado da
+    // muralha Leste, entre a torre sudeste e o Portão Leste.
+    const ram = this.addIsoImage('iso_goblin_battering_ram_broken', 28.05, 22.35, 164, .055, 6);
+    const footprint = {u1:27.10,v1:21.70,u2:29.05,v2:23.15,corner:.18};
     this.addIsoGroundContact(footprint,.09);
     this.registerSolidMask(ram,'iso_goblin_battering_ram_broken',{
       label:'aríete goblin destruído',
