@@ -488,10 +488,11 @@ export class AetherCityScene extends Phaser.Scene {
 
 
   addBrokenGoblinRamOutsideCity() {
-    // Hotfix: o aríete destruído fica do lado de fora do trecho quebrado da
-    // muralha Leste, entre a torre sudeste e o Portão Leste.
-    const ram = this.addIsoImage('iso_goblin_battering_ram_broken', 28.05, 22.35, 164, .055, 6);
-    const footprint = {u1:27.10,v1:21.70,u2:29.05,v2:23.15,corner:.18};
+    // v0.3.0 Round 1 hotfix: o aríete fica encostado do lado de fora da
+    // brecha Leste. O corpo é deslocado em direção ao Portão Leste para que
+    // a ponta quebrada do tronco fique voltada para o trecho destruído.
+    const ram = this.addIsoImage('iso_goblin_battering_ram_broken', 27.05, 19.65, 164, .055, 6);
+    const footprint = {u1:26.42,v1:18.82,u2:27.92,v2:20.58,corner:.18};
     this.addIsoGroundContact(footprint,.09);
     this.registerSolidMask(ram,'iso_goblin_battering_ram_broken',{
       label:'aríete goblin destruído',
@@ -605,7 +606,7 @@ export class AetherCityScene extends Phaser.Scene {
     const tileSpan=end-start;
     const targetWidth=48*tileSpan; // 8 tiles => 384 px no plano 2:1 do mapa.
     const scale=targetWidth/source.width;
-    const originY=0.968; // ancora os destroços no chão sem suspender a base.
+    const originY=0.864; // alinha a base opaca do trecho quebrado à mesma linha de chão do muro íntegro.
     const middle=(start+end)/2;
     const u=fixedAxis==='u'?fixed:middle;
     const v=fixedAxis==='v'?fixed:middle;
