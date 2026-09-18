@@ -514,7 +514,9 @@ export class AetherTerritory{
     this.addIsoImage('outskirts_shrine_v2',55.5,23.2,292,{solid:{label:'Santuário Antigo',width:184,height:35,yOffset:-12},visibleRadius:34});
     this.addIsoImage('outskirts_ruins_v2',20.4,66,270,{solid:{label:'arco em ruínas',width:204,height:38,yOffset:-13},visibleRadius:34});
     this.addIsoImage('outskirts_ruins_v2',28.3,69.2,174,{solid:{label:'ruínas menores',width:126,height:25,yOffset:-8},flipX:true,visibleRadius:31});
-    this.addIsoImage('outskirts_cave_v2',58.8,65,300,{solid:{label:'entrada da caverna',width:218,height:42,yOffset:-14},visibleRadius:35});
+    // Guardamos as referências dos bloqueios lógicos para que a colisão só
+    // exista quando a própria arte estiver realmente criada e visível.
+    this.caveBlock=this.addIsoImage('outskirts_cave_v2',58.8,65,300,{solid:{label:'entrada da caverna',width:218,height:42,yOffset:-14},visibleRadius:35});
     this.greenwoodsBlock=this.addIsoImage('outskirts_greenwoods_block_v2',72,48.5,410,{solid:{label:'raízes de Greenwoods',width:228,height:48,yOffset:-14},visibleRadius:39});
     [[53,20.2],[58.4,20.8],[52.2,25.7],[59,26.1]].forEach(([u,v],index)=>this.addFlat('outskirts_rock_cluster',u,v,.63,index*.38,-26,{visibleRadius:28}));
   }
@@ -562,17 +564,36 @@ export class AetherTerritory{
 
   isLogicalBarrierBlocked(u,v,radius=.27){
     const bounds=AETHER_LOGICAL_BOUNDS;
+    // O limite externo do próprio terreno continua sólido; além dele não há
+    // mapa renderizado. Dentro dos Arredores, porém, não pode existir colisão
+    // sem uma barreira visual correspondente.
     if(u<bounds.minU+radius||v<bounds.minV+radius||u>bounds.maxU-radius||v>bounds.maxV-radius)return true;
-    // Round96: a borda da escarpa ao lado da Estrada Velha é a barreira
-    // autoritativa deste trecho; não dependemos mais dos footprints da arte.
+
+    // A escarpa da Estrada Velha está efetivamente renderizada e a borda
+    // contínua aprovada no Round96 continua sendo a barreira autoritativa.
     if(this.oldRoadEscarpment?.isBlocked?.(u,v,radius))return true;
-    if(isAetherWaterBlocked(u,v,radius))return true;
-    // O bloqueio usa somente raízes/troncos na base; a copa ampla segue sendo
-    // decorativa e não cria uma parede invisível distante.
-    const woodsU=(u-AETHER_GREENWOODS_BLOCK.u)/(AETHER_GREENWOODS_BLOCK.radiusU+radius),woodsV=(v-AETHER_GREENWOODS_BLOCK.v)/(AETHER_GREENWOODS_BLOCK.radiusV+radius);
-    if(!this.worldFlags.greenwoodsGateOpened&&woodsU*woodsU+woodsV*woodsV<=1)return true;
-    const caveU=(u-58.8)/(2+radius),caveV=(v-64.45)/(1.35+radius);
-    return caveU*caveU+caveV*caveV<=1;
+
+    // Round97: o reset visual atual NÃO cria riacho/lago, entrada da caverna
+    // nem raízes de Greenwoods. Os antigos bloqueios lógicos desses sistemas
+    // estavam ativos mesmo sem arte na tela e eram a principal origem das
+    // colisões "com o nada" espalhadas pelos Arredores. Cada um só volta a
+    // bloquear quando sua arte correspondente existir, estiver ativa e visível.
+    const waterVisible=this.waterSprites.some(item=>item.sprite?.active&&item.sprite?.visible);
+    if(waterVisible&&isAetherWaterBlocked(u,v,radius))return true;
+
+    const woodsVisible=!!(this.greenwoodsBlock?.active&&this.greenwoodsBlock?.visible);
+    if(woodsVisible&&!this.worldFlags.greenwoodsGateOpened){
+      const woodsU=(u-AETHER_GREENWOODS_BLOCK.u)/(AETHER_GREENWOODS_BLOCK.radiusU+radius);
+      const woodsV=(v-AETHER_GREENWOODS_BLOCK.v)/(AETHER_GREENWOODS_BLOCK.radiusV+radius);
+      if(woodsU*woodsU+woodsV*woodsV<=1)return true;
+    }
+
+    const caveVisible=!!(this.caveBlock?.active&&this.caveBlock?.visible);
+    if(caveVisible){
+      const caveU=(u-58.8)/(2+radius),caveV=(v-64.45)/(1.35+radius);
+      if(caveU*caveU+caveV*caveV<=1)return true;
+    }
+    return false;
   }
 
   destroy(){this.oldRoadEscarpment?.destroy();this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0;this.waterSprites.length=0}
