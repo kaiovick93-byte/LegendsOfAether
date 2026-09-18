@@ -461,7 +461,7 @@ export class AetherCityScene extends Phaser.Scene {
     // O trecho sudeste da muralha Sul volta a usar os mesmos módulos padrão
     // do restante do perímetro. Assim a altura, o topo e a base ficam
     // exatamente iguais aos demais muros e ao Portão Sul, sem variar de peça.
-    this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true);
+    this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true, 1.17);
     this.createCornerTowers();
 
     const gateTargetWidth = 432;
@@ -662,7 +662,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.registerSolidMask(image,key,{label:'trecho destruído da muralha',mode:'isoRect',isoRect:rect});
   }
 
-  addWallRun(fixedAxis, fixed, start, end, flip) {
+  addWallRun(fixedAxis, fixed, start, end, flip, heightMultiplier = 1) {
     // Round92: mantém EXATAMENTE a arte v2 aprovada. O PNG foi apenas
     // normalizado geometricamente para o 2:1 real do mapa; nenhuma troca de
     // estilo/asset foi feita. Os conectores terminais agora coincidem com o
@@ -684,9 +684,19 @@ export class AetherCityScene extends Phaser.Scene {
         screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
         depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.08
       });
-      // O ponto de origem passa pela metade exata da linha de contato do módulo.
-      // Como originX=0.5, o flip horizontal mantém o mesmo pivô nos dois eixos.
-      image.setOrigin(.5, wallOriginY).setFlipX(flip).setScale(wallScale);
+      // O trecho sudeste do muro Sul precisa ter a mesma altura visual do
+      // Portão Sul e do restante da muralha, mas sem levantar a base do chão.
+      // Para isso aumentamos somente a escala vertical e recalculamos o originY
+      // para manter o último pixel opaco da base exatamente na mesma posição.
+      const sourceHeight=source.height;
+      const opaqueBottomY=802; // último pixel opaco do asset aprovado atual.
+      const opaqueBottomRatio=opaqueBottomY/sourceHeight;
+      const adjustedOriginY=heightMultiplier===1
+        ? wallOriginY
+        : opaqueBottomRatio-(opaqueBottomRatio-wallOriginY)/heightMultiplier;
+      image.setOrigin(.5, adjustedOriginY)
+        .setFlipX(flip)
+        .setScale(wallScale, wallScale*heightMultiplier);
       image.updateIsoPosition();
       this.wallSprites.push(image);
 
