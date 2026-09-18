@@ -31,9 +31,6 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('general_iso','assets/images/characters/npcs/isometric/general_iso.png');
     this.load.image('guard_iso','assets/images/characters/npcs/isometric/guard_iso.png');
     this.load.image('south_guard_iso','assets/images/characters/npcs/isometric/south_guard_iso.png');
-    this.load.image('siege_goblin','assets/images/characters/siege/goblin_wall_raider.png');
-    this.load.image('siege_archer','assets/images/characters/siege/aether_wall_archer.png');
-    this.load.spritesheet('siege_archer_action_v2','assets/images/characters/siege/aether_wall_archer_action_v2.png',{frameWidth:256,frameHeight:256});
     // Atores roteirizados do prólogo: folhas reais de ação, não imagens
     // estáticas deslocadas pelo código. Todas as células preservam a base.
     this.load.spritesheet('prologue_young_wolf','assets/images/characters/prologue/prologue_young_wolf_sheet_v2.png',{frameWidth:362,frameHeight:724});

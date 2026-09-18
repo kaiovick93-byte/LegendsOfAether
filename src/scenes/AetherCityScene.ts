@@ -18,7 +18,6 @@ import {Npc} from '../npc/Npc';
 import {WanderingNpc} from '../npc/WanderingNpc';
 import {SfxManager} from '../audio/SfxManager';
 import {Waystone} from '../world/Waystone';
-import {LowerWallSiege} from '../world/LowerWallSiege';
 import {CityPavementKit} from '../world/CityPavementKit';
 import {FountainWaterEffect} from '../world/FountainWaterEffect';
 import {AetherTerritory} from '../world/AetherTerritory';
@@ -110,7 +109,6 @@ export class AetherCityScene extends Phaser.Scene {
     this.createWorld();
     this.createNpcs();
     this.createAmbientLife();
-    this.createLowerWallSiege();
     this.setCityRegionActive(this.player.isoX<=44&&this.player.isoY<=44);
     this.setupInput();
     this.setupHud();
@@ -1336,16 +1334,6 @@ export class AetherCityScene extends Phaser.Scene {
     this.createOldManAndBirdsIso();
   }
 
-  createLowerWallSiege(){
-    this.lowerWallSiege=new LowerWallSiege(this,{
-      tileWidth:AetherCityScene.TILE_WIDTH,
-      tileHeight:AetherCityScene.TILE_HEIGHT,
-      originX:AetherCityScene.ORIGIN_X,
-      originY:AetherCityScene.ORIGIN_Y,
-      depthBase:AetherCityScene.ISO_DEPTH_BASE,
-      project:(u,v)=>this.project(u,v)
-    });
-  }
 
   installAmbientAnimations() {
     const a = this.anims;
@@ -1643,7 +1631,6 @@ export class AetherCityScene extends Phaser.Scene {
     const activeSector=this.aetherTerritory.update(_time,this.player.isoX,this.player.isoY);
     this.isSafeZone=this.isPlayerInsideCity();
     this.setCityRegionActive(this.player.isoX<=44&&this.player.isoY<=44);
-    this.lowerWallSiege?.setRegionActive?.(this.player.isoX<=42&&this.player.isoY<=42);
     this.hud.setLocalName(this.aetherTerritory.getLocalName(this.player.isoX,this.player.isoY));
     this.registry.set('aetherActiveSector',activeSector);
     this.updateNpcPrompts();
@@ -1815,23 +1802,10 @@ export class AetherCityScene extends Phaser.Scene {
 
   isBlockedByCityBounds(u, v, radius) {
     if(this.aetherTerritory?.isLogicalBarrierBlocked(u,v,radius))return true;
-    if (this.isBlockedByLowerWallSiegeZone(u,v,radius)) return true;
     if (this.isOutsideCityWallEnvelope(u, v, radius)) return true;
     return false;
   }
 
-  isBlockedByLowerWallSiegeZone(u,v,radius){
-    // O cerco é cenográfico, mas cada estação possui uma pequena zona física.
-    // Isso impede alcançar/atacar os atores sem fechar todo o território.
-    const stations=[
-      {u:6.70,v:26.82},{u:10.15,v:26.82},{u:17.90,v:26.82},{u:21.30,v:26.82},
-      {u:26.82,v:10.85},{u:26.82,v:18.40}
-    ];
-    return stations.some(station=>{
-      const du=(u-station.u)/(1.02+radius),dv=(v-station.v)/(1.08+radius);
-      return du*du+dv*dv<=1;
-    });
-  }
 
   isBlocked(u, v, radius) {
     return this.isBlockedByCityBounds(u,v,radius)||this.isBlockedBySolidMasks(u,v);
@@ -2129,7 +2103,6 @@ export class AetherCityScene extends Phaser.Scene {
     window.addEventListener('beforeunload', this._unload);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.saveGame();
-      this.lowerWallSiege?.destroy?.();
       this.prologue?.destroy?.();
       this.aetherTerritory?.destroy?.();
       this.cityPavement?.destroy?.();
