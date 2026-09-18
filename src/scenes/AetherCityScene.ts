@@ -449,13 +449,15 @@ export class AetherCityScene extends Phaser.Scene {
     // trechos restantes têm 8 tiles cada e recebem dois módulos longos de 4
     // tiles, evitando comprimir a nova arte em peças minúsculas.
     this.addWallRun('u', C.CITY_MAX, C.CITY_MIN, 10, false);
-    // Hotfix: o lado Leste da cidade precisa receber o trecho destruído
-    // entre a torre sudeste e o Portão Leste. Portanto o segmento leste
-    // inferior deixa de ser intacto e passa a usar a peça de muro quebrado.
-    this.addBrokenWallSection('u', C.CITY_MAX, 18, C.CITY_MAX, false);
+    // O trecho quebrado fica na muralha Leste, entre a torre sudeste e o
+    // Portão Leste. Um pequeno avanço visual em direção à torre garante que
+    // a peça desapareça sob ela, que continua renderizada à frente.
+    this.addBrokenWallSection('u', C.CITY_MAX, 18, C.CITY_MAX, false, .28);
     this.addWallRun('v', C.CITY_MAX, C.CITY_MIN, 10, true);
-    // O lado Sul volta a ficar íntegro entre o Portão Sul e a torre sudeste.
-    this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true);
+    // A metade sudeste da muralha Sul usa uma peça longa única. Isso elimina
+    // o degrau/dobra visual criado pela sobreposição de dois terminais no meio
+    // do trecho e mantém a torre sudeste à frente da junção.
+    this.addSouthWallLongSection(18, C.CITY_MAX, .10);
     this.createCornerTowers();
 
     const gateTargetWidth = 432;
@@ -488,11 +490,11 @@ export class AetherCityScene extends Phaser.Scene {
 
 
   addBrokenGoblinRamOutsideCity() {
-    // v0.3.0 Round 1 hotfix: o aríete fica encostado do lado de fora da
-    // brecha Leste. O corpo é deslocado em direção ao Portão Leste para que
-    // a ponta quebrada do tronco fique voltada para o trecho destruído.
-    const ram = this.addIsoImage('iso_goblin_battering_ram_broken', 27.05, 19.65, 164, .055, 6);
-    const footprint = {u1:26.42,v1:18.82,u2:27.92,v2:20.58,corner:.18};
+    // O aríete permanece apontado para a brecha, mas é deslocado para fora da
+    // muralha o suficiente para não atravessar a parede. Continua o mais
+    // próximo possível do trecho quebrado sem invadi-lo visualmente.
+    const ram = this.addIsoImage('iso_goblin_battering_ram_broken', 27.78, 19.65, 164, .055, 6);
+    const footprint = {u1:27.15,v1:18.82,u2:28.65,v2:20.58,corner:.18};
     this.addIsoGroundContact(footprint,.09);
     this.registerSolidMask(ram,'iso_goblin_battering_ram_broken',{
       label:'aríete goblin destruído',
@@ -600,7 +602,34 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
 
-  addBrokenWallSection(fixedAxis, fixed, start, end, flip) {
+  addSouthWallLongSection(start, end, towardTower = 0) {
+    const key='iso_city_wall_south_long';
+    const source=this.textures.get(key).getSourceImage();
+    const scale=192/650;
+    // O asset longo foi montado com dois módulos já fundidos e um único
+    // contraforte no encontro central. O pivô coincide com o meio dos
+    // conectores extremos do trecho de oito tiles.
+    const originX=.5;
+    const originY=795/1222;
+    const middle=(start+end)/2+towardTower;
+    const image=new IsoSprite({
+      scene:this,isoX:middle,isoY:AetherCityScene.CITY_MAX,isoZ:0,
+      texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
+      screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
+      depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.08
+    });
+    image.setOrigin(originX,originY).setScale(scale);
+    image.updateIsoPosition();
+    this.wallSprites.push(image);
+
+    const thickness=.06;
+    const rect={u1:start,v1:AetherCityScene.CITY_MAX-thickness,u2:end,v2:AetherCityScene.CITY_MAX+thickness,corner:.08};
+    this.addIsoGroundContact(rect,.10);
+    this.registerSolidMask(image,key,{label:'muralha sul',mode:'isoRect',isoRect:rect});
+  }
+
+
+  addBrokenWallSection(fixedAxis, fixed, start, end, flip, towerOverlap = 0) {
     const key='iso_city_wall_broken';
     const source=this.textures.get(key).getSourceImage();
     const tileSpan=end-start;
@@ -608,8 +637,8 @@ export class AetherCityScene extends Phaser.Scene {
     const scale=targetWidth/source.width;
     const originY=0.864; // alinha a base opaca do trecho quebrado à mesma linha de chão do muro íntegro.
     const middle=(start+end)/2;
-    const u=fixedAxis==='u'?fixed:middle;
-    const v=fixedAxis==='v'?fixed:middle;
+    const u=fixedAxis==='u'?fixed:middle+towerOverlap;
+    const v=fixedAxis==='v'?fixed:middle+towerOverlap;
     const image=new IsoSprite({
       scene:this,isoX:u,isoY:v,isoZ:0,
       texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
