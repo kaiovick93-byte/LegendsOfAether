@@ -345,9 +345,13 @@ export class AetherCityScene extends Phaser.Scene {
       // O ateliê continua entre a taverna e o Portão Leste, mas usa a mesma
       // linha de implantação dos demais estabelecimentos da muralha norte.
       {id:'artisan', key:'artisan_house', label:'Ateliê de Maelis', u:23.50, v:6.65, height:224, rect:[22.00,5.20,3.00,2.75], npc:[23.80,7.48], collisionBand:.64, smoke:{x:392,y:66,size:40,alpha:.76}},
-      // Bairro residencial (u=2..12, v=16..26) reservado para reconstrução.
-      // As casas anteriores, as fumaças correspondentes e os footprints foram
-      // retirados do plano. Apenas edifícios públicos seguem ativos acima.
+      // O bairro usa quatro tipologias reais: sobrado de ardósia, casa de
+      // enxaimel, chalé térreo e residência com varanda. A diferença está na
+      // arquitetura, não em simples trocas de cor.
+      {id:'house_blue', key:'residential_house_blue_v2', label:'Casa da Ardósia', u:4.18, v:18.72, height:184, rect:[2.95,17.62,2.45,2.12], collisionBand:.58},
+      {id:'house_green', key:'residential_house_green_v2', label:'Sobrado do Musgo', u:9.05, v:18.66, height:198, rect:[7.84,17.48,2.56,2.38], collisionBand:.58, smoke:{x:405,y:61,size:42,alpha:.72}},
+      {id:'house_ochre', key:'residential_house_ochre_v2', label:'Chalé da Lenha', u:4.55, v:23.12, height:182, rect:[3.20,22.02,2.55,2.12], collisionBand:.58, smoke:{x:410,y:58,size:39,alpha:.70}},
+      {id:'house_burgundy', key:'residential_house_burgundy_v2', label:'Casa da Varanda', u:9.32, v:23.18, height:202, rect:[7.86,21.98,2.70,2.48], collisionBand:.58, smoke:{x:404,y:62,size:42,alpha:.74}}
     ];
   }
 
@@ -878,9 +882,9 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   getEnvironmentalAccentPlan() {
-    // Árvores ficam inteiramente nos gramados laterais; bancos seguem fora
-    // da área residencial reservada à reconstrução. Nenhuma âncora atravessa
-    // rua, entrada de loja ou NPC relevante.
+    // Árvores ficam inteiramente nos gramados laterais; bancos usam apenas
+    // bordas largas de praça e de calçada. Nenhuma âncora atravessa rua,
+    // entrada de loja, rota do Morador ou NPC relevante.
     return {
       trees: [
         {id:'arvore-jardim-oeste', label:'tronco da árvore do jardim oeste', u:3.05, v:15.85, height:156},
@@ -888,7 +892,8 @@ export class AetherCityScene extends Phaser.Scene {
       ],
       benches: [
         {id:'banco-praca', label:'banco da praça', u:10.25, v:15.78, height:62, flipX:true},
-        {id:'banco-passeio-leste', label:'banco do passeio leste', u:21.08, v:16.72, height:58}
+        {id:'banco-passeio-leste', label:'banco do passeio leste', u:21.08, v:16.72, height:58},
+        {id:'banco-residencial', label:'banco do jardim residencial', u:2.75, v:25.12, height:60, flipX:true}
       ]
     };
   }
@@ -1381,10 +1386,14 @@ export class AetherCityScene extends Phaser.Scene {
       if (texture === 'south_guard') this.bottomGuard = npc;
     }
 
-    // O Morador de Aether foi retirado temporariamente da cena; o Viajante
-    // e seu percurso independente no centro permanecem sem alteração.
+    // Circuitos próprios e livres de footprints: nenhum andarilho depende de
+    // colisor móvel, portanto não fica travado ao cruzar outra pessoa.
+    // O circuito acompanha a cruz das ruas residenciais e contorna os quatro
+    // novos lotes. Nenhum ponto atravessa a base de uma residência.
+    const residentRoute = [[10.70,20.80],[9.80,21.20],[8.40,21.20],[6.60,21.20],[6.60,23.70],[6.60,24.70],[6.60,23.70],[6.60,21.20],[4.70,21.20],[3.00,21.20],[4.70,21.20],[6.60,21.20],[6.60,19.00],[6.60,17.10],[8.70,17.10],[10.70,17.10],[10.70,18.80]];
     const travelerRoute = [[9.8,11.5],[10.0,10.0],[11.8,9.0],[13.5,9.2],[15.0,9.0],[15.4,10.2],[15.0,11.4],[14.0,12.0],[12.4,11.8],[11.0,11.4]];
     this.walkers = [
+      this.createWalker('resident', 'resident_iso_walk', 'Tomas Belmon', 'Morador de Aether', ['A praça ainda é o lugar mais seguro de Aether.'], residentRoute, 106, 44, 700, 'portrait_tomas'),
       this.createWalker('traveler', 'traveler_iso_walk_v2', 'Darian Kestrel', 'Viajante', ['Ouvi rumores sobre o castelo.'], travelerRoute, 106, 50, 1100, 'portrait_darian', {originY:224/240})
     ];
     this.cityActors.push(...this.walkers);
