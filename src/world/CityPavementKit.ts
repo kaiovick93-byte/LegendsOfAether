@@ -45,20 +45,13 @@ export class CityPavementKit {
     this.entry('atelie-maelis', 24, 6, 24, 10);
     this.entry('mercado-aldren', 6, 12, 10, 14);
 
-    // Bairro residencial: espinha central, cruzamento e quatro calçadas de
-    // lote. O Morador percorre exatamente essas faixas (ver a rota da cena).
+    // Preparação do bairro residencial: permanecem somente as vias públicas
+    // de pedra e a ligação com a praça. As quatro plataformas quadradas e
+    // soleiras das antigas casas foram removidas para não deixar marcas de
+    // lotes enquanto a nova arquitetura ainda não foi definida. Os espaços
+    // livres exibem o gramado contínuo da cidade, sem overlays/provisórios.
     this.street('espinha-residencial', 5, 16, 7, 26);
     this.intersection('cruzamento-residencial', 3, 20, 11, 22);
-    this.corner('canto-noroeste-residencial', 6, 18, 'northWest');
-    this.corner('canto-sudeste-residencial', 8, 22, 'southEast');
-    this.sidewalk('lote-casa-azul', 2, 16, 6, 20);
-    this.sidewalk('lote-casa-verde', 8, 16, 12, 20);
-    this.sidewalk('lote-casa-ocre', 2, 22, 6, 26);
-    this.sidewalk('lote-casa-vinho', 8, 22, 12, 26);
-    this.entry('entrada-casa-azul', 4, 18, 4, 22);
-    this.entry('entrada-casa-verde', 10, 18, 10, 22);
-    this.entry('entrada-casa-ocre', 4, 20, 4, 24);
-    this.entry('entrada-casa-vinho', 10, 20, 10, 24);
     this.plazaLink('ligacao-bairro-praca', 6, 16, 12, 18);
 
     this.finishEdges();
