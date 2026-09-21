@@ -412,29 +412,41 @@ export class AetherCityScene extends Phaser.Scene {
 
 
   createOuterPerimeterTerrainPass() {
-    // v0.3.0 Round 1 — rio modular ao longo do lado de fora da muralha Sul.
-    // Nesta etapa usamos um kit modular próprio, sem ponte e sem props extras.
-    // O rio fica acima do terreno externo e abaixo da Estrada Velha / muralhas.
-    const pieces = [
-      { key:'outskirts_river_straight_03', x: 55,  y: 445, scale: .23 },
-      { key:'outskirts_river_straight_01', x: 215, y: 475, scale: .23 },
-      { key:'outskirts_river_straight_02', x: 375, y: 505, scale: .23 },
-      { key:'outskirts_river_straight_01', x: 535, y: 535, scale: .23 },
-      { key:'outskirts_river_straight_03', x: 695, y: 565, scale: .23 }
+    // Rio sul: as posições do território são lógicas (u, v), não pixels de
+    // uma captura de tela. O código anterior posicionava as imagens entre
+    // x=55..695 / y=445..565, fora da área real da Cidade de Aether,
+    // cujo mapa fica em torno da origem de mundo (1600, 250).
+    //
+    // Mantém os assets modulares da versão anterior, sem ponte, props,
+    // mudanças na navegação, colisões ou no bairro residencial.
+    // A água é desenhada entre o gramado B4 (-80) e a Estrada Velha (-70).
+    const segments = [
+      {u: 2.0, v:28.5, key:'outskirts_river_straight_01'},
+      {u: 6.1, v:28.5, key:'outskirts_river_straight_02'},
+      {u:10.2, v:28.5, key:'outskirts_river_straight_01'},
+      {u:14.3, v:28.5, key:'outskirts_river_straight_02'},
+      {u:18.4, v:28.5, key:'outskirts_river_straight_01'},
+      {u:22.5, v:28.5, key:'outskirts_river_straight_02'},
+      {u:26.6, v:28.5, key:'outskirts_river_straight_01'},
+      {u:30.3, v:29.1, key:'outskirts_river_curve_01'},
+      {u:33.9, v:31.6, key:'outskirts_river_straight_01'}
     ];
-
-    this.outerSouthRiverParts?.forEach?.((part) => part.destroy?.());
+    this.outerSouthRiverParts?.forEach?.(part => part.destroy?.());
     this.outerSouthRiverParts = [];
 
-    for (const piece of pieces) {
-      if (!this.textures.exists(piece.key)) continue;
-      const riverPart = this.add.image(piece.x, piece.y, piece.key)
+    for (const segment of segments) {
+      if (!this.textures.exists(segment.key)) {
+        console.error(`Rio sul: textura não carregada (${segment.key})`);
+        continue;
+      }
+      const position = this.project(segment.u, segment.v);
+      const part = this.add.image(position.x, position.y, segment.key)
         .setOrigin(.5)
-        .setScale(piece.scale)
-        .setDepth(AetherCityScene.ISO_DEPTH_BASE - 75)
-        .setAlpha(.99);
-      riverPart.setData?.('aetherRenderClass','ground');
-      this.outerSouthRiverParts.push(riverPart);
+        .setScale(.23)
+        .setFlipX(true)
+        .setDepth(AetherCityScene.ISO_DEPTH_BASE - 75);
+      part.setData?.('aetherRenderClass', 'ground');
+      this.outerSouthRiverParts.push(part);
     }
   }
 
