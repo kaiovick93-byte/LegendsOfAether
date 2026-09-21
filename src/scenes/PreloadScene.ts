@@ -15,7 +15,6 @@ export class PreloadScene extends Phaser.Scene{
     // Os dois atlases 2D abaixo ainda pertencem aos trabalhadores da fazenda
     // nos Arredores. Os antigos NPCs urbanos foram substituídos por versões
     // isométricas e não são mais carregados.
-    this.load.spritesheet('resident','assets/images/characters/npcs/resident.png',{frameWidth:128,frameHeight:160});
     this.load.spritesheet('traveler','assets/images/characters/npcs/traveler.png',{frameWidth:128,frameHeight:160});
     this.load.spritesheet('city_dog','assets/images/characters/ambient/city_dog.png',{frameWidth:144,frameHeight:96});this.load.spritesheet('city_cat','assets/images/characters/ambient/city_cat.png',{frameWidth:144,frameHeight:96});this.load.spritesheet('city_bird','assets/images/characters/ambient/city_bird.png',{frameWidth:64,frameHeight:48});this.load.spritesheet('city_rat_gray','assets/images/characters/ambient/city_rat_gray.png',{frameWidth:112,frameHeight:64});this.load.spritesheet('city_rat_brown','assets/images/characters/ambient/city_rat_brown.png',{frameWidth:112,frameHeight:64});this.load.spritesheet('city_rat_dark','assets/images/characters/ambient/city_rat_dark.png',{frameWidth:112,frameHeight:64});this.load.spritesheet('city_chicken_white','assets/images/characters/ambient/city_chicken_white.png',{frameWidth:80,frameHeight:80});this.load.spritesheet('city_chicken_brown','assets/images/characters/ambient/city_chicken_brown.png',{frameWidth:80,frameHeight:80});this.load.spritesheet('city_chicken_cream','assets/images/characters/ambient/city_chicken_cream.png',{frameWidth:80,frameHeight:80});
     this.load.image('merchant_iso','assets/images/characters/npcs/isometric/merchant_iso.png');
@@ -54,7 +53,6 @@ export class PreloadScene extends Phaser.Scene{
     this.load.spritesheet('south_guard_iso_action','assets/images/characters/npcs/isometric/south_guard_iso_action.png',{frameWidth:256,frameHeight:256});
     this.load.spritesheet('elder_mira_iso_action','assets/images/characters/npcs/isometric/elder_mira_iso_action.png',{frameWidth:256,frameHeight:256});
     this.load.spritesheet('general_iso_action','assets/images/characters/npcs/isometric/general_iso_action.png',{frameWidth:256,frameHeight:256});
-    this.load.spritesheet('resident_iso_walk','assets/images/characters/npcs/isometric/resident_iso_walk.png',{frameWidth:208,frameHeight:224});
     this.load.spritesheet('traveler_iso_walk','assets/images/characters/npcs/isometric/traveler_iso_walk.png',{frameWidth:208,frameHeight:224});
     this.load.spritesheet('traveler_iso_walk_v2','assets/images/characters/npcs/isometric/traveler_iso_walk_v2.png',{frameWidth:208,frameHeight:240});
     this.load.spritesheet('city_ground','assets/images/environment/city/city_ground.png',{frameWidth:32,frameHeight:32});
@@ -67,10 +65,6 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('tavern_house','assets/images/environment/buildings/tavern_house.png');
     this.load.image('scholar_house','assets/images/environment/buildings/scholar_house.png');
     this.load.image('artisan_house','assets/images/environment/buildings/artisan_house.png');
-    this.load.image('residential_house_blue_v2','assets/images/environment/buildings/residential_house_blue_v2.png');
-    this.load.image('residential_house_green_v2','assets/images/environment/buildings/residential_house_green_v2.png');
-    this.load.image('residential_house_ochre_v2','assets/images/environment/buildings/residential_house_ochre_v2.png');
-    this.load.image('residential_house_burgundy_v2','assets/images/environment/buildings/residential_house_burgundy_v2.png');
     this.load.image('waystone_dormant','assets/images/environment/world/waystone_dormant.png');
     this.load.image('waystone_city_dormant','assets/images/environment/world/waystone_city_dormant.png');
     this.load.image('city_fountain','assets/images/environment/city/props/city_fountain.png');
@@ -171,7 +165,6 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('portrait_general','assets/images/ui/dialogue/portraits/portrait_general.png');
     this.load.image('portrait_kael','assets/images/ui/dialogue/portraits/portrait_kael.png');
     this.load.image('portrait_bren','assets/images/ui/dialogue/portraits/portrait_bren.png');
-    this.load.image('portrait_tomas','assets/images/ui/dialogue/portraits/portrait_tomas.png');
     this.load.image('portrait_darian','assets/images/ui/dialogue/portraits/portrait_darian.png');
     for(const appearanceId of PLAYER_APPEARANCE_ORDER){
       for(const state of PLAYER_VISUAL_STATES){
