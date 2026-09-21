@@ -101,7 +101,6 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('outskirts_reeds','assets/images/environment/outskirts/outskirts_reeds.png');
     this.load.image('outskirts_bush_cluster','assets/images/environment/outskirts/outskirts_bush_cluster.png');
     this.load.image('outskirts_grass_patch','assets/images/environment/outskirts/outskirts_grass_patch.png');
-    this.load.image('outskirts_south_outer_stream_round1','assets/images/environment/outskirts/south_outer_stream_round1.png');
     this.load.image('outskirts_river_source_01','assets/images/environment/outskirts/river-kit/river_source_01.png');
     this.load.image('outskirts_river_straight_01','assets/images/environment/outskirts/river-kit/river_straight_01.png');
     this.load.image('outskirts_river_straight_02','assets/images/environment/outskirts/river-kit/river_straight_02.png');
