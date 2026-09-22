@@ -44,7 +44,7 @@ export class OldRoadProps{
       this.segments.push({a,b,dx:dx/length,dy:dy/length,length,start:this.length});
       this.length+=length;
     }
-    this.placeOnShoulder('aetherSign',.07,27.4,1.12,{role:'start-sign'});
+    this.placeOnShoulder('aetherSign',.07,27.4,.60,{role:'start-sign'});
     this.placeOnShoulder('waystone',1/3,21.5,1.36,{role:'ruined-waystone'});
     for(const [key,fraction,offset,scale,flipX=false,angle=0] of DRESSING)
       this.placeOnShoulder(key,fraction,offset,scale,{flipX,role:'roadside',
