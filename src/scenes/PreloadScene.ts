@@ -1,4 +1,5 @@
 // @ts-nocheck
+import {SOUTH_RIVER_ASSET} from '../world/SouthRiver';
 import {OLD_ROAD_B4D_TEXTURES} from '../world/OldRoadVisuals';
 import {ESCARPMENT_ASSETS} from '../world/OldRoadEscarpmentAssets';
 import {ESCARPMENT_NATURAL_ASSETS} from '../world/OldRoadEscarpmentNaturalAssets';
@@ -101,13 +102,7 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('outskirts_reeds','assets/images/environment/outskirts/outskirts_reeds.png');
     this.load.image('outskirts_bush_cluster','assets/images/environment/outskirts/outskirts_bush_cluster.png');
     this.load.image('outskirts_grass_patch','assets/images/environment/outskirts/outskirts_grass_patch.png');
-    this.load.image('outskirts_river_source_01','assets/images/environment/outskirts/river-kit/river_source_01.png');
-    this.load.image('outskirts_river_straight_01','assets/images/environment/outskirts/river-kit/river_straight_01.png');
-    this.load.image('outskirts_river_straight_02','assets/images/environment/outskirts/river-kit/river_straight_02.png');
-    this.load.image('outskirts_river_straight_03','assets/images/environment/outskirts/river-kit/river_straight_03.png');
-    this.load.image('outskirts_river_end_01','assets/images/environment/outskirts/river-kit/river_end_01.png');
-    this.load.image('outskirts_river_curve_01','assets/images/environment/outskirts/river-kit/river_curve_01.png');
-    this.load.image('outskirts_river_curve_02','assets/images/environment/outskirts/river-kit/river_curve_02.png');
+    this.load.image(SOUTH_RIVER_ASSET.key,SOUTH_RIVER_ASSET.path);
     this.load.image('farmhouse','assets/images/environment/outskirts/farm/farmhouse.png');
     this.load.image('farm_barn','assets/images/environment/outskirts/farm/barn.png');
     this.load.image('farm_empty_wagon','assets/images/environment/outskirts/farm/empty_wagon.png');

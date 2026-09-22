@@ -23,6 +23,7 @@ import {FountainWaterEffect} from '../world/FountainWaterEffect';
 import {AetherTerritory} from '../world/AetherTerritory';
 import {AETHER_LOGICAL_BOUNDS,AETHER_NEW_GAME_SPAWN,AETHER_WORLD_BOUNDS,legacyWorldPositionToIso} from '../world/AetherTerritoryLayout';
 import {IsoSprite,IsoOcclusionManager} from '../isometric/IsoOcclusion';
+import {SouthRiver} from '../world/SouthRiver';
 import {OldAetherPrologue} from '../prologue/OldAetherPrologue';
 
 /**
@@ -412,42 +413,12 @@ export class AetherCityScene extends Phaser.Scene {
 
 
   createOuterPerimeterTerrainPass() {
-    // Rio sul: as posições do território são lógicas (u, v), não pixels de
-    // uma captura de tela. O código anterior posicionava as imagens entre
-    // x=55..695 / y=445..565, fora da área real da Cidade de Aether,
-    // cujo mapa fica em torno da origem de mundo (1600, 250).
-    //
-    // Mantém os assets modulares da versão anterior, sem ponte, props,
-    // mudanças na navegação, colisões ou no bairro residencial.
-    // A água é desenhada entre o gramado B4 (-80) e a Estrada Velha (-70).
-    const segments = [
-      {u: 2.0, v:28.5, key:'outskirts_river_straight_01'},
-      {u: 6.1, v:28.5, key:'outskirts_river_straight_02'},
-      {u:10.2, v:28.5, key:'outskirts_river_straight_01'},
-      {u:14.3, v:28.5, key:'outskirts_river_straight_02'},
-      {u:18.4, v:28.5, key:'outskirts_river_straight_01'},
-      {u:22.5, v:28.5, key:'outskirts_river_straight_02'},
-      {u:26.6, v:28.5, key:'outskirts_river_straight_01'},
-      {u:30.3, v:29.1, key:'outskirts_river_curve_01'},
-      {u:33.9, v:31.6, key:'outskirts_river_straight_01'}
-    ];
-    this.outerSouthRiverParts?.forEach?.(part => part.destroy?.());
-    this.outerSouthRiverParts = [];
-
-    for (const segment of segments) {
-      if (!this.textures.exists(segment.key)) {
-        console.error(`Rio sul: textura não carregada (${segment.key})`);
-        continue;
-      }
-      const position = this.project(segment.u, segment.v);
-      const part = this.add.image(position.x, position.y, segment.key)
-        .setOrigin(.5)
-        .setScale(.23)
-        .setFlipX(true)
-        .setDepth(AetherCityScene.ISO_DEPTH_BASE - 75);
-      part.setData?.('aetherRenderClass', 'ground');
-      this.outerSouthRiverParts.push(part);
-    }
+    this.southRiver?.destroy();
+    this.southRiver = new SouthRiver(this, {
+      project: (u,v) => this.project(u,v),
+      depth: AetherCityScene.ISO_DEPTH_BASE - 75,
+      groundMask: this.aetherTerritory.groundMask
+    });
   }
 
   createAnimatedGrassDetails() {
