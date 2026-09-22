@@ -1,7 +1,7 @@
-# Legends of Aether — v0.3.0 Round 3
+# Legends of Aether — v0.3.0 Round 4
 
-Base exclusiva: `legends-of-aether-v0.3.0-round2-red-river-github.zip`.
-SHA-256 da base anexada: `f2d7435af741a80ca845916207f0053a9847e2f5d64ee883b107b5ab48f07e13`.
+Base exclusiva: `legends-of-aether-v0.3.0-round3-aether-sign-sprite-swap.zip`.
+SHA-256 da base anexada: `3b5d70323fd05ba5a42f518f4f1c3cc629aaecf686c33c399f89d589483565ba`.
 
 ## Executar
 
@@ -33,7 +33,18 @@ Para verificar a lógica e a integração com os métodos existentes:
 npm run test:world-clock
 ```
 
-## Rio da marcação vermelha — preservado da Round 2
+## Animação da água — Round 4
+
+`src/world/SouthRiver.ts` movimenta somente os pixels de água do material já
+existente. Uma máscara fixa protege as margens, pedras e vegetação. O avanço é
+compartilhado pelos nove módulos e segue a distância ao longo do rio, inclusive
+nas curvas, sem mover os sprites. As texturas são atualizadas até 30 vezes por
+segundo, apenas nos módulos visíveis; a fase continua compartilhada fora da tela.
+
+Não foram criados ou alterados assets. Traçado, largura, posição, escala, estrada,
+mapas, colisões, props e demais sistemas permanecem como na base anexada.
+
+## Rio da marcação vermelha — implementação herdada
 
 O novo rio acompanha o exterior da muralha sul e faz a curva após a torre frontal,
 conforme a referência RIO VERMELHO. Não há ponte nem novos props.
@@ -51,14 +62,19 @@ gerado com a ferramenta de imagens integrada, usando a referência para direçã
 Os sete PNGs do antigo `river-kit` foram removidos após verificar que não há mais
 referências a eles no código. Os demais assets são os da base.
 
-## Validação
+## Validação da Round 4
 
-Build de produção, verificação TypeScript e 11 testes automatizados concluídos.
-Os testes cobrem passagem do tempo/meia-noite, morte/respawn, save/load, saves
-antigos, pausas, troca de mapa, instalação única e arquivos pedidos pelo preloader.
-São testes de lógica e integração com IO simulado, não uma partida no navegador.
-O teste interativo de carregamento e HUD permanece pendente: o ambiente bloqueou
-o acesso do navegador ao servidor local.
+Build de produção, verificação TypeScript e teste dos arquivos pedidos pelo
+preloader concluídos. A comparação da renderização Canvas 2D confirmou a arte
+inicial idêntica à base, movimento nos nove módulos, pixels fora da máscara
+inalterados, continuidade na repetição da correnteza e liberação dos recursos
+ao encerrar a cena. A geometria e as transformações dos sprites foram preservadas.
+
+Essa validação utiliza o código do rio e o material real com a interface de cena
+simulada. A inicialização e a animação em uma partida real ainda precisam de
+verificação: o navegador do ambiente bloqueou o acesso ao servidor local
+(`ERR_BLOCKED_BY_CLIENT`). Os testes de World Clock são herdados e não foram
+executados novamente nesta alteração.
 
 O ZIP contém fonte, assets, configurações, lockfile, testes e este README. Não inclui
 `docs`, `dist`, `scripts`, `node_modules`, prévias nem relatórios históricos.
