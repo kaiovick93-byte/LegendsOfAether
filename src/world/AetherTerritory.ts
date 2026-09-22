@@ -506,7 +506,7 @@ export class AetherTerritory{
     // Só os dois marcos narrativos permanecem. Os demais props aguardam a
     // próxima etapa para a área não virar decoração definitiva antes do aval
     // da estrada modular.
-    this.addIsoImage('outskirts_aether_sign_v2',12.4,35.7,170,{solid:{label:'placa para Aether',width:108,height:20,yOffset:-7},visibleRadius:29});
+    this.addIsoImage('outskirts_aether_sign_v2',12.4,35.7,128,{solid:{label:'placa para Aether',width:84,height:16,yOffset:-6},visibleRadius:29});
     this.addIsoImage('outskirts_aether_sign_v2',8.5,66,150,{solid:{label:'marco antigo da estrada',width:96,height:18,yOffset:-6},flipX:true,visibleRadius:29});
   }
 
