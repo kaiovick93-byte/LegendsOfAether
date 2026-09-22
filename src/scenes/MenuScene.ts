@@ -2,6 +2,7 @@
 import {SaveManager} from '../save/SaveManager';
 import {ScreenFade} from '../ui/ScreenFade';
 import {centerReferenceViewport} from '../render/Viewport';
+import {worldClock} from '../world/WorldClock';
 export class MenuScene extends Phaser.Scene{
  constructor(){super('MenuScene')}
  create(){
@@ -28,6 +29,7 @@ export class MenuScene extends Phaser.Scene{
  }
  startExisting(save){
   if(!save)return;
+  worldClock.restore(save.worldClock);
   let target=save.lastScene||'AetherCityScene';
   // Todo save legado de WorldScene pertence agora ao mesmo território da
   // cidade. A própria AetherCityScene migra a posição antes do primeiro frame.

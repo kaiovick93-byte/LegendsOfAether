@@ -15,8 +15,11 @@ export const AETHER_WORLD_BOUNDS={
   height:5000
 };
 
+// Novo Jogo: pés do personagem no começo da Estrada Velha, ao lado da borda
+// sudoeste do terreno e antes da placa Aether (referência visual do usuário).
+// Não altera saves existentes, entradas por portões ou pontos de respawn.
 export const AETHER_NEW_GAME_SPAWN={
-  id:'old-aether-road-new-game',u:7.7,v:73.2,facing:'upRight',safeRadius:3.2
+  id:'old-aether-road-new-game',u:1.35,v:81.4,facing:'upRight',safeRadius:3.2
 };
 
 /** Mantém compatibilidade com consumidores do Prompt 9. */

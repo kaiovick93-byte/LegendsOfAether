@@ -14,6 +14,7 @@ import {CastleScene} from './scenes/CastleScene';
 import {VictoryScene} from './scenes/VictoryScene';
 import {GAME_WIDTH,GAME_HEIGHT} from './config';
 import {centerReferenceViewport} from './render/Viewport';
+import {installWorldClock} from './world/WorldClockRuntime';
 
 // As pinturas 2,5D e os textos não são pixel art. Cada Text recebe uma
 // textura interna de alta resolução, mas conserva o mesmo tamanho lógico.
@@ -45,6 +46,7 @@ new Phaser.Game({
   antialiasGL:true,
   roundPixels:false,
   callbacks:{postBoot(game){
+    installWorldClock(game);
     const centered=new Set(['MenuScene','OptionsScene','PrologueScene','CharacterSelectScene','HouseInteriorScene','VictoryScene']);
     for(const scene of game.scene.scenes){
       scene.events.on(Phaser.Scenes.Events.CREATE,()=>{

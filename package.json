@@ -1,13 +1,14 @@
 {
   "name": "legends-of-aether",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test:world-clock": "node --test tests/world-clock.test.mjs"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

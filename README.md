@@ -1,6 +1,7 @@
-# Legends of Aether — Round 86 / v14.10
+# Legends of Aether — v0.3.0 Round 3
 
-Prompt **9D-B4.2D**. Base exclusiva: `legends-of-aether-round85-v14.9-prompt9d-b4.2c-github.zip`, SHA-256 `6449c05bbbb61fc646c7c5ac0d5dbee4138e59db0074886b21b9b3d18fb2daa9`.
+Base exclusiva: `legends-of-aether-v0.3.0-round2-red-river-github.zip`.
+SHA-256 da base anexada: `f2d7435af741a80ca845916207f0053a9847e2f5d64ee883b107b5ab48f07e13`.
 
 ## Executar
 
@@ -17,16 +18,47 @@ npm run build
 npm run preview
 ```
 
-## Estado atual
+## World Clock
 
-B4.2D faz somente microacabamento nas bordas da junção em Y e no acesso ao Portão Sul: seis tufos baixos e três pequenos grupos de pedrinhas, usando as texturas já carregadas `iso_grass_tufts` e `old_road_rocks_cluster_01`.
+Um relógio global exibe `Dia N • HH:MM` discretamente no canto superior esquerdo.
+Um dia dura 72 minutos reais. Novo jogo e saves antigos sem relógio começam no
+Dia 1 às 08:00. Morte, menus, diálogos e pausas existentes congelam o relógio;
+reviver ou trocar de mapa preserva o mesmo estado. O save inclui a fração do
+minuto e não aplica tempo decorrido enquanto o jogo estiver fechado.
 
-Os detalhes são planos, pequenos, sem interação, colisão ou oclusão de atores. Quebram pontualmente as bordas mais rígidas; não substituem, deslocam ou redimensionam nenhum módulo da estrada. Nenhum detalhe foi colocado fora da junção/acesso.
+Não há ciclo visual, alteração de iluminação, rotinas ou mudanças nos mapas/assets.
+Para verificar a lógica e a integração com os métodos existentes:
 
-Todos os props aprovados — placas Aether e Y, marco arruinado, primeira cerca e demais cercas — permanecem idênticos. Traçados, larguras, escarpa e vegetação, Cidade, muralhas, Portão Sul, campo aberto, gameplay, colisões, NPCs, player, escalas e animações preservados.
+```sh
+npm run test:world-clock
+```
 
-Arquivos alterados: `src/world/AetherTerritory.ts` e este `README.md`. Nenhum asset criado, alterado ou removido. O ZIP não inclui `docs`, `dist`, `scripts`, `qa` ou `node_modules`.
+## Rio da marcação vermelha — preservado da Round 2
+
+O novo rio acompanha o exterior da muralha sul e faz a curva após a torre frontal,
+conforme a referência RIO VERMELHO. Não há ponte nem novos props.
+
+`src/world/SouthRiver.ts` monta nove módulos de chão a partir de um novo material
+pintado, com conectores compartilhados, coordenadas isométricas, margens suaves
+e correnteza discreta. Os módulos são criados pelo Canvas 2D e carregados como
+texturas Phaser, funcionando nos renderizadores Canvas e WebGL. A lâmina de água
+passa sobre o acesso existente ao Portão Sul; a estrada não é movida ou reconstruída.
+A colisão e o gameplay da base não foram alterados.
+
+Integração: `src/scenes/PreloadScene.ts` e `src/scenes/AetherCityScene.ts`.
+Novo material: `assets/images/environment/outskirts/south-river/river_channel_material_01.png`,
+gerado com a ferramenta de imagens integrada, usando a referência para direção visual.
+Os sete PNGs do antigo `river-kit` foram removidos após verificar que não há mais
+referências a eles no código. Os demais assets são os da base.
 
 ## Validação
 
-Comparação estática dos construtores e assets reais com a base B4.2C. Dois closes: junção em Y e ligação com o Portão Sul. Sem build completo ou teste interativo neste ambiente.
+Build de produção, verificação TypeScript e 11 testes automatizados concluídos.
+Os testes cobrem passagem do tempo/meia-noite, morte/respawn, save/load, saves
+antigos, pausas, troca de mapa, instalação única e arquivos pedidos pelo preloader.
+São testes de lógica e integração com IO simulado, não uma partida no navegador.
+O teste interativo de carregamento e HUD permanece pendente: o ambiente bloqueou
+o acesso do navegador ao servidor local.
+
+O ZIP contém fonte, assets, configurações, lockfile, testes e este README. Não inclui
+`docs`, `dist`, `scripts`, `node_modules`, prévias nem relatórios históricos.
