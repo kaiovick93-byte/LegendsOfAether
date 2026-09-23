@@ -24,6 +24,7 @@ import {AetherTerritory} from '../world/AetherTerritory';
 import {AETHER_LOGICAL_BOUNDS,AETHER_NEW_GAME_SPAWN,AETHER_WORLD_BOUNDS,legacyWorldPositionToIso} from '../world/AetherTerritoryLayout';
 import {IsoSprite,IsoOcclusionManager} from '../isometric/IsoOcclusion';
 import {SouthRiver} from '../world/SouthRiver';
+import {SouthRiverBridge} from '../world/SouthRiverBridge';
 import {OldAetherPrologue} from '../prologue/OldAetherPrologue';
 
 /**
@@ -413,12 +414,21 @@ export class AetherCityScene extends Phaser.Scene {
 
 
   createOuterPerimeterTerrainPass() {
+    this.southRiverBridge?.destroy();
     this.southRiver?.destroy();
     this.southRiver = new SouthRiver(this, {
       project: (u,v) => this.project(u,v),
       depth: AetherCityScene.ISO_DEPTH_BASE - 75,
       groundMask: this.aetherTerritory.groundMask
     });
+    this.southRiverBridge = new SouthRiverBridge(this, {
+      project: (u,v) => this.project(u,v),
+      depthBase: AetherCityScene.ISO_DEPTH_BASE,
+      sections: this.southRiver.sections
+    });
+    const safe=this.southRiverBridge.recoverPosition(this.player.isoX,this.player.isoY,this.playerIsoRadius,
+      (u,v)=>!this.isBlocked(u,v,this.playerIsoRadius));
+    if(safe)this.player.setIsoPosition(safe.u,safe.v,this.player.isoZ);
   }
 
   createAnimatedGrassDetails() {
@@ -477,10 +487,10 @@ export class AetherCityScene extends Phaser.Scene {
     // Portão Leste.
     this.addBrokenWallSection('u', C.CITY_MAX, 18, C.CITY_MAX, false, 0);
     this.addWallRun('v', C.CITY_MAX, C.CITY_MIN, 10, true);
-    // O trecho sudeste da muralha Sul volta a usar os mesmos módulos padrão
-    // do restante do perímetro. Assim a altura, o topo e a base ficam
-    // exatamente iguais aos demais muros e ao Portão Sul, sem variar de peça.
-    this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true, 1.17);
+    // O mesmo passo, escala e pivô em todo o perímetro mantêm os dois
+    // conectores no chão. Esticar só este trecho inclinava sua base e criava
+    // um degrau no encontro dos módulos junto ao Portão Sul.
+    this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true);
     this.createCornerTowers();
 
     const gateTargetWidth = 432;
@@ -557,10 +567,10 @@ export class AetherCityScene extends Phaser.Scene {
   createCornerTowers() {
     const key='iso_city_corner_tower';
     const source=this.textures.get(key).getSourceImage();
-    // Round94 hotfix: usa a torre final aprovada como peça real de junção.
-    // Cada canto é deslocado para FORA do perímetro para que os muros sumam
-    // dentro da torre, como no canto aprovado pelo usuário. A colisão lógica
-    // permanece ancorada na quina original, evitando abrir frestas jogáveis.
+    // A torre aprovada usa o pé frontal como pivô. No canto norte, esse pé
+    // fica à frente da quina, assim como no canto sul; usar o sinal contrário
+    // deixava a base atrás do terreno e apoiada visualmente sobre os muros.
+    // Os deslocamentos laterais dos outros cantos permanecem preservados.
     const scale=250/source.width;
     const originY=1417/source.height;
     const topBottomOffset=.58;
@@ -569,8 +579,8 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id:'north-west',label:'torre de arqueiros norte',
         anchorU:AetherCityScene.CITY_MIN,anchorV:AetherCityScene.CITY_MIN,
-        spriteU:AetherCityScene.CITY_MIN-topBottomOffset,
-        spriteV:AetherCityScene.CITY_MIN-topBottomOffset,
+        spriteU:AetherCityScene.CITY_MIN+topBottomOffset,
+        spriteV:AetherCityScene.CITY_MIN+topBottomOffset,
         flipX:false
       },
       {
@@ -597,11 +607,18 @@ export class AetherCityScene extends Phaser.Scene {
     ];
     this.cornerTowerSprites=[];
     for(const tower of corners){
+      // A torre deve cobrir as pontas dos dois módulos que chegam à quina.
+      // Seu pivô externo continua no mesmo lugar; apenas a ordenação precisa
+      // considerar o módulo adjacente mais à frente, sem elevar a base.
+      const frontWallSum=tower.anchorU+tower.anchorV+
+        (tower.anchorU===AetherCityScene.CITY_MIN||tower.anchorV===AetherCityScene.CITY_MIN?2:-2);
+      const towerSum=tower.spriteU+tower.spriteV;
+      const cornerDepthOffset=.32+Math.max(0,frontWallSum-towerSum)*100;
       const sprite=new IsoSprite({
         scene:this,isoX:tower.spriteU,isoY:tower.spriteV,isoZ:0,
         texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
         screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
-        depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.32
+        depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:cornerDepthOffset
       });
       sprite.setOrigin(.5,originY).setScale(scale).setFlipX(!!tower.flipX);
       sprite.updateIsoPosition();
@@ -681,8 +698,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.registerSolidMask(image,key,{label:'trecho destruído da muralha',mode:'isoRect',isoRect:rect});
   }
 
-  addWallRun(fixedAxis, fixed, start, end, flip, heightMultiplier = 1) {
-    const source=this.textures.get('iso_city_wall').getSourceImage();
+  addWallRun(fixedAxis, fixed, start, end, flip) {
     // Round92: mantém EXATAMENTE a arte v2 aprovada. O PNG foi apenas
     // normalizado geometricamente para o 2:1 real do mapa; nenhuma troca de
     // estilo/asset foi feita. Os conectores terminais agora coincidem com o
@@ -704,19 +720,9 @@ export class AetherCityScene extends Phaser.Scene {
         screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
         depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.08
       });
-      // O trecho sudeste do muro Sul precisa ter a mesma altura visual do
-      // Portão Sul e do restante da muralha, mas sem levantar a base do chão.
-      // Para isso aumentamos somente a escala vertical e recalculamos o originY
-      // para manter o último pixel opaco da base exatamente na mesma posição.
-      const sourceHeight=source.height;
-      const opaqueBottomY=802; // último pixel opaco do asset aprovado atual.
-      const opaqueBottomRatio=opaqueBottomY/sourceHeight;
-      const adjustedOriginY=heightMultiplier===1
-        ? wallOriginY
-        : opaqueBottomRatio-(opaqueBottomRatio-wallOriginY)/heightMultiplier;
-      image.setOrigin(.5, adjustedOriginY)
+      image.setOrigin(.5, wallOriginY)
         .setFlipX(flip)
-        .setScale(wallScale, wallScale*heightMultiplier);
+        .setScale(wallScale);
       image.updateIsoPosition();
       this.wallSprites.push(image);
 
@@ -1883,6 +1889,7 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   isBlockedByCityBounds(u, v, radius) {
+    if(this.southRiverBridge?.isBlocked(u,v,radius))return true;
     if(this.aetherTerritory?.isLogicalBarrierBlocked(u,v,radius))return true;
     if (this.isOutsideCityWallEnvelope(u, v, radius)) return true;
     return false;

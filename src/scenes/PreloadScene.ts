@@ -1,5 +1,6 @@
 // @ts-nocheck
 import {SOUTH_RIVER_ASSET} from '../world/SouthRiver';
+import {SOUTH_BRIDGE_ASSET} from '../world/SouthRiverBridge';
 import {OLD_ROAD_B4D_TEXTURES} from '../world/OldRoadVisuals';
 import {ESCARPMENT_ASSETS} from '../world/OldRoadEscarpmentAssets';
 import {ESCARPMENT_NATURAL_ASSETS} from '../world/OldRoadEscarpmentNaturalAssets';
@@ -13,11 +14,15 @@ export class PreloadScene extends Phaser.Scene{
     for(const asset of Object.values(ESCARPMENT_NATURAL_ASSETS))this.load.image(asset.key,asset.path);
     for(const key of Object.values(OLD_ROAD_B4D_TEXTURES).flat())
       this.load.image(key,`assets/images/environment/outskirts/old-road-b4d/${key}.png`);
-    // Os dois atlases 2D abaixo ainda pertencem aos trabalhadores da fazenda
-    // nos Arredores. Os antigos NPCs urbanos foram substituídos por versões
-    // isométricas e não são mais carregados.
+    // Apenas os sprites utilizados na cena atual permanecem no preload.
     this.load.spritesheet('traveler','assets/images/characters/npcs/traveler.png',{frameWidth:128,frameHeight:160});
-    this.load.spritesheet('city_dog','assets/images/characters/ambient/city_dog.png',{frameWidth:144,frameHeight:96});this.load.spritesheet('city_cat','assets/images/characters/ambient/city_cat.png',{frameWidth:144,frameHeight:96});this.load.spritesheet('city_bird','assets/images/characters/ambient/city_bird.png',{frameWidth:64,frameHeight:48});this.load.spritesheet('city_rat_gray','assets/images/characters/ambient/city_rat_gray.png',{frameWidth:112,frameHeight:64});this.load.spritesheet('city_rat_brown','assets/images/characters/ambient/city_rat_brown.png',{frameWidth:112,frameHeight:64});this.load.spritesheet('city_rat_dark','assets/images/characters/ambient/city_rat_dark.png',{frameWidth:112,frameHeight:64});this.load.spritesheet('city_chicken_white','assets/images/characters/ambient/city_chicken_white.png',{frameWidth:80,frameHeight:80});this.load.spritesheet('city_chicken_brown','assets/images/characters/ambient/city_chicken_brown.png',{frameWidth:80,frameHeight:80});this.load.spritesheet('city_chicken_cream','assets/images/characters/ambient/city_chicken_cream.png',{frameWidth:80,frameHeight:80});
+    this.load.spritesheet('city_dog','assets/images/characters/ambient/city_dog.png',{frameWidth:144,frameHeight:96});
+    this.load.spritesheet('city_cat','assets/images/characters/ambient/city_cat.png',{frameWidth:144,frameHeight:96});
+    this.load.spritesheet('city_bird','assets/images/characters/ambient/city_bird.png',{frameWidth:64,frameHeight:48});
+    this.load.spritesheet('city_rat_gray','assets/images/characters/ambient/city_rat_gray.png',{frameWidth:112,frameHeight:64});
+    this.load.spritesheet('city_rat_brown','assets/images/characters/ambient/city_rat_brown.png',{frameWidth:112,frameHeight:64});
+    this.load.spritesheet('city_rat_dark','assets/images/characters/ambient/city_rat_dark.png',{frameWidth:112,frameHeight:64});
+
     this.load.image('merchant_iso','assets/images/characters/npcs/isometric/merchant_iso.png');
     this.load.image('blacksmith_iso','assets/images/characters/npcs/isometric/blacksmith_iso.png');
     this.load.image('blacksmith_iso_empty','assets/images/characters/npcs/isometric/blacksmith_iso_empty.png');
@@ -53,13 +58,12 @@ export class PreloadScene extends Phaser.Scene{
     this.load.spritesheet('guard_iso_action','assets/images/characters/npcs/isometric/guard_iso_action.png',{frameWidth:256,frameHeight:256});
     this.load.spritesheet('south_guard_iso_action','assets/images/characters/npcs/isometric/south_guard_iso_action.png',{frameWidth:256,frameHeight:256});
     this.load.spritesheet('elder_mira_iso_action','assets/images/characters/npcs/isometric/elder_mira_iso_action.png',{frameWidth:256,frameHeight:256});
-    this.load.spritesheet('general_iso_action','assets/images/characters/npcs/isometric/general_iso_action.png',{frameWidth:256,frameHeight:256});
-    this.load.spritesheet('traveler_iso_walk','assets/images/characters/npcs/isometric/traveler_iso_walk.png',{frameWidth:208,frameHeight:224});
+
     this.load.spritesheet('traveler_iso_walk_v2','assets/images/characters/npcs/isometric/traveler_iso_walk_v2.png',{frameWidth:208,frameHeight:240});
-    this.load.spritesheet('city_ground','assets/images/environment/city/city_ground.png',{frameWidth:32,frameHeight:32});
+
     this.load.image('merchant_shop','assets/images/environment/buildings/merchant_shop.png');
     this.load.image('blacksmith_shop','assets/images/environment/buildings/blacksmith_shop.png');
-    this.load.spritesheet('chimney_smoke','assets/images/environment/buildings/chimney_smoke.png',{frameWidth:96,frameHeight:96});
+
     this.load.image('chimney_smoke_wisp','assets/images/environment/buildings/chimney_smoke_wisp.png');
 	    this.load.image('healer_house','assets/images/environment/buildings/healer_house.png');
 	    this.load.image('healer_house_abandoned','assets/images/environment/buildings/healer_house_abandoned.png');
@@ -72,13 +76,7 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('city_tree','assets/images/environment/city/props/city_tree.png');
     this.load.image('city_bench','assets/images/environment/city/props/city_bench.png');
     this.load.image('street_crates','assets/images/environment/city/props/street_crates.png');
-    this.load.image('street_barrels','assets/images/environment/city/props/street_barrels.png');
-    this.load.image('street_logs','assets/images/environment/city/props/street_logs.png');
-    this.load.image('street_lamppost','assets/images/environment/city/props/street_lamppost.png');
-    this.load.image('street_flower_fence','assets/images/environment/city/props/street_flower_fence.png');
-    this.load.image('chicken_coop','assets/images/environment/city/props/chicken_coop.png');
-    this.load.image('city_chicken_fence','assets/images/environment/city/props/city_chicken_fence.png');
-    this.load.image('iso_grass_patch','assets/images/environment/isometric/isometric_grass_patch.png');
+
     this.load.spritesheet('iso_grass_tufts','assets/images/environment/isometric/isometric_grass_tufts.png',{frameWidth:96,frameHeight:96});
     this.load.image('iso_city_wall','assets/images/environment/isometric/isometric_city_wall_v2_aligned.png');
     this.load.image('iso_city_wall_south_long','assets/images/environment/isometric/isometric_city_wall_south_long.png');
@@ -94,21 +92,9 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('iso_pavement_tile_c','assets/images/environment/isometric/iso_pavement_tile_c.png');
     this.load.image('iso_pavement_tile_d','assets/images/environment/isometric/iso_pavement_tile_d.png');
     this.load.image('iso_waystone_garden','assets/images/environment/isometric/isometric_waystone_garden.png');
-    this.load.image('outskirts_dirt_path','assets/images/environment/outskirts/outskirts_dirt_path.png');
-    this.load.image('outskirts_water_patch','assets/images/environment/outskirts/outskirts_water_patch.png');
-    this.load.image('outskirts_rock_cluster','assets/images/environment/outskirts/outskirts_rock_cluster.png');
-    this.load.image('outskirts_wood_bridge','assets/images/environment/outskirts/outskirts_wood_bridge.png');
-    this.load.image('outskirts_fence_segment','assets/images/environment/outskirts/outskirts_fence_segment.png');
-    this.load.image('outskirts_reeds','assets/images/environment/outskirts/outskirts_reeds.png');
-    this.load.image('outskirts_bush_cluster','assets/images/environment/outskirts/outskirts_bush_cluster.png');
-    this.load.image('outskirts_grass_patch','assets/images/environment/outskirts/outskirts_grass_patch.png');
+
     this.load.image(SOUTH_RIVER_ASSET.key,SOUTH_RIVER_ASSET.path);
-    this.load.image('farmhouse','assets/images/environment/outskirts/farm/farmhouse.png');
-    this.load.image('farm_barn','assets/images/environment/outskirts/farm/barn.png');
-    this.load.image('farm_empty_wagon','assets/images/environment/outskirts/farm/empty_wagon.png');
-    this.load.image('farm_crop_wheat','assets/images/environment/outskirts/farm/crop_wheat.png');
-    this.load.image('farm_crop_cabbage','assets/images/environment/outskirts/farm/crop_cabbage.png');
-    this.load.image('farm_crop_vegetables','assets/images/environment/outskirts/farm/crop_vegetables.png');
+    this.load.image(SOUTH_BRIDGE_ASSET.key,SOUTH_BRIDGE_ASSET.path);
     // 9D-B4.0B: um material contínuo e tileable fica mascarado exatamente no
     // território lógico dos Arredores. Os detalhes abaixo são transparentes e
     // discretos; a Estrada Velha permanece na camada modular acima do chão.
@@ -117,21 +103,11 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('outskirts_ground_b4_detail_1','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_1.png');
     this.load.image('outskirts_ground_b4_detail_2','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_2.png');
     this.load.image('outskirts_ground_b4_detail_3','assets/images/environment/outskirts/terrain-b4/outskirts_ground_b4_detail_3.png');
-    this.load.image('outskirts_old_road_v2','assets/images/environment/outskirts/v2/outskirts_old_road_v2.png');
+
     // 9D-B3.2: quatro peças extraídas da prancha fornecida, sem labels.
-    this.load.image('outskirts_stream_v2','assets/images/environment/outskirts/v2/outskirts_stream_v2.png');
-    this.load.image('outskirts_bridge_v2','assets/images/environment/outskirts/v2/outskirts_bridge_v2.png');
-    this.load.image('outskirts_shrine_v2','assets/images/environment/outskirts/v2/outskirts_shrine_v2.png');
-    this.load.image('outskirts_ruins_v2','assets/images/environment/outskirts/v2/outskirts_ruins_v2.png');
-    this.load.image('outskirts_cave_v2','assets/images/environment/outskirts/v2/outskirts_cave_v2.png');
-    this.load.image('outskirts_greenwoods_block_v2','assets/images/environment/outskirts/v2/outskirts_greenwoods_block_v2.png');
+
     this.load.image('outskirts_aether_sign_v2','assets/images/environment/outskirts/v2/outskirts_aether_sign_v2.png');
-    this.load.image('outskirts_lake_v2','assets/images/environment/outskirts/v2/outskirts_lake_v2.png');
-    this.load.spritesheet('farm_cow','assets/images/characters/ambient/farm/cow.png',{frameWidth:112,frameHeight:84});
-    this.load.spritesheet('farm_pig','assets/images/characters/ambient/farm/pig.png',{frameWidth:96,frameHeight:72});
-    this.load.spritesheet('farm_horse','assets/images/characters/ambient/farm/horse.png',{frameWidth:128,frameHeight:96});
-    this.load.image('npc_key_f','assets/images/ui/npc_interaction/keycap_f.png');
-    this.load.image('npc_key_t','assets/images/ui/npc_interaction/keycap_t.png');
+
     this.load.image('bottom_hud_frame_v2','assets/images/ui/hud/bottom_hud_frame_v2.png');
     this.load.image('hud_action_healing','assets/images/ui/hud/actions/healing.png');
     this.load.image('hud_action_mana','assets/images/ui/hud/actions/mana.png');
@@ -141,13 +117,7 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('hud_action_controls','assets/images/ui/hud/actions/controls.png');
     this.load.image('hud_action_menu','assets/images/ui/hud/actions/menu.png');
     this.load.image('city_map_exact_2_5d','assets/images/ui/map/city_map_exact_2_5d.png');
-    this.load.image('dialogue_body_panel','assets/images/ui/dialogue/dialogue_body_panel.png');
-    this.load.image('dialogue_header_bar','assets/images/ui/dialogue/dialogue_header_bar.png');
-    this.load.image('dialogue_portrait_frame','assets/images/ui/dialogue/dialogue_portrait_frame.png');
-    this.load.image('dialogue_button_blue','assets/images/ui/dialogue/dialogue_button_blue.png');
-    this.load.image('dialogue_button_green','assets/images/ui/dialogue/dialogue_button_green.png');
-    this.load.image('dialogue_button_red','assets/images/ui/dialogue/dialogue_button_red.png');
-    this.load.image('dialogue_key_esc','assets/images/ui/dialogue/dialogue_key_esc.png');
+
     this.load.image('portrait_aldren','assets/images/ui/dialogue/portraits/portrait_aldren.png');
     this.load.image('portrait_borin','assets/images/ui/dialogue/portraits/portrait_borin.png');
 	    this.load.image('portrait_elara','assets/images/ui/dialogue/portraits/portrait_elara.png');
@@ -167,7 +137,7 @@ export class PreloadScene extends Phaser.Scene{
         this.load.spritesheet(playerOutlineTextureKey(appearanceId,state),`assets/images/characters/player/${appearanceId}_${state}_outline.png`,{frameWidth:96,frameHeight:96});
       }
     }
-    this.load.spritesheet('elder_feeder_iso','assets/images/characters/ambient/elder_feeder_iso.png',{frameWidth:208,frameHeight:224});
+
     this.load.spritesheet('elder_feeder_iso_v3','assets/images/characters/ambient/elder_feeder_iso_v3.png',{frameWidth:208,frameHeight:224});
     const g=this.add.graphics();
     g.fillStyle(0xff6b6b).fillRect(0,0,32,32);g.generateTexture('enemy',32,32);
