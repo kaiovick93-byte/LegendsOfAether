@@ -97,6 +97,10 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image(SOUTH_BRIDGE_ASSET.key,SOUTH_BRIDGE_ASSET.path);
     this.load.image('ancient_riverbank_tree_01','assets/images/environment/outskirts/south-river/ancient_riverbank_tree_01.png');
     this.load.image('riverbank_rock_outcrop_01','assets/images/environment/outskirts/south-river/riverbank_rock_outcrop_01.png');
+    this.load.image('riverbank_fern_clearing_01','assets/images/environment/outskirts/south-river/riverbank_fern_clearing_01.png');
+    this.load.image('riverbank_cattails_01','assets/images/environment/outskirts/south-river/riverbank_cattails_01.png');
+    this.load.image('riverbank_mossy_clearing_01','assets/images/environment/outskirts/south-river/riverbank_mossy_clearing_01.png');
+    this.load.image('riverbank_reeds_01','assets/images/environment/outskirts/south-river/riverbank_reeds_01.png');
     // 9D-B4.0B: um material contínuo e tileable fica mascarado exatamente no
     // território lógico dos Arredores. Os detalhes abaixo são transparentes e
     // discretos; a Estrada Velha permanece na camada modular acima do chão.

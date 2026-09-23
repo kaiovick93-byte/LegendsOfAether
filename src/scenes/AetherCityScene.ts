@@ -74,6 +74,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.ambientActors = [];
     this.ambientRouteStates=[];
     this.tavernRatTweens=[];
+    this.southRiverBankDecorations=[];
     // Primeiro quadro já dentro da avenida: nenhuma torre encobre o herói.
     this.playerIsoStart = {x: 14, y: 25.02};
     this.playerIsoRadius = .27;
@@ -428,6 +429,7 @@ export class AetherCityScene extends Phaser.Scene {
     });
     this.createSouthRiverAncientTree();
     this.createSouthRiverRockOutcrop();
+    this.createSouthRiverBankDecorations();
     const safe=this.southRiverBridge.recoverPosition(this.player.isoX,this.player.isoY,this.playerIsoRadius,
       (u,v)=>!this.isBlocked(u,v,this.playerIsoRadius));
     if(safe)this.player.setIsoPosition(safe.u,safe.v,this.player.isoZ);
@@ -479,6 +481,64 @@ export class AetherCityScene extends Phaser.Scene {
     });
   }
 
+
+  createSouthRiverBankDecorations() {
+    const specs = [
+      {
+        id: 'south-river-fern-clearing',
+        key: 'riverbank_fern_clearing_01',
+        u: 5.25,
+        v: 31.78,
+        height: 96,
+        depthOffset: .022,
+        screenYOffset: 5,
+        behindMargin: 5
+      },
+      {
+        id: 'south-river-cattails',
+        key: 'riverbank_cattails_01',
+        u: 14.2,
+        v: 31.44,
+        height: 110,
+        depthOffset: .024,
+        screenYOffset: 9,
+        behindMargin: 5
+      },
+      {
+        id: 'south-river-mossy-clearing',
+        key: 'riverbank_mossy_clearing_01',
+        u: 23.1,
+        v: 31.82,
+        height: 92,
+        depthOffset: .021,
+        screenYOffset: 4,
+        behindMargin: 5
+      },
+      {
+        id: 'south-river-reeds',
+        key: 'riverbank_reeds_01',
+        u: 33.15,
+        v: 35.15,
+        height: 102,
+        depthOffset: .023,
+        screenYOffset: 8,
+        behindMargin: 5,
+        flipX: true
+      }
+    ];
+    this.southRiverBankDecorations?.forEach?.(prop => prop?.destroy?.());
+    this.southRiverBankDecorations = [];
+    for (const spec of specs) {
+      if (!this.textures.exists(spec.key)) continue;
+      const image = this.addIsoImage(spec.key, spec.u, spec.v, spec.height, spec.depthOffset, spec.screenYOffset);
+      if (spec.flipX) image.setFlipX(true);
+      image.setData('environmentalAccent', spec.id);
+      image.setData('aetherRenderClass', 'environment');
+      this.southRiverBankDecorations.push(image);
+      this.aetherTerritory?.track?.(image, spec.u, spec.v, {alwaysActive:true});
+      this.registerOccluder(image, spec.key, image.y - 2, {behindMargin: spec.behindMargin ?? 5});
+    }
+  }
   createAnimatedGrassDetails() {
     if (!this.textures.exists('iso_grass_tufts')) return;
     if (!this.anims.exists('city-grass-sway')) {
