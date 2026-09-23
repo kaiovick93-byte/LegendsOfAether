@@ -427,9 +427,33 @@ export class AetherCityScene extends Phaser.Scene {
       sections: this.southRiver.sections
     });
     this.createSouthRiverAncientTree();
+    this.createSouthRiverRockOutcrop();
     const safe=this.southRiverBridge.recoverPosition(this.player.isoX,this.player.isoY,this.playerIsoRadius,
       (u,v)=>!this.isBlocked(u,v,this.playerIsoRadius));
     if(safe)this.player.setIsoPosition(safe.u,safe.v,this.player.isoZ);
+  }
+
+
+  createSouthRiverRockOutcrop() {
+    this.southRiverRockOutcrop?.destroy?.();
+    if (!this.textures.exists('riverbank_rock_outcrop_01')) return;
+    const key='riverbank_rock_outcrop_01';
+    // Complemento natural discreto na margem inicial do rio, sem poluir a
+    // travessia. O afloramento fica alguns módulos adiante da árvore.
+    const u=7.45, v=30.82;
+    const outcrop=this.addIsoImage(key,u,v,152,.024,12);
+    outcrop.setData('environmentalAccent','south-river-rock-outcrop');
+    outcrop.setData('aetherRenderClass','environment');
+    this.southRiverRockOutcrop=outcrop;
+    this.aetherTerritory?.track?.(outcrop,u,v,{alwaysActive:true});
+    this.registerOccluder(outcrop,key,outcrop.y-4,{behindMargin:8});
+    this.registerSolidMask(outcrop,key,{
+      label:'Afloramento rochoso da margem do rio',
+      mode:'footprint',
+      footprintWidth:34,
+      footprintHeight:18,
+      footprintYOffset:-5
+    });
   }
 
 
