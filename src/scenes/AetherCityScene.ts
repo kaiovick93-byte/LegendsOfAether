@@ -431,6 +431,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.createSouthRiverAncientTree();
     this.createSouthRiverRockOutcrop();
     this.createSouthRiverBankDecorations();
+    this.createSouthRiverFallenLog();
     const safe=this.southRiverBridge.recoverPosition(this.player.isoX,this.player.isoY,this.playerIsoRadius,
       (u,v)=>!this.isBlocked(u,v,this.playerIsoRadius));
     if(safe)this.player.setIsoPosition(safe.u,safe.v,this.player.isoZ);
@@ -488,8 +489,10 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-fern-clearing',
         key: 'riverbank_fern_clearing_01',
-        u: 6.10,
-        v: 31.98,
+        // Reposicionada da área em vermelho para a margem indicada em amarelo,
+        // à direita do afloramento rochoso e mais próxima da borda do rio.
+        u: 9.78,
+        v: 30.18,
         height: 96,
         depthOffset: .022,
         screenYOffset: 5,
@@ -510,8 +513,10 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-mossy-clearing',
         key: 'riverbank_mossy_clearing_01',
-        u: 23.1,
-        v: 31.82,
+        // Reposicionada da área em vermelho para a margem indicada em amarelo,
+        // deslocando a moita para a direita e mais próxima da borda do rio.
+        u: 25.05,
+        v: 31.34,
         height: 92,
         depthOffset: .021,
         screenYOffset: 4,
@@ -520,8 +525,10 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-reeds',
         key: 'riverbank_reeds_01',
-        u: 34.10,
-        v: 35.55,
+        // Margem seca marcada em amarelo no trecho final do rio.
+        // Reposicionar somente este agrupamento, sem alterar o rio.
+        u: 33.20,
+        v: 33.12,
         height: 102,
         depthOffset: .023,
         screenYOffset: 8,
@@ -542,6 +549,33 @@ export class AetherCityScene extends Phaser.Scene {
       this.registerOccluder(image, spec.key, image.y - 2, {behindMargin: spec.behindMargin ?? 5});
     }
   }
+  createSouthRiverFallenLog() {
+    this.southRiverFallenLog?.destroy?.();
+    const key='riverbank_fallen_ancient_log_01';
+    if (!this.textures.exists(key)) return;
+    // Tronco na margem oposta, no início da curva final, conforme a área
+    // vermelha da referência: base sobre a margem seca e uma ponta junto à água.
+    // Não altera a geometria do rio nem interfere na ponte ou na estrada.
+    const u=28.73, v=26.66;
+    const log=this.addIsoImage(key,u,v,114,.025,0);
+    // Tronco horizontal: a âncora fica no contato central com o terreno,
+    // não na borda inferior da imagem (adequada para sprites em pé).
+    log.setOrigin(.5,.79);
+    log.updateIsoPosition();
+    log.setData('environmentalAccent','south-river-fallen-ancient-log');
+    log.setData('aetherRenderClass','environment');
+    this.southRiverFallenLog=log;
+    this.aetherTerritory?.track?.(log,u,v,{alwaysActive:true});
+    this.registerOccluder(log,key,log.y-4,{behindMargin:5});
+    this.registerSolidMask(log,key,{
+      label:'Tronco antigo caído na margem do rio',
+      mode:'footprint',
+      footprintWidth:140,
+      footprintHeight:22,
+      footprintYOffset:-5
+    });
+  }
+
   createAnimatedGrassDetails() {
     if (!this.textures.exists('iso_grass_tufts')) return;
     if (!this.anims.exists('city-grass-sway')) {
