@@ -488,8 +488,8 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-fern-clearing',
         key: 'riverbank_fern_clearing_01',
-        u: 6.75,
-        v: 31.35,
+        u: 6.10,
+        v: 31.98,
         height: 96,
         depthOffset: .022,
         screenYOffset: 5,
@@ -498,8 +498,8 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-cattails',
         key: 'riverbank_cattails_01',
-        u: 16.15,
-        v: 31.62,
+        u: 15.25,
+        v: 31.98,
         height: 110,
         depthOffset: .024,
         screenYOffset: 9,
@@ -518,8 +518,8 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-reeds',
         key: 'riverbank_reeds_01',
-        u: 34.95,
-        v: 35.20,
+        u: 34.10,
+        v: 35.55,
         height: 102,
         depthOffset: .023,
         screenYOffset: 8,
