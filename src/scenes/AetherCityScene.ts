@@ -25,6 +25,7 @@ import {AETHER_LOGICAL_BOUNDS,AETHER_NEW_GAME_SPAWN,AETHER_WORLD_BOUNDS,legacyWo
 import {IsoSprite,IsoOcclusionManager} from '../isometric/IsoOcclusion';
 import {SouthRiver} from '../world/SouthRiver';
 import {SouthRiverBridge} from '../world/SouthRiverBridge';
+import {createGroundedBrokenWall,southWallJoinTexture,foundationColumns,isFoundationContact} from '../world/CityWallGrounding';
 import {OldAetherPrologue} from '../prologue/OldAetherPrologue';
 
 /**
@@ -586,13 +587,9 @@ export class AetherCityScene extends Phaser.Scene {
     // trechos restantes têm 8 tiles cada e recebem dois módulos longos de 4
     // tiles, evitando comprimir a nova arte em peças minúsculas.
     this.addWallRun('u', C.CITY_MAX, C.CITY_MIN, 10, false);
-    // O trecho quebrado fica na muralha Leste, entre a torre sudeste e o
-    // Portão Leste. Um pequeno avanço visual em direção à torre garante que
-    // a peça desapareça sob ela, que continua renderizada à frente.
-    // O trecho destruído permanece na lateral Leste, mas sem deslocamento
-    // extra ao longo do eixo. Isso preserva a altura dos conectores nas duas
-    // extremidades e evita o desencontro visual com a torre sudeste e o
-    // Portão Leste.
+    // A arte quebrada é projetada pelos dois pés do próprio PNG, no mesmo
+    // trecho Leste. A altura dos pilares independe da inclinação do chão;
+    // destroços e brecha continuam pertencendo a essa única peça aprovada.
     this.addBrokenWallSection('u', C.CITY_MAX, 18, C.CITY_MAX, false, 0);
     this.addWallRun('v', C.CITY_MAX, C.CITY_MIN, 10, true);
     // O mesmo passo, escala e pivô em todo o perímetro mantêm os dois
@@ -626,7 +623,15 @@ export class AetherCityScene extends Phaser.Scene {
       screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
       depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.15
     }).setScale(southGateScale);
+    const southJoin=this.wallSprites.find(wall=>wall.isoY===C.CITY_MAX&&Math.abs(wall.isoX-19.65)<.001);
+    if(southJoin)southJoin.setTexture(southWallJoinTexture(this,southJoin,this.southGateSprite));
     this.registerGateTowerFootprints();
+    // The existing rectangles stop short of the drawn pier feet. Sample
+    // their real bottom contour so the player cannot enter the masonry.
+    this.registerSolidMask(this.southGateSprite,'iso_city_gate',{
+      label:'bases e encontros do Portão Sul',mode:'groundContour',
+      minHits:1,alphaThreshold:100
+    });
   }
 
 
@@ -779,21 +784,17 @@ export class AetherCityScene extends Phaser.Scene {
 
   addBrokenWallSection(fixedAxis, fixed, start, end, flip, towerOverlap = 0) {
     const key='iso_city_wall_broken';
-    const source=this.textures.get(key).getSourceImage();
-    const tileSpan=end-start;
-    const targetWidth=48*tileSpan; // 8 tiles => 384 px no plano 2:1 do mapa.
-    const scale=targetWidth/source.width;
-    const originY=0.864; // alinha a base opaca do trecho quebrado à mesma linha de chão do muro íntegro.
+    const grounded=createGroundedBrokenWall(this,(u,v)=>this.project(u,v),fixed,start,end);
     const middle=(start+end)/2;
     const u=fixedAxis==='u'?fixed:middle+towerOverlap;
     const v=fixedAxis==='v'?fixed:middle+towerOverlap;
     const image=new IsoSprite({
       scene:this,isoX:u,isoY:v,isoZ:0,
-      texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
+      texture:grounded.key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
       screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
       depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.09
     });
-    image.setOrigin(.5,originY).setFlipX(flip).setScale(scale);
+    image.setOrigin(grounded.originX,grounded.originY).setFlipX(flip).setScale(grounded.scale);
     image.updateIsoPosition();
     this.wallSprites.push(image);
 
@@ -819,7 +820,10 @@ export class AetherCityScene extends Phaser.Scene {
     for (let index = 0; index < count; index++) {
       const segStart = start + tileSpan * index;
       const segEnd = segStart + tileSpan;
-      const middle = (segStart + segEnd) / 2;
+      // Seat the existing two-module run under the gate's end pier; its
+      // opposite end remains concealed behind the unchanged corner tower.
+      const gateJoinOffset=fixedAxis==='v'&&fixed===AetherCityScene.CITY_MAX&&start===18?-.35:0;
+      const middle = (segStart + segEnd) / 2+gateJoinOffset;
       const u = fixedAxis === 'u' ? fixed : middle;
       const v = fixedAxis === 'v' ? fixed : middle;
       const image = new IsoSprite({
@@ -838,7 +842,7 @@ export class AetherCityScene extends Phaser.Scene {
       const thickness=.06;
       const rect=fixedAxis==='u'
         ?{u1:fixed-thickness,v1:segStart,u2:fixed+thickness,v2:segEnd,corner:.08}
-        :{u1:segStart,v1:fixed-thickness,u2:segEnd,v2:fixed+thickness,corner:.08};
+        :{u1:segStart+gateJoinOffset,v1:fixed-thickness,u2:segEnd+gateJoinOffset,v2:fixed+thickness,corner:.08};
       this.addIsoGroundContact(rect,.10);
       this.registerSolidMask(image,'iso_city_wall',{label:'muralha',mode:'isoRect',isoRect:rect});
       // Oclusão continua intencionalmente fora desta etapa.
@@ -1235,6 +1239,13 @@ export class AetherCityScene extends Phaser.Scene {
 
   isSolidSourcePoint(entry,targetMask,sourceX,sourceY) {
     if(sourceX<0||sourceX>=targetMask.width||sourceY<0||sourceY>=targetMask.height)return false;
+    if(entry.mode==='groundContour'){
+      this.foundationColumnCache??=new Map();
+      const key=`${entry.key}:${String(entry.frameName??'__BASE')}:${entry.alphaThreshold}`;
+      if(!this.foundationColumnCache.has(key))this.foundationColumnCache.set(key,foundationColumns(targetMask,entry.alphaThreshold));
+      const scaleY=Math.abs(this.resolveSolidValue(entry.scaleY,entry.image.scaleY??1));
+      return isFoundationContact(this.foundationColumnCache.get(key),sourceX,sourceY,16/scaleY);
+    }
     if((targetMask.alpha[sourceY*targetMask.width+sourceX]??0)>=entry.alphaThreshold)return true;
     if(entry.mode!=='foundation')return false;
     const spans=this.getFoundationRowSpans(entry,targetMask);

@@ -1,7 +1,7 @@
-# Legends of Aether — v0.3.0 Round 6 — Alinhamento das muralhas
+# Legends of Aether — v0.3.0 Round 7 — Apoio da muralha quebrada e Portão Sul
 
-Base exclusiva: `legends-of-aether-v0.3.0-round5-south-gate-bridge-github.zip`.
-SHA-256 da base anexada: `bfc28bca5a95cc2c0bcb54aa2f729df234484adeaf8827c6592c2002c899b650`.
+Base exclusiva: `legends-of-aether-v0.3.0-round6-river-bank-props-integration.zip`.
+SHA-256 da base anexada: `865c7f6cdb875deeff878b658dabe937be0a780f5fd3531cba1376e38da6e562`.
 
 ## Executar
 
@@ -17,6 +17,51 @@ npm run check
 npm run build
 npm run preview
 ```
+
+## Correções pontuais — Round 7
+
+A muralha quebrada usa os dois pontos de apoio da arte aprovada para encaixar
+no trecho Leste existente. A projeção alinha os pés ao chão e mantém o pilar
+íntegro com aproximadamente 124 pixels de altura, compatível com os módulos
+normais. A brecha e os destroços pertencem ao mesmo PNG, sem peças adicionadas.
+O aríete não foi movido. O ajuste é geométrico em uma textura de execução;
+nenhum arquivo de imagem foi editado ou substituído.
+
+O trecho de dois módulos à direita do Portão Sul foi assentado 0,35 tile ao
+longo da própria muralha, mantendo escala, altura e inclinação da base. A
+extremidade oposta continua atrás da torre existente. No encontro com o
+portão, apenas os pixels cobertos pelo próprio pilar ficam ocultos, sem
+módulos duplicados e sem mudar a profundidade global do portão.
+
+A colisão adicional segue o contorno inferior opaco dos pés do Portão Sul.
+Ela não usa a silhueta elevada do arco nem se estende para a grama à frente
+da pedra. O caminho central alinhado à ponte continua livre. Portões, torres,
+muralhas restantes, rio, ponte, Estrada Velha e decoração das margens estão
+preservados, assim como todos os assets da base anexada.
+
+### Verificação
+
+```sh
+node --test tests/city-walls.test.mjs tests/south-bridge.test.mjs
+node --test --test-name-pattern=preloader tests/world-clock.test.mjs
+npm run build
+```
+
+Os testes usam os métodos reais de movimento, as amostras de contato de
+`Player` e o alpha do PNG aprovado do portão. Cobrem pontos antes penetráveis,
+aproximação por dentro/fora, retorno após bloqueio e travessia da ponte/arco nos
+dois sentidos, sem sobreposição com a pedra. Também verificam os apoios da
+muralha quebrada, a escala dos muros, preservação dos portões/torres e descarte
+das texturas temporárias ao encerrar a cena.
+
+A conferência visual dos dois pontos usa o código de criação da cena e os
+assets reais em Canvas 2D nativo. **A validação interativa em uma partida real
+continua pendente:** o navegador do ambiente bloqueou o servidor local com
+`ERR_BLOCKED_BY_CLIENT`. Os testes e a renderização assistida não substituem
+essa verificação final no navegador do jogo.
+
+Alterados: `src/scenes/AetherCityScene.ts`, `tests/city-walls.test.mjs`, `README.md`.
+Criado: `src/world/CityWallGrounding.ts`. Nenhum asset adicionado ou removido.
 
 ## Revisão das muralhas — Round 6
 
