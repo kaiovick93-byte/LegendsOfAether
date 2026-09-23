@@ -488,8 +488,9 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-fern-clearing',
         key: 'riverbank_fern_clearing_01',
-        u: 5.25,
-        v: 31.78,
+        // Colado à margem inicial, ao lado da árvore, sem invadir a estrada.
+        u: 4.8,
+        v: 30.85,
         height: 96,
         depthOffset: .022,
         screenYOffset: 5,
@@ -498,8 +499,9 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-cattails',
         key: 'riverbank_cattails_01',
-        u: 14.2,
-        v: 31.44,
+        // Recuado para a beira do rio e deslocado para longe do leito da estrada.
+        u: 15.1,
+        v: 30.95,
         height: 110,
         depthOffset: .024,
         screenYOffset: 9,
@@ -508,8 +510,9 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-mossy-clearing',
         key: 'riverbank_mossy_clearing_01',
-        u: 23.1,
-        v: 31.82,
+        // Mantido no trecho médio, agora encostado visualmente na margem.
+        u: 22.7,
+        v: 31.1,
         height: 92,
         depthOffset: .021,
         screenYOffset: 4,
@@ -518,8 +521,9 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-reeds',
         key: 'riverbank_reeds_01',
-        u: 33.15,
-        v: 35.15,
+        // Trazido para a curva final do barranco, sem jogar a moita para dentro do gramado.
+        u: 33.0,
+        v: 34.55,
         height: 102,
         depthOffset: .023,
         screenYOffset: 8,
