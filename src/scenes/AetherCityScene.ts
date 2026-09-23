@@ -498,8 +498,10 @@ export class AetherCityScene extends Phaser.Scene {
       {
         id: 'south-river-cattails',
         key: 'riverbank_cattails_01',
-        u: 15.25,
-        v: 31.98,
+        // Margem direita da saída da ponte, conforme marcação amarela.
+        // A posição antiga deixava a moita sobre a estrada.
+        u: 16.02,
+        v: 30.04,
         height: 110,
         depthOffset: .024,
         screenYOffset: 9,
