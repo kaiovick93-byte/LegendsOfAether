@@ -426,9 +426,33 @@ export class AetherCityScene extends Phaser.Scene {
       depthBase: AetherCityScene.ISO_DEPTH_BASE,
       sections: this.southRiver.sections
     });
+    this.createSouthRiverAncientTree();
     const safe=this.southRiverBridge.recoverPosition(this.player.isoX,this.player.isoY,this.playerIsoRadius,
       (u,v)=>!this.isBlocked(u,v,this.playerIsoRadius));
     if(safe)this.player.setIsoPosition(safe.u,safe.v,this.player.isoZ);
+  }
+
+
+  createSouthRiverAncientTree() {
+    this.southRiverAncientTree?.destroy?.();
+    if (!this.textures.exists('ancient_riverbank_tree_01')) return;
+    const key='ancient_riverbank_tree_01';
+    // Início do rio ao sul dos muros: margem externa, antes da ponte/portão.
+    // A árvore fica na margem sem bloquear a travessia principal.
+    const u=3.85, v=31.15;
+    const tree=this.addIsoImage(key,u,v,262,.028,18);
+    tree.setData('environmentalAccent','south-river-ancient-tree');
+    tree.setData('aetherRenderClass','environment');
+    this.southRiverAncientTree=tree;
+    this.aetherTerritory?.track?.(tree,u,v,{alwaysActive:true});
+    this.registerOccluder(tree,key,tree.y-6,{behindMargin:8});
+    this.registerSolidMask(tree,key,{
+      label:'Árvore ancestral do rio',
+      mode:'footprint',
+      footprintWidth:42,
+      footprintHeight:22,
+      footprintYOffset:-9
+    });
   }
 
   createAnimatedGrassDetails() {
