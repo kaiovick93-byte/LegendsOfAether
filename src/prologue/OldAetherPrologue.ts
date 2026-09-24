@@ -501,7 +501,12 @@ export class OldAetherPrologue{
     if(!target){this.cue?.hide();return;}
     const sign=target.sprite;
     if(sign){
-      this.cue.show(sign.x,sign.y-Math.max(52,sign.displayHeight*.74),sign.depth+1,target.label);
+      // O sprite da placa tem depth isometrico negativo. Usar sign.depth+1
+      // deixava o aviso atras das camadas do terreno, embora o F funcionasse.
+      // Assim como a UI dos NPCs, exiba o cartao acima da cena, ancorado
+      // acima do topo visual da placa sem alterar a hitbox da interacao.
+      const aboveSign=sign.y-sign.displayHeight*sign.originY-18;
+      this.cue.show(sign.x,aboveSign,1600,target.label);
       return;
     }
     const p=this.scene.project(target.anchor.u,target.anchor.v);
