@@ -141,6 +141,7 @@ export class OldAetherPrologue{
     this.hud=new PrologueHud(scene);
     this.cue=new PrologueCue(scene);
     this.createRoadSetDressing();
+    this.createBloodTrailDressing();
     this.createCollectible();
     this.syncObjective();
     // A mensagem exibida após derrotar o lobo só sai no próximo deslocamento real.
@@ -272,6 +273,45 @@ export class OldAetherPrologue{
     // preservado para não alterar a máquina de estados nesta etapa.
     this.wagon=null;
     this.cartDecor=[];
+  }
+
+  // Cena ambiental da emboscada na Estrada Velha. Cada PNG e posicionado
+  // isoladamente em coordenadas do territorio: nao cola um fundo sobre o mapa,
+  // nao altera a geometria e nao interfere na quest ainda pendente do sangue.
+  createBloodTrailDressing(){
+    this.bloodTrailDecor=[];
+    const place=(key,u,v,width,depthOffset=.02)=>{
+      if(!this.scene.textures.exists(key))return;
+      const point=this.scene.project(u,v);
+      const source=this.scene.textures.get(key).getSourceImage();
+      const sprite=this.scene.add.image(point.x,point.y,key)
+        .setOrigin(.5,.5)
+        .setScale(width/source.width)
+        .setDepth(this.scene.depthAt(u,v,depthOffset));
+      this.bloodTrailDecor.push(sprite);
+    };
+    // Inicio no circulo vermelho, imediatamente adiante do caixote.
+    place('road_blood_pool_02',10.0,63.05,52,-.24);
+    place('road_blood_pool_01',9.89,62.88,28,-.23);
+
+    // Rastro curvo afastando-se da estrada e subindo pela grama, seguindo a
+    // marcacao vermelha da referencia, com pequenas manchas separadas.
+    const trail=[
+      [9.55,62.45,43],[9.20,61.70,39],[8.85,60.90,38],
+      [8.45,60.15,43],[7.95,59.55,41],[7.40,58.75,48],
+      [7.02,57.95,38],[6.65,57.25,46],[6.30,56.60,42],
+      [5.98,56.02,47],[5.65,55.35,52],[5.43,54.72,41],
+      [5.25,54.10,48]
+    ];
+    trail.forEach(([u,v,width],index)=>place(`road_blood_trail_0${index%3+1}`,u,v,width,-.21));
+
+    // Area maior da emboscada na grama, antes da regiao amarela da referencia.
+    // Corpos nao graficos de viajantes, sem colisoes nem interacoes nesta etapa.
+    place('road_blood_pool_03',4.65,53.22,103,-.22);
+    place('road_blood_pool_02',6.25,53.75,108,-.22);
+    place('road_blood_pool_01',5.65,54.15,67,-.22);
+    place('road_fallen_traveler_01',4.68,52.92,126,.04);
+    place('road_fallen_traveler_02',6.20,53.54,119,.04);
   }
 
   createCollectible(){
@@ -900,6 +940,7 @@ export class OldAetherPrologue{
   destroy(){
     this.collectibleTween?.stop();this.collectible?.destroy();this.cue?.destroy();this.hud?.destroy();
     this.wagon?.destroy();for(const item of this.cartDecor||[])item?.destroy();
+    for(const item of this.bloodTrailDecor||[])item?.destroy();
     for(const enemy of this.enemies)if(enemy?.active)enemy.destroy();
   }
 }
