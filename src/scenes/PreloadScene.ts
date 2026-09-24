@@ -9,6 +9,7 @@ import {PLAYER_APPEARANCE_ORDER,PLAYER_DIRECTION_ROWS,PLAYER_VISUAL_STATES,playe
 export class PreloadScene extends Phaser.Scene{
   constructor(){super('PreloadScene')}
   preload(){
+    this.load.image('aether_main_menu','assets/images/ui/main_menu_aether.png');
     for(const asset of Object.values(OLD_ROAD_PROP_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(ESCARPMENT_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(ESCARPMENT_NATURAL_ASSETS))this.load.image(asset.key,asset.path);

@@ -7,25 +7,35 @@ export class MenuScene extends Phaser.Scene{
  constructor(){super('MenuScene')}
  create(){
   centerReferenceViewport(this);
-  this.sm=new SaveManager(); this.fade=new ScreenFade(this);
-  this.add.text(480,75,'LEGENDS OF AETHER',{fontFamily:'Arial',fontSize:42,color:'#ecf0ff',fontStyle:'bold'}).setOrigin(.5);
-  this.add.text(480,120,'Action RPG de navegador',{fontFamily:'Arial',fontSize:17,color:'#7ee0ff'}).setOrigin(.5);
+  this.sm=new SaveManager();
   const save=this.sm.load();
-  const continueBtn=this.addButton('CONTINUAR',220,()=>this.startExisting(save),!!save);
-  this.addButton('NOVO JOGO',285,()=>{this.sm.clear();this.fade.out(()=>this.scene.start('PrologueScene'))},true);
-  this.addButton('OPÇÕES / SOBRE',350,()=>this.fade.out(()=>this.scene.start('OptionsScene')),true);
-  if(save){
-    this.add.text(480,430,`Save encontrado • Nível ${save.player.level} • ${save.lastScene||'WorldScene'}`,{fontFamily:'Arial',fontSize:12,color:'#9aa8c7'}).setOrigin(.5)
-  }else{
-    this.add.text(480,430,'Nenhum save encontrado. CONTINUAR está desabilitado.',{fontFamily:'Arial',fontSize:12,color:'#7280a8'}).setOrigin(.5)
-  }
-  this.fade.in()
+  const w=this.scale.width,h=this.scale.height;
+  // Interface e zonas de clique acompanham exatamente a imagem em RESIZE.
+  this.add.image(w/2,h/2,'aether_main_menu').setDisplaySize(w,h).setScrollFactor(0);
+  // A arte já contém títulos e rótulos. Os controles transparentes, separados
+  // da pintura, deixam os fluxos existentes funcionais sem duplicar o texto.
+  this.addMenuHitArea(.184,.431,.218,.075,()=>{
+   this.sm.clear();this.fade.out(()=>this.scene.start('PrologueScene'));
+  },true);
+  this.addMenuHitArea(.184,.521,.218,.075,()=>this.startExisting(save),!!save);
+  this.addMenuHitArea(.184,.612,.218,.075,()=>this.fade.out(()=>this.scene.start('OptionsScene')),true);
+  // Créditos e Sair permanecem apenas na arte, sem ação nesta etapa.
+  this.fade=new ScreenFade(this);
+  this.fade.in();
  }
- addButton(t,y,cb,enabled){
-  const obj=this.add.text(480,y,t,{fontFamily:'Arial',fontSize:20,color:enabled?'#ecf0ff':'#626d83',backgroundColor:enabled?'#24314d':'#161d2a',padding:{left:20,right:20,top:10,bottom:10}}).setOrigin(.5);
-  if(!enabled)return obj;
-  obj.setInteractive({useHandCursor:true}).on('pointerover',()=>obj.setBackgroundColor('#36507c')).on('pointerout',()=>obj.setBackgroundColor('#24314d')).on('pointerdown',cb);
-  return obj;
+ addMenuHitArea(nx,ny,nw,nh,callback,enabled){
+  const w=this.scale.width,h=this.scale.height;
+  const x=nx*w,y=ny*h,bw=nw*w,bh=nh*h;
+  if(!enabled){
+   // A função Continuar só pode ser utilizada quando existe um save.
+   this.add.rectangle(x,y,bw,bh,0x090c13,.58).setScrollFactor(0);
+   return;
+  }
+  const hover=this.add.rectangle(x,y,bw,bh,0x7dc9ff,0)
+   .setScrollFactor(0).setInteractive({useHandCursor:true});
+  hover.on('pointerover',()=>hover.setFillStyle(0x7dc9ff,.16));
+  hover.on('pointerout',()=>hover.setFillStyle(0x7dc9ff,0));
+  hover.on('pointerdown',()=>{if(!this.menuBusy){this.menuBusy=true;callback();}});
  }
  startExisting(save){
   if(!save)return;
