@@ -282,12 +282,36 @@ export class OldAetherPrologue{
   }
 
   createRoadSetDressing(){
-    // Round94 v14.19: remove do mapa da Estrada Velha o conjunto visual da
-    // carroça atacada que estava aparecendo como acampamento/entulho: carroça,
-    // caixas, pilha de madeira e cerca. O marco narrativo/âncora do prólogo é
-    // preservado para não alterar a máquina de estados nesta etapa.
+    // A carroça abandonada volta ao mapa como cena fixa da emboscada, agora
+    // na clareira acima da estrada. Os itens caídos usam o mesmo padrão de
+    // arte do prólogo e ficam ligados à mesma âncora narrativa.
     this.wagon=null;
     this.cartDecor=[];
+    const anchor=this.anchors.attackedWagon;
+    const point=this.scene.project(anchor.u,anchor.v);
+    if(this.scene.textures.exists('abandoned_wagon_v3')){
+      const source=this.scene.textures.get('abandoned_wagon_v3').getSourceImage();
+      this.wagon=this.scene.add.image(point.x,point.y,'abandoned_wagon_v3')
+        .setOrigin(.5,.76)
+        .setScale(238/source.width)
+        .setDepth(this.scene.depthAt(anchor.u,anchor.v,.09))
+        .setFlipX(true);
+    }
+    if(this.scene.textures.exists('street_crates')){
+      const source=this.scene.textures.get('street_crates').getSourceImage();
+      const decorate=(du,dv,height,angle=0,depthOffset=.06)=>{
+        const p=this.scene.project(anchor.u+du,anchor.v+dv);
+        const prop=this.scene.add.image(p.x,p.y,'street_crates')
+          .setOrigin(.5,1)
+          .setScale(height/source.height)
+          .setAngle(angle)
+          .setDepth(this.scene.depthAt(anchor.u+du,anchor.v+dv,depthOffset));
+        this.cartDecor.push(prop);
+      };
+      decorate(.72,.26,44,7,.04);
+      decorate(.38,.84,35,-9,.04);
+      decorate(1.06,-.05,28,14,.04);
+    }
   }
 
   // Cena ambiental da emboscada na Estrada Velha. Cada PNG e posicionado
@@ -350,6 +374,7 @@ export class OldAetherPrologue{
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.INVESTIGATE_ROAD_BLOOD,OLD_AETHER_PROLOGUE_STAGES.BLOOD_SCENE_WAIT_MOVEMENT))this.hud?.setObjective('Investigue o sangue na estrada');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.RETURN_TO_ROAD_FACE_GOBLINS))this.hud?.setObjective('Volte para a Estrada e enfrente os Goblins');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS))this.hud?.setObjective('Enfrente os Goblins Batedores');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ATTACKED_WAGON))this.hud?.setObjective('Investigue a Carroça Abandonada');
     else if(this.state.completed)this.hud?.setObjective('Fale com o General.');
     else if(this.state.tavern.introCompleted)this.hud?.setObjective('Procure informações na praça.');
     else this.hud?.setObjective('Encontre abrigo em Aether.');
@@ -802,7 +827,7 @@ export class OldAetherPrologue{
     if(this.state.tutorials.movementComplete&&this.nearRoadSign())return{sprite:this.roadSignSprite(),label:'F - Investigar'};
     if(this.canInvestigateRuinedRoadWaystone()&&this.nearRuinedRoadWaystone())return{sprite:this.ruinedRoadWaystone(),label:'F - Investigar'};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES)&&this.isNear(this.anchors.travelSupplies,1.0))return{anchor:this.anchors.travelSupplies,label:'E — Coletar',lift:64};
-    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ATTACKED_WAGON)&&this.isNear(this.anchors.attackedWagon,1.45))return{anchor:this.anchors.attackedWagon,label:'F — Examinar',lift:130};
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ATTACKED_WAGON)&&this.isNear(this.anchors.attackedWagon,1.45))return{anchor:this.anchors.attackedWagon,label:'F — Investigar',lift:138};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.SPEAK_TO_PATROL)&&this.patrol&&this.nearNpc(this.patrol,100))return{anchor:this.anchors.patrol,label:'F — Conversar',lift:138};
     return null;
   }

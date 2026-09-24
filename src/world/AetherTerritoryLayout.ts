@@ -33,9 +33,9 @@ export const AETHER_PROLOGUE_ANCHORS=Object.freeze({
   // A âncora única controla tanto o sprite quanto a área de interação/coleta.
   travelSupplies:{u:9.8,v:63.8},
   youngWolf:{u:9.0,v:59.55},
-  // A carroça fica depois dos Batedores no sentido da Cidade: o fluxo físico
-  // acompanha a narrativa, sem retorno artificial pela estrada.
-  attackedWagon:{u:11.25,v:45.35},
+  // Round 27: a carroça abandonada foi reposicionada para a clareira acima
+  // da estrada, junto à cena da caravana atacada indicada na referência.
+  attackedWagon:{u:5.75,v:49.25},
   goblinScouts:[{u:10.5,v:48.8},{u:12.15,v:47.25}],
   patrol:{u:11.9,v:41.55},
   cityVista:{u:13.1,v:34.5},
