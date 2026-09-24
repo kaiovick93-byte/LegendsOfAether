@@ -34,6 +34,8 @@ export const OLD_AETHER_PROLOGUE_STAGES=Object.freeze({
   COLLECT_TRAVEL_SUPPLIES:'COLLECT_TRAVEL_SUPPLIES',
   POTION_HINT_PENDING:'POTION_HINT_PENDING',
   INVESTIGATE_ROAD_BLOOD:'INVESTIGATE_ROAD_BLOOD',
+  BLOOD_SCENE_WAIT_MOVEMENT:'BLOOD_SCENE_WAIT_MOVEMENT',
+  RETURN_TO_ROAD_FACE_GOBLINS:'RETURN_TO_ROAD_FACE_GOBLINS',
   DEFEAT_GOBLIN_SCOUTS:'DEFEAT_GOBLIN_SCOUTS',
   EXAMINE_ATTACKED_WAGON:'EXAMINE_ATTACKED_WAGON',
   SPEAK_TO_PATROL:'SPEAK_TO_PATROL',
@@ -148,6 +150,9 @@ export class OldAetherPrologue{
     this.wolfDefeatHintPendingMovement=false;
     this.potionHintPendingMovement=this.isAt(OLD_AETHER_PROLOGUE_STAGES.POTION_HINT_PENDING);
     if(this.potionHintPendingMovement)this.showPotionHint();
+    // Um save feito no meio da investigação retoma o aviso e os cinco segundos.
+    this.bloodSceneLockedUntil=0;
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.BLOOD_SCENE_WAIT_MOVEMENT))this.startBloodSceneMessage();
     this.movementHintPending=!this.state.tutorials.movementComplete;
     if(this.movementHintPending){
       scene.time.delayedCall(420,()=>{
@@ -161,7 +166,8 @@ export class OldAetherPrologue{
     return {
       version:3,started:true,stage:OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,
       tutorials:{movementShown:true,movementComplete:false,interactionComplete:false,collectionComplete:false,
-        suppliesApproachReached:false,potionHintDismissed:false},
+        suppliesApproachReached:false,potionHintDismissed:false,
+        bloodSceneTriggered:false,bloodSceneMessageDismissed:false,goblinRoadEncounterStarted:false},
       encounters:{youngWolf:'pending',youngWolfIntroSeen:false,youngWolfIntroComplete:false,goblinScouts:['pending','pending'],goblinScoutsCompleted:false,rewardGranted:false},
       discoveries:{cart:false,patrol:false,aetherVista:false,cityEntry:false},
       gates:{southEntryHinted:false},
@@ -187,6 +193,10 @@ export class OldAetherPrologue{
     if(state.encounters.youngWolf==='defeated'){
       if(state.tutorials.collectionComplete){
         if(!state.tutorials.potionHintDismissed)return OLD_AETHER_PROLOGUE_STAGES.POTION_HINT_PENDING;
+        if(state.tutorials.bloodSceneMessageDismissed)return state.tutorials.goblinRoadEncounterStarted
+          ?OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS
+          :OLD_AETHER_PROLOGUE_STAGES.RETURN_TO_ROAD_FACE_GOBLINS;
+        if(state.tutorials.bloodSceneTriggered)return OLD_AETHER_PROLOGUE_STAGES.BLOOD_SCENE_WAIT_MOVEMENT;
         return OLD_AETHER_PROLOGUE_STAGES.INVESTIGATE_ROAD_BLOOD;
       }
       if(state.waystone.ruinedExamined)return state.tutorials.suppliesApproachReached
@@ -220,6 +230,11 @@ export class OldAetherPrologue{
     if(persisted.stage==='COLLECT_TRAVEL_SUPPLIES'&&next.waystone.ruinedExamined)
       next.tutorials.suppliesApproachReached=true;
     if(next.encounters.goblinScouts.every(value=>value==='defeated'))next.encounters.goblinScoutsCompleted=true;
+    // Saves de builds anteriores que já iniciaram o combate não retrocedem.
+    if(persisted.stage==='DEFEAT_GOBLIN_SCOUTS'&&!next.encounters.goblinScoutsCompleted){
+      next.tutorials.bloodSceneMessageDismissed=true;
+      next.tutorials.goblinRoadEncounterStarted=true;
+    }
     next.completed=!!persisted.completed||!!next.waystone.reacted;
     // A v1 permitia carroça → goblins. A mesma normalização também protege
     // saves v2 que tenham sido gravados no meio de uma execução interrompida.
@@ -332,7 +347,8 @@ export class OldAetherPrologue{
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE))this.hud?.setObjective('Investigue o monumento destruído');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.FOLLOW_ROAD_AFTER_WAYSTONE))this.hud?.setObjective('Siga a Estrada');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,OLD_AETHER_PROLOGUE_STAGES.POTION_HINT_PENDING))this.hud?.setObjective('Colete os Suprimentos');
-    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.INVESTIGATE_ROAD_BLOOD))this.hud?.setObjective('Investigue o sangue na estrada');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.INVESTIGATE_ROAD_BLOOD,OLD_AETHER_PROLOGUE_STAGES.BLOOD_SCENE_WAIT_MOVEMENT))this.hud?.setObjective('Investigue o sangue na estrada');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.RETURN_TO_ROAD_FACE_GOBLINS))this.hud?.setObjective('Volte para a Estrada e enfrente os Goblins');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS))this.hud?.setObjective('Enfrente os Goblins Batedores');
     else if(this.state.completed)this.hud?.setObjective('Fale com o General.');
     else if(this.state.tavern.introCompleted)this.hud?.setObjective('Procure informações na praça.');
@@ -380,6 +396,15 @@ export class OldAetherPrologue{
     if(this.potionHintPendingMovement){
       this.dismissPotionHint();
     }
+    // A mensagem dura NO MÍNIMO cinco segundos; após liberar o movimento,
+    // somente um deslocamento efetivo a encerra e atualiza o Quest Tracker.
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.BLOOD_SCENE_WAIT_MOVEMENT)&&!this.isBloodSceneMovementLocked()){
+      this.hud?.hideHint();
+      this.advance(OLD_AETHER_PROLOGUE_STAGES.BLOOD_SCENE_WAIT_MOVEMENT,
+        OLD_AETHER_PROLOGUE_STAGES.RETURN_TO_ROAD_FACE_GOBLINS,()=>{
+          this.state.tutorials.bloodSceneMessageDismissed=true;
+        });
+    }
     if(this.movementHintPending){
       this.movementHintPending=false;
       this.hud?.hideHint();
@@ -389,6 +414,16 @@ export class OldAetherPrologue{
         this.hud?.hint('A estrada segue para o norte. Uma placa antiga parece legível.');
       }
     }
+  }
+
+  startBloodSceneMessage(){
+    this.bloodSceneLockedUntil=this.scene.time.now+5000;
+    this.hud?.hint('Uma caravana foi atacada aqui. Os viajantes não sobreviveram. Pelas marcas deixadas no local, isso parece ter sido obra de goblins.',{persistent:true});
+  }
+
+  isBloodSceneMovementLocked(){
+    return this.enabled&&this.isAt(OLD_AETHER_PROLOGUE_STAGES.BLOOD_SCENE_WAIT_MOVEMENT)
+      &&this.scene.time.now<this.bloodSceneLockedUntil;
   }
 
   showPotionHint(){
@@ -675,6 +710,28 @@ export class OldAetherPrologue{
   }
 
   updateProgressTriggers(){
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.INVESTIGATE_ROAD_BLOOD)){
+      // Linha amarela da referência: borda da área de emboscada, diante dos
+      // viajantes caídos (5.65/54.65). Medição em pixels do mundo, independente
+      // da câmera e do tamanho da tela; não é acionada pela poça na estrada.
+      const target=this.scene.project(5.65,54.65);
+      if(Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,target.x,target.y)<=86){
+        if(this.advance(OLD_AETHER_PROLOGUE_STAGES.INVESTIGATE_ROAD_BLOOD,
+          OLD_AETHER_PROLOGUE_STAGES.BLOOD_SCENE_WAIT_MOVEMENT,()=>{
+            this.state.tutorials.bloodSceneTriggered=true;
+          }))this.startBloodSceneMessage();
+      }
+    }
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.RETURN_TO_ROAD_FACE_GOBLINS)){
+      // Os batedores só entram em combate DEPOIS da mensagem ser dispensada
+      // e de o jogador efetivamente retornar ao trecho caminhável da estrada.
+      const road=this.scene.project(10,53.5);
+      if(Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,road.x,road.y)<=80)
+        this.advance(OLD_AETHER_PROLOGUE_STAGES.RETURN_TO_ROAD_FACE_GOBLINS,
+          OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS,()=>{
+            this.state.tutorials.goblinRoadEncounterStarted=true;
+          });
+    }
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.FOLLOW_ROAD_AFTER_WAYSTONE)){
       // Linha rosa da referência: passagem na estrada depois do marco, antes do caixote.
       // A distância longitudinal usa a própria rota e funciona mesmo com a câmera movendo.
