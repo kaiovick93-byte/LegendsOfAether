@@ -49,7 +49,7 @@ export class MapHud{
   if(Phaser.Input.Keyboard.JustDown(this.keys.i)){this.toggleInventory();return true}
   if(Phaser.Input.Keyboard.JustDown(this.keys.k)){this.toggleSkills();return true}
   if(this.inventoryPanel.isVisible()||this.skillPanel.visible)return true;
-  if(Phaser.Input.Keyboard.JustDown(this.keys.h)){useHealing(this.player,this.inventory);actions.afterAction?.();this.bottom.update();return true}
+  if(Phaser.Input.Keyboard.JustDown(this.keys.h)){const used=useHealing(this.player,this.inventory);if(used)this.scene.prologue?.onHealingPotionUsed?.();actions.afterAction?.();this.bottom.update();return true}
   if(Phaser.Input.Keyboard.JustDown(this.keys.j)){useMana(this.player,this.inventory);actions.afterAction?.();this.bottom.update();return true}
   if(Phaser.Input.Keyboard.JustDown(this.keys.r)){this.equipment.autoEquipBest(this.inventory);actions.afterAction?.();return true}
   if(Phaser.Input.Keyboard.JustDown(this.keys.e)){actions.collect?.();return true}
@@ -59,7 +59,7 @@ export class MapHud{
  }
 
  handleHudAction(action){
-  if(action==='healing'){useHealing(this.player,this.inventory);this.save?.();this.bottom.update();return}
+  if(action==='healing'){const used=useHealing(this.player,this.inventory);if(used)this.scene.prologue?.onHealingPotionUsed?.();this.save?.();this.bottom.update();return}
   if(action==='mana'){useMana(this.player,this.inventory);this.save?.();this.bottom.update();return}
   if(action==='skills'){this.toggleSkills();return}
   if(action==='inventory'){this.toggleInventory();return}

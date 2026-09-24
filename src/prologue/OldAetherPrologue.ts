@@ -30,7 +30,10 @@ export const OLD_AETHER_PROLOGUE_STAGES=Object.freeze({
   WOLF_ENTRANCE:'WOLF_ENTRANCE',
   DEFEAT_YOUNG_WOLF:'DEFEAT_YOUNG_WOLF',
   EXAMINE_RUINED_WAYSTONE:'EXAMINE_RUINED_WAYSTONE',
+  FOLLOW_ROAD_AFTER_WAYSTONE:'FOLLOW_ROAD_AFTER_WAYSTONE',
   COLLECT_TRAVEL_SUPPLIES:'COLLECT_TRAVEL_SUPPLIES',
+  POTION_HINT_PENDING:'POTION_HINT_PENDING',
+  INVESTIGATE_ROAD_BLOOD:'INVESTIGATE_ROAD_BLOOD',
   DEFEAT_GOBLIN_SCOUTS:'DEFEAT_GOBLIN_SCOUTS',
   EXAMINE_ATTACKED_WAGON:'EXAMINE_ATTACKED_WAGON',
   SPEAK_TO_PATROL:'SPEAK_TO_PATROL',
@@ -142,6 +145,8 @@ export class OldAetherPrologue{
     this.syncObjective();
     // A mensagem exibida após derrotar o lobo só sai no próximo deslocamento real.
     this.wolfDefeatHintPendingMovement=false;
+    this.potionHintPendingMovement=this.isAt(OLD_AETHER_PROLOGUE_STAGES.POTION_HINT_PENDING);
+    if(this.potionHintPendingMovement)this.showPotionHint();
     this.movementHintPending=!this.state.tutorials.movementComplete;
     if(this.movementHintPending){
       scene.time.delayedCall(420,()=>{
@@ -154,7 +159,8 @@ export class OldAetherPrologue{
   createState(){
     return {
       version:3,started:true,stage:OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,
-      tutorials:{movementShown:true,movementComplete:false,interactionComplete:false,collectionComplete:false},
+      tutorials:{movementShown:true,movementComplete:false,interactionComplete:false,collectionComplete:false,
+        suppliesApproachReached:false,potionHintDismissed:false},
       encounters:{youngWolf:'pending',youngWolfIntroSeen:false,youngWolfIntroComplete:false,goblinScouts:['pending','pending'],goblinScoutsCompleted:false,rewardGranted:false},
       discoveries:{cart:false,patrol:false,aetherVista:false,cityEntry:false},
       gates:{southEntryHinted:false},
@@ -178,8 +184,13 @@ export class OldAetherPrologue{
     if(state.discoveries.cart)return OLD_AETHER_PROLOGUE_STAGES.SPEAK_TO_PATROL;
     if(state.encounters.goblinScoutsCompleted)return OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ATTACKED_WAGON;
     if(state.encounters.youngWolf==='defeated'){
-      if(state.tutorials.collectionComplete)return OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS;
-      if(state.waystone.ruinedExamined)return OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES;
+      if(state.tutorials.collectionComplete){
+        if(!state.tutorials.potionHintDismissed)return OLD_AETHER_PROLOGUE_STAGES.POTION_HINT_PENDING;
+        return OLD_AETHER_PROLOGUE_STAGES.INVESTIGATE_ROAD_BLOOD;
+      }
+      if(state.waystone.ruinedExamined)return state.tutorials.suppliesApproachReached
+        ?OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES
+        :OLD_AETHER_PROLOGUE_STAGES.FOLLOW_ROAD_AFTER_WAYSTONE;
       return OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE;
     }
     // Um save antigo pode ter coletado os suprimentos antes do lobo.
@@ -204,6 +215,9 @@ export class OldAetherPrologue{
     next.gates={...next.gates,...persisted.gates};
     next.tavern={...next.tavern,...persisted.tavern};
     next.waystone={...next.waystone,...persisted.waystone};
+    // Saves do Round 21 já no objetivo dos suprimentos permanecem nessa etapa.
+    if(persisted.stage==='COLLECT_TRAVEL_SUPPLIES'&&next.waystone.ruinedExamined)
+      next.tutorials.suppliesApproachReached=true;
     if(next.encounters.goblinScouts.every(value=>value==='defeated'))next.encounters.goblinScoutsCompleted=true;
     next.completed=!!persisted.completed||!!next.waystone.reacted;
     // A v1 permitia carroça → goblins. A mesma normalização também protege
@@ -264,7 +278,7 @@ export class OldAetherPrologue{
     if(this.state.tutorials.collectionComplete||!this.scene.textures.exists('street_crates'))return;
     const a=this.anchors.travelSupplies,p=this.scene.project(a.u,a.v),source=this.scene.textures.get('street_crates').getSourceImage();
     this.collectible=this.scene.add.image(p.x,p.y,'street_crates').setOrigin(.5,1).setScale(72/source.height).setDepth(this.scene.depthAt(a.u,a.v,.08));
-    // O mesmo caixote permanece no local atual; só fica coletável após o lobo e o monumento.
+    // O mesmo caixote permanece no local atual, mas só aparece depois da linha rosa.
     this.collectible.setVisible(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES));
     this.collectibleTween=this.scene.tweens.add({targets:this.collectible,y:{from:p.y,to:p.y-2},duration:800,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
   }
@@ -276,7 +290,9 @@ export class OldAetherPrologue{
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.WOLF_ENTRANCE))this.hud?.setObjective('Siga a Estrada');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF))this.hud?.setObjective('Enfrente o Jovem Lobo');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE))this.hud?.setObjective('Investigue o monumento destruído');
-    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES))this.hud?.setObjective('Siga a Estrada');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.FOLLOW_ROAD_AFTER_WAYSTONE))this.hud?.setObjective('Siga a Estrada');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,OLD_AETHER_PROLOGUE_STAGES.POTION_HINT_PENDING))this.hud?.setObjective('Colete os Suprimentos');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.INVESTIGATE_ROAD_BLOOD))this.hud?.setObjective('Investigue o sangue na estrada');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS))this.hud?.setObjective('Enfrente os Goblins Batedores');
     else if(this.state.completed)this.hud?.setObjective('Fale com o General.');
     else if(this.state.tavern.introCompleted)this.hud?.setObjective('Procure informações na praça.');
@@ -321,6 +337,9 @@ export class OldAetherPrologue{
       this.wolfDefeatHintPendingMovement=false;
       this.hud?.hideHint();
     }
+    if(this.potionHintPendingMovement){
+      this.dismissPotionHint();
+    }
     if(this.movementHintPending){
       this.movementHintPending=false;
       this.hud?.hideHint();
@@ -330,6 +349,25 @@ export class OldAetherPrologue{
         this.hud?.hint('A estrada segue para o norte. Uma placa antiga parece legível.');
       }
     }
+  }
+
+  showPotionHint(){
+    this.hud?.hint('Você encontrou uma Poção de HP! Aperte H para usar a poção e recuperar vida.',{persistent:true});
+  }
+
+  dismissPotionHint(){
+    if(!this.isAt(OLD_AETHER_PROLOGUE_STAGES.POTION_HINT_PENDING))return false;
+    this.potionHintPendingMovement=false;
+    this.hud?.hideHint();
+    return this.advance(OLD_AETHER_PROLOGUE_STAGES.POTION_HINT_PENDING,
+      OLD_AETHER_PROLOGUE_STAGES.INVESTIGATE_ROAD_BLOOD,()=>{
+        this.state.tutorials.potionHintDismissed=true;
+      });
+  }
+
+  onHealingPotionUsed(){
+    // O H precisa CONSUMIR uma poção; teclas sem item não dispensam a mensagem.
+    if(this.potionHintPendingMovement)this.dismissPotionHint();
   }
 
   updateTutorials(){
@@ -597,6 +635,23 @@ export class OldAetherPrologue{
   }
 
   updateProgressTriggers(){
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.FOLLOW_ROAD_AFTER_WAYSTONE)){
+      // Linha rosa da referência: passagem na estrada depois do marco, antes do caixote.
+      // A distância longitudinal usa a própria rota e funciona mesmo com a câmera movendo.
+      const road=this.scene.aetherTerritory?.oldRoadProps;
+      const line=road?.roadPoint(.355);
+      if(line){
+        const player=this.scene.player;
+        const forward=(player.x-line.x)*line.dx+(player.y-line.y)*line.dy;
+        const lateral=Math.abs((player.x-line.x)*line.dy-(player.y-line.y)*line.dx);
+        if(forward>=0&&lateral<=115){
+          this.advance(OLD_AETHER_PROLOGUE_STAGES.FOLLOW_ROAD_AFTER_WAYSTONE,
+            OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,()=>{
+              this.state.tutorials.suppliesApproachReached=true;
+            });
+        }
+      }
+    }
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.FOLLOW_OLD_ROAD)){
       // A marca amarela fica na estrada, antes do marco arruinado.
       const yellow=this.roadPoint(.202);
@@ -658,10 +713,11 @@ export class OldAetherPrologue{
   tryCollect(){
     if(!this.enabled||!this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES)||!this.isNear(this.anchors.travelSupplies,1.0))return false;
     this.collectibleTween?.stop();this.collectible?.destroy();this.collectible=null;
-    this.advance(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS,()=>{
+    this.advance(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,OLD_AETHER_PROLOGUE_STAGES.POTION_HINT_PENDING,()=>{
       this.state.tutorials.collectionComplete=true;this.scene.inv.add('healing_potion',1);
     });
-    this.hud?.hint('Você encontrou uma poção simples. Ela pode ser usada com H.');
+    this.potionHintPendingMovement=true;
+    this.showPotionHint();
     return true;
   }
 
@@ -696,7 +752,7 @@ export class OldAetherPrologue{
         pages:['Esse é um dos Marco de Senda de Aether, no passado eles eram usados com magia para viagens rápidas entre eles. Esse está destruído. Será que ainda tem algum em funcionamento?'],
         spriteKey:'old_road_waystone_ruined_01',completeOnClose:true
       },()=>{
-        this.advance(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE,OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,()=>{
+        this.advance(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE,OLD_AETHER_PROLOGUE_STAGES.FOLLOW_ROAD_AFTER_WAYSTONE,()=>{
           this.state.waystone.ruinedExamined=true;
         });
       });
