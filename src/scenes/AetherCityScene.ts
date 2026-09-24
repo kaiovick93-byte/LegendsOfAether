@@ -2291,6 +2291,9 @@ export class AetherCityScene extends Phaser.Scene {
     this.hud.openExternalModal();
     this.activeDialogueNpc=npc;
     this.scriptedDialogueCompletion=typeof onComplete==='function'?onComplete:null;
+    // A investigação da placa conclui ao fechar por qualquer controle (F, ESC
+    // ou botão Fechar); os demais diálogos conservam sua regra original.
+    this.scriptedDialogueCompleteOnClose=!!config.completeOnClose;
     npc?.pauseRoute?.();npc?.showConversationIcon?.();
     this.prologue?.hideCue?.();
     this.npcDialogue.open({
@@ -2343,8 +2346,9 @@ export class AetherCityScene extends Phaser.Scene {
 
   closeDialogue(completed=false) {
     const npc = this.activeDialogueNpc;
-    const onComplete=completed?this.scriptedDialogueCompletion:null;
+    const onComplete=(completed||this.scriptedDialogueCompleteOnClose)?this.scriptedDialogueCompletion:null;
     this.scriptedDialogueCompletion=null;
+    this.scriptedDialogueCompleteOnClose=false;
     this.dialogue.close();
     this.npcDialogue?.close?.();
     this.dialogueOpen = false;

@@ -251,6 +251,7 @@ export class OldAetherPrologue{
   syncObjective(){
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD))this.hud?.setObjective('');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN))this.hud?.setObjective('Investigue a Placa');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES))this.hud?.setObjective('Siga a Estrada');
     else if(this.state.completed)this.hud?.setObjective('Fale com o General.');
     else if(this.state.tavern.introCompleted)this.hud?.setObjective('Procure informações na praça.');
     else this.hud?.setObjective('Encontre abrigo em Aether.');
@@ -490,7 +491,7 @@ export class OldAetherPrologue{
   }
 
   getInteractionTarget(){
-    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN)&&this.isNear(this.anchors.roadSign,1.2))return{anchor:this.anchors.roadSign,label:'F — Examinar',lift:126};
+    if(this.state.tutorials.movementComplete&&this.isNear(this.anchors.roadSign,1.6))return{anchor:this.anchors.roadSign,label:'F - Investigar',lift:126};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES)&&this.isNear(this.anchors.travelSupplies,1.0))return{anchor:this.anchors.travelSupplies,label:'E — Coletar',lift:64};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ATTACKED_WAGON)&&this.isNear(this.anchors.attackedWagon,1.45))return{anchor:this.anchors.attackedWagon,label:'F — Examinar',lift:130};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.SPEAK_TO_PATROL)&&this.patrol&&this.nearNpc(this.patrol,100))return{anchor:this.anchors.patrol,label:'F — Conversar',lift:138};
@@ -509,10 +510,16 @@ export class OldAetherPrologue{
 
   tryInteract(){
     if(!this.enabled)return false;
-    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN)&&this.isNear(this.anchors.roadSign,1.2)){
-      this.scene.openScriptedDialogue({name:'Placa da Estrada',role:'Estrada Velha de Aether',pages:['AETHER — siga a estrada ao norte.\nAs letras foram gastas pelo tempo, mas a direção ainda é clara.'],spriteKey:'outskirts_aether_sign_v2'},()=>{
+    // A placa continua legível depois de concluída sua etapa. A leitura
+    // inicial atualiza o objetivo apenas ao fechar o diálogo, por F ou ESC;
+    // as próximas leituras não modificam o estado da missão.
+    if(this.state.tutorials.movementComplete&&this.isNear(this.anchors.roadSign,1.6)){
+      this.scene.openScriptedDialogue({
+        name:'Placa da Estrada',role:'Estrada Velha de Aether',
+        pages:['CIDADE DE AETHER — siga a Estrada Velha para o norte até o Portão Sul.\nContinue pela estrada principal para alcançar as muralhas da cidade.'],
+        spriteKey:'outskirts_aether_sign_v2',completeOnClose:true
+      },()=>{
         this.advance(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN,OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,()=>{this.state.tutorials.interactionComplete=true;});
-        this.hud?.hint('Há uma pequena caixa de viagem logo adiante.');
       });
       return true;
     }
