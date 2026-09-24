@@ -257,6 +257,19 @@ export class OldAetherPrologue{
     else this.hud?.setObjective('Encontre abrigo em Aether.');
   }
 
+  // A placa é um prop renderizado fora da âncora narrativa antiga. Consulte a
+  // posição do sprite real para que o F apareça junto à placa que o jogador vê.
+  roadSignSprite(){
+    return this.scene.aetherTerritory?.oldRoadProps?.props?.find(prop=>prop.role==='start-sign')?.sprite??null;
+  }
+  nearRoadSign(){
+    const sign=this.roadSignSprite();
+    if(!sign?.active)return false;
+    const player=this.scene.player;
+    // Mesmo sistema de distância em pixels usado pelos NPCs, com margem para
+    // o poste e a base visual da placa, sem exigir entrar em sua colisão.
+    return Phaser.Math.Distance.Between(player.x,player.y,sign.x,sign.y)<=120;
+  }
   distanceTo(anchor){return Math.hypot(this.scene.player.isoX-anchor.u,this.scene.player.isoY-anchor.v);}
   isNear(anchor,radius=1.12){return this.distanceTo(anchor)<=radius;}
   nearNpc(npc,range=96){return !!npc&&Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,npc.x,npc.y)<=range;}
@@ -486,12 +499,17 @@ export class OldAetherPrologue{
     if(this.scene.dialogueOpen){this.cue?.hide();return;}
     const target=this.getInteractionTarget();
     if(!target){this.cue?.hide();return;}
+    const sign=target.sprite;
+    if(sign){
+      this.cue.show(sign.x,sign.y-Math.max(52,sign.displayHeight*.74),sign.depth+1,target.label);
+      return;
+    }
     const p=this.scene.project(target.anchor.u,target.anchor.v);
     this.cue.show(p.x,p.y-target.lift,this.scene.depthAt(target.anchor.u,target.anchor.v,.72),target.label);
   }
 
   getInteractionTarget(){
-    if(this.state.tutorials.movementComplete&&this.isNear(this.anchors.roadSign,1.6))return{anchor:this.anchors.roadSign,label:'F - Investigar',lift:126};
+    if(this.state.tutorials.movementComplete&&this.nearRoadSign())return{sprite:this.roadSignSprite(),label:'F - Investigar'};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES)&&this.isNear(this.anchors.travelSupplies,1.0))return{anchor:this.anchors.travelSupplies,label:'E — Coletar',lift:64};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ATTACKED_WAGON)&&this.isNear(this.anchors.attackedWagon,1.45))return{anchor:this.anchors.attackedWagon,label:'F — Examinar',lift:130};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.SPEAK_TO_PATROL)&&this.patrol&&this.nearNpc(this.patrol,100))return{anchor:this.anchors.patrol,label:'F — Conversar',lift:138};
@@ -513,7 +531,7 @@ export class OldAetherPrologue{
     // A placa continua legível depois de concluída sua etapa. A leitura
     // inicial atualiza o objetivo apenas ao fechar o diálogo, por F ou ESC;
     // as próximas leituras não modificam o estado da missão.
-    if(this.state.tutorials.movementComplete&&this.isNear(this.anchors.roadSign,1.6)){
+    if(this.state.tutorials.movementComplete&&this.nearRoadSign()){
       this.scene.openScriptedDialogue({
         name:'Placa da Estrada',role:'Estrada Velha de Aether',
         pages:['CIDADE DE AETHER — siga a Estrada Velha para o norte até o Portão Sul.\nContinue pela estrada principal para alcançar as muralhas da cidade.'],
