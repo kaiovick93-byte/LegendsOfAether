@@ -280,7 +280,7 @@ export class OldAetherPrologue{
     this.collectible=this.scene.add.image(p.x,p.y,'street_crates').setOrigin(.5,1).setScale(72/source.height).setDepth(this.scene.depthAt(a.u,a.v,.08));
     // O mesmo caixote permanece no local atual, mas só aparece depois da linha rosa.
     this.collectible.setVisible(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES));
-    this.collectibleTween=this.scene.tweens.add({targets:this.collectible,y:{from:p.y,to:p.y-2},duration:800,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+    // O caixote permanece fixo na âncora do mapa, sem animação de flutuação.
   }
 
   syncObjective(){
