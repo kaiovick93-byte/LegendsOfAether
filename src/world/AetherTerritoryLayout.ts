@@ -29,7 +29,9 @@ export const AETHER_FUTURE_NEW_GAME_SPAWN=AETHER_NEW_GAME_SPAWN;
 export const AETHER_PROLOGUE_ANCHORS=Object.freeze({
   spawn:AETHER_NEW_GAME_SPAWN,
   roadSign:{u:8.5,v:66.0},
-  travelSupplies:{u:8.0,v:63.15},
+  // Round 23: caixote na marca amarela (ponto caminhável da estrada), não junto à cerca quebrada.
+  // A âncora única controla tanto o sprite quanto a área de interação/coleta.
+  travelSupplies:{u:9.8,v:63.8},
   youngWolf:{u:9.0,v:59.55},
   // A carroça fica depois dos Batedores no sentido da Cidade: o fluxo físico
   // acompanha a narrativa, sem retorno artificial pela estrada.
