@@ -86,23 +86,32 @@ class PrologueHud{
   destroy(){this.scene.scale.off(Phaser.Scale.Events.RESIZE,this.resizeHandler);this.root.destroy(true);this.hintText.destroy();}
 }
 
-/** Prompt branco curto, na mesma linguagem dos cartões próximos aos NPCs. */
+/** Cartão de interação na mesma linguagem visual dos NPCs, ligado ao prop real. */
 class PrologueCue{
   constructor(scene){
     this.scene=scene;
-    this.root=scene.add.container(0,0).setVisible(false).setAlpha(0);
+    // É um objeto do mundo: usa as coordenadas da placa e acompanha a câmera.
+    // A profundidade fixa alta evita a oclusão pela estrada e pelos terrenos.
+    this.root=scene.add.container(0,0).setDepth(1800).setScrollFactor(1).setVisible(false);
     this.back=scene.add.graphics();
-    this.text=scene.add.text(0,0,'',{fontFamily:'Georgia, serif',fontSize:11,color:'#273342',fontStyle:'bold'}).setOrigin(.5);
-    this.root.add([this.back,this.text]);
+    this.keycap=scene.add.graphics();
+    this.key=scene.add.text(-61,0,'F',{fontFamily:'Arial',fontSize:11,color:'#17202b',fontStyle:'bold'}).setOrigin(.5);
+    this.text=scene.add.text(-42,0,'Investigar',{fontFamily:'Georgia, serif',fontSize:11,color:'#273342',fontStyle:'bold'}).setOrigin(0,.5);
+    this.back.fillStyle(0xffffff,.92).fillRoundedRect(-96,-29,192,58,9)
+      .lineStyle(1,0xc4ccd5,.96).strokeRoundedRect(-96,-29,192,58,9);
+    this.keycap.fillStyle(0xf4f6f8,1).fillRoundedRect(-72,-10,22,20,5)
+      .lineStyle(1,0x8c98a5,1).strokeRoundedRect(-72,-10,22,20,5);
+    this.root.add([this.back,this.keycap,this.key,this.text]);
   }
-  show(x,y,depth,label){
-    const width=Math.max(118,Math.min(220,26+label.length*6.1));
-    this.back.clear().fillStyle(0xffffff,.94).fillRoundedRect(-width/2,-17,width,34,8).lineStyle(1,0xc4ccd5,.96).strokeRoundedRect(-width/2,-17,width,34,8);
-    this.text.setText(label);
-    this.root.setPosition(x,y).setDepth(depth).setVisible(true);
-    if(this.root.alpha<.98){this.scene.tweens.killTweensOf(this.root);this.scene.tweens.add({targets:this.root,alpha:1,duration:120,ease:'Sine.Out'});}
+  show(x,y,_depth,label){
+    const match=/^([A-Z])\s*[-—•]\s*(.*)$/.exec(label||'');
+    this.key.setText(match?.[1]||'F');
+    this.text.setText(match?.[2]||label||'Investigar');
+    // Não reiniciar um tween a cada frame: o cartão deve ser visível assim
+    // que a placa estiver ao alcance, como acontece com os NPCs.
+    this.root.setPosition(x,y).setAlpha(1).setVisible(true).setDepth(1800);
   }
-  hide(){if(!this.root.visible)return;this.scene.tweens.killTweensOf(this.root);this.root.setVisible(false).setAlpha(0);}
+  hide(){this.root.setVisible(false);}
   destroy(){this.root.destroy(true);}
 }
 
@@ -505,8 +514,8 @@ export class OldAetherPrologue{
       // deixava o aviso atras das camadas do terreno, embora o F funcionasse.
       // Assim como a UI dos NPCs, exiba o cartao acima da cena, ancorado
       // acima do topo visual da placa sem alterar a hitbox da interacao.
-      const aboveSign=sign.y-sign.displayHeight*sign.originY-18;
-      this.cue.show(sign.x,aboveSign,1600,target.label);
+      const aboveSign=sign.getBounds().top-42;
+      this.cue.show(sign.x,aboveSign,1800,target.label);
       return;
     }
     const p=this.scene.project(target.anchor.u,target.anchor.v);
