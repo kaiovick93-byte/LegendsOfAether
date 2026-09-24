@@ -64,7 +64,11 @@ class PrologueHud{
     this.objective.setWordWrapWidth(width-25,true);
     this.hintText.setPosition(this.scene.scale.width/2,Math.max(104,top-26)).setWordWrapWidth(Math.min(520,this.scene.scale.width-56),true);
   }
-  setObjective(text){this.objective.setText(text);}
+  setObjective(text){
+    this.objective.setText(text);
+    // O tracker permanece oculto enquanto nao ha objetivo narrativo.
+    this.root.setVisible(Boolean(text));
+  }
   hint(text,{persistent=false}={}){
     this.scene.tweens.killTweensOf(this.hintText);
     this.hintText.setText(text).setAlpha(0);
@@ -245,7 +249,9 @@ export class OldAetherPrologue{
   }
 
   syncObjective(){
-    if(this.state.completed)this.hud?.setObjective('Fale com o General.');
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD))this.hud?.setObjective('');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN))this.hud?.setObjective('Investigue a Placa');
+    else if(this.state.completed)this.hud?.setObjective('Fale com o General.');
     else if(this.state.tavern.introCompleted)this.hud?.setObjective('Procure informações na praça.');
     else this.hud?.setObjective('Encontre abrigo em Aether.');
   }
@@ -267,18 +273,22 @@ export class OldAetherPrologue{
   }
 
   onPlayerMoved(){
-    // Só um deslocamento de fato encerra a dica: pressionar contra uma
-    // colisão ou ficar parado não deve ocultá-la.
-    if(!this.enabled||!this.movementHintPending)return;
-    this.movementHintPending=false;
-    this.hud?.hideHint();
+    // Somente o primeiro deslocamento real revela mensagem e objetivo juntos;
+    // uma tecla pressionada contra colisao nao dispara a transicao.
+    if(!this.enabled)return;
+    if(this.movementHintPending){
+      this.movementHintPending=false;
+      this.hud?.hideHint();
+    }
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD)){
+      if(this.advance(OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN,()=>{this.state.tutorials.movementComplete=true;})){
+        this.hud?.hint('A estrada segue para o norte. Uma placa antiga parece legível.');
+      }
+    }
   }
 
   updateTutorials(){
-    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD)&&this.distanceTo(this.anchors.spawn)>.62){
-      this.advance(OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN,()=>{this.state.tutorials.movementComplete=true;});
-      this.hud?.hint('A estrada segue para o norte. Uma placa antiga parece legível.');
-    }
+    // A transicao de chegada ocorre em onPlayerMoved, nao por distancia do spawn.
   }
 
   updateCollectible(){
