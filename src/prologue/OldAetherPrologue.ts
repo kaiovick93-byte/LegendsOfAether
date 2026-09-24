@@ -26,8 +26,11 @@ function enemyDirectionFromScreenDelta(dx,dy,fallback='s'){
 export const OLD_AETHER_PROLOGUE_STAGES=Object.freeze({
   ARRIVAL_ON_OLD_ROAD:'ARRIVAL_ON_OLD_ROAD',
   EXAMINE_ROAD_SIGN:'EXAMINE_ROAD_SIGN',
-  COLLECT_TRAVEL_SUPPLIES:'COLLECT_TRAVEL_SUPPLIES',
+  FOLLOW_OLD_ROAD:'FOLLOW_OLD_ROAD',
+  WOLF_ENTRANCE:'WOLF_ENTRANCE',
   DEFEAT_YOUNG_WOLF:'DEFEAT_YOUNG_WOLF',
+  EXAMINE_RUINED_WAYSTONE:'EXAMINE_RUINED_WAYSTONE',
+  COLLECT_TRAVEL_SUPPLIES:'COLLECT_TRAVEL_SUPPLIES',
   DEFEAT_GOBLIN_SCOUTS:'DEFEAT_GOBLIN_SCOUTS',
   EXAMINE_ATTACKED_WAGON:'EXAMINE_ATTACKED_WAGON',
   SPEAK_TO_PATROL:'SPEAK_TO_PATROL',
@@ -148,12 +151,12 @@ export class OldAetherPrologue{
 
   createState(){
     return {
-      version:2,started:true,stage:OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,
+      version:3,started:true,stage:OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,
       tutorials:{movementShown:true,movementComplete:false,interactionComplete:false,collectionComplete:false},
-      encounters:{youngWolf:'pending',goblinScouts:['pending','pending'],goblinScoutsCompleted:false,rewardGranted:false},
+      encounters:{youngWolf:'pending',youngWolfIntroSeen:false,youngWolfIntroComplete:false,goblinScouts:['pending','pending'],goblinScoutsCompleted:false,rewardGranted:false},
       discoveries:{cart:false,patrol:false,aetherVista:false,cityEntry:false},
       gates:{southEntryHinted:false},
-      tavern:{introCompleted:false},waystone:{examined:false,reacted:false},completed:false
+      tavern:{introCompleted:false},waystone:{examined:false,ruinedExamined:false,reacted:false},completed:false
     };
   }
 
@@ -172,9 +175,15 @@ export class OldAetherPrologue{
     if(state.discoveries.patrol)return OLD_AETHER_PROLOGUE_STAGES.VIEW_AETHER;
     if(state.discoveries.cart)return OLD_AETHER_PROLOGUE_STAGES.SPEAK_TO_PATROL;
     if(state.encounters.goblinScoutsCompleted)return OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ATTACKED_WAGON;
-    if(state.encounters.youngWolf==='defeated')return OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS;
-    if(state.tutorials.collectionComplete)return OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF;
-    if(state.tutorials.interactionComplete)return OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES;
+    if(state.encounters.youngWolf==='defeated'){
+      if(state.tutorials.collectionComplete)return OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS;
+      if(state.waystone.ruinedExamined)return OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES;
+      return OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE;
+    }
+    // Um save antigo pode ter coletado os suprimentos antes do lobo.
+    if(state.tutorials.collectionComplete||state.encounters.youngWolfIntroComplete)return OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF;
+    if(state.encounters.youngWolfIntroSeen)return OLD_AETHER_PROLOGUE_STAGES.WOLF_ENTRANCE;
+    if(state.tutorials.interactionComplete)return OLD_AETHER_PROLOGUE_STAGES.FOLLOW_OLD_ROAD;
     if(state.tutorials.movementComplete)return OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN;
     return OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD;
   }
@@ -199,7 +208,7 @@ export class OldAetherPrologue{
     // saves v2 que tenham sido gravados no meio de uma execução interrompida.
     if(!next.encounters.goblinScoutsCompleted)next.discoveries.cart=false;
     next.stage=this.stageFromMilestones(next);
-    next.version=2;
+    next.version=3;
     return next;
   }
 
@@ -253,6 +262,7 @@ export class OldAetherPrologue{
     if(this.state.tutorials.collectionComplete||!this.scene.textures.exists('street_crates'))return;
     const a=this.anchors.travelSupplies,p=this.scene.project(a.u,a.v),source=this.scene.textures.get('street_crates').getSourceImage();
     this.collectible=this.scene.add.image(p.x,p.y,'street_crates').setOrigin(.5,1).setScale(33/source.height).setDepth(this.scene.depthAt(a.u,a.v,.08));
+    // O mesmo caixote permanece no local atual; só fica coletável após o lobo e o monumento.
     this.collectible.setVisible(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES));
     this.collectibleTween=this.scene.tweens.add({targets:this.collectible,y:{from:p.y,to:p.y-2},duration:800,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
   }
@@ -260,7 +270,12 @@ export class OldAetherPrologue{
   syncObjective(){
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD))this.hud?.setObjective('');
     else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN))this.hud?.setObjective('Investigue a Placa');
-    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES))this.hud?.setObjective('Siga a Estrada');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.FOLLOW_OLD_ROAD))this.hud?.setObjective('Siga a Estrada');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.WOLF_ENTRANCE))this.hud?.setObjective('Siga a Estrada');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF))this.hud?.setObjective('Enfrente o Jovem Lobo');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE))this.hud?.setObjective('Investigue o monumento destruído');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES))this.hud?.setObjective('Colete os suprimentos');
+    else if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS))this.hud?.setObjective('Enfrente os Goblins Batedores');
     else if(this.state.completed)this.hud?.setObjective('Fale com o General.');
     else if(this.state.tavern.introCompleted)this.hud?.setObjective('Procure informações na praça.');
     else this.hud?.setObjective('Encontre abrigo em Aether.');
@@ -289,6 +304,7 @@ export class OldAetherPrologue{
     this.updateTutorials();
     this.updateCollectible();
     this.ensureScriptedActors();
+    this.updateWolfEntrance(delta);
     this.updateEnemies(time,delta);
     this.resolveEnemyDeaths(time);
     this.updateProgressTriggers();
@@ -319,15 +335,92 @@ export class OldAetherPrologue{
   }
 
   ensureScriptedActors(){
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.WOLF_ENTRANCE)&&this.state.encounters.youngWolf==='pending'&&!this.wolf)this.spawnWolfEntrance();
+    // Compatibilidade com partidas antigas, que já chegaram ao combate após a coleta.
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF)&&this.state.encounters.youngWolf==='pending'&&!this.wolf)this.spawnWolf();
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS)&&!this.state.encounters.goblinScoutsCompleted)this.spawnGoblinScouts();
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.SPEAK_TO_PATROL)&&!this.patrol)this.spawnPatrol();
   }
 
+  ruinedRoadWaystone(){
+    return this.scene.aetherTerritory?.oldRoadProps?.props?.find(prop=>prop.role==='ruined-waystone')?.sprite??null;
+  }
+
+  roadPoint(fraction){
+    return this.scene.aetherTerritory?.oldRoadProps?.roadPoint(fraction)??null;
+  }
+
+  isWolfEntranceActive(){return this.enabled&&this.isAt(OLD_AETHER_PROLOGUE_STAGES.WOLF_ENTRANCE);}
+
+  // O caminho é medido contra o próprio marco do mapa real, não contra um
+  // objeto ou coordenada de tela fixos: entrada atrás da pedra -> beira -> estrada.
+  wolfEntrancePath(){
+    const monument=this.ruinedRoadWaystone();
+    if(!monument?.active)return null;
+    const destination=this.roadPoint(.292);
+    if(!destination)return null;
+    return [
+      {x:monument.x-29,y:monument.y-93},
+      {x:monument.x-62,y:monument.y-29},
+      {x:monument.x-112,y:monument.y+69},
+      {x:destination.x,y:destination.y}
+    ];
+  }
+
+  spawnWolfEntrance(){
+    const path=this.wolfEntrancePath();
+    if(!path)return;
+    const a=this.scene.aetherTerritory.screenToLogical(path[0].x,path[0].y);
+    this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:82,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250});
+    if(!this.wolf)return;
+    this.wolfEntrance={path,segment:0};
+    this.wolf.setUiVisible(false);
+    this.hud?.hint('Um Lobo Jovem surge atrás do monumento destruído! Prepare-se para atacar!',{persistent:true});
+  }
+
+  updateWolfEntrance(delta){
+    if(!this.isWolfEntranceActive()||!this.wolf?.active||!this.wolfEntrance)return;
+    const intro=this.wolfEntrance,wolf=this.wolf,segment=intro.segment;
+    const target=intro.path[segment+1];
+    if(!target){this.finishWolfEntrance();return;}
+    const from=this.scene.project(wolf.iso.u,wolf.iso.v);
+    const distance=Phaser.Math.Distance.Between(from.x,from.y,target.x,target.y);
+    const step=120*Math.min(.05,Math.max(0,delta||0)/1000);
+    const ratio=distance>0?Math.min(1,step/distance):1;
+    const x=from.x+(target.x-from.x)*ratio,y=from.y+(target.y-from.y)*ratio;
+    const logical=this.scene.aetherTerritory.screenToLogical(x,y);
+    this.updateEnemyFacing(wolf,logical.u-wolf.iso.u,logical.v-wolf.iso.v);
+    wolf.iso.u=logical.u;wolf.iso.v=logical.v;
+    this.playEnemyAnimation(wolf,'walk');
+    this.syncEnemyVisual(wolf);
+    // Atrás do marco, o lobo é parcialmente ocultado pela pedra existente.
+    const monument=this.ruinedRoadWaystone();
+    if(segment===0&&monument?.active)wolf.setDepth(monument.depth-.01);
+    if(ratio===1){
+      intro.segment++;
+      if(intro.segment>=intro.path.length-1)this.finishWolfEntrance();
+    }
+  }
+
+  finishWolfEntrance(){
+    const wolf=this.wolf;
+    if(!wolf?.active)return;
+    this.wolfEntrance=null;
+    wolf.iso.originU=wolf.iso.u;wolf.iso.originV=wolf.iso.v;
+    this.syncEnemyVisual(wolf);
+    this.playEnemyAnimation(wolf,'idle');
+    wolf.setUiVisible(true);
+    this.hud?.hideHint();
+    this.advance(OLD_AETHER_PROLOGUE_STAGES.WOLF_ENTRANCE,OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF,()=>{
+      this.state.encounters.youngWolfIntroComplete=true;
+    });
+  }
+
   spawnWolf(){
     const a=this.anchors.youngWolf;
     this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:82,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250});
-    this.hud?.hint('Um Lobo Jovem bloqueia a estrada. Use o ataque básico para se defender.');
+    // Entradas já concluídas (incluindo saves) voltam diretamente ao combate.
+    this.hud?.hint('Enfrente o Lobo Jovem. Use o ataque básico para se defender.');
   }
 
   spawnGoblinScouts(){
@@ -357,6 +450,7 @@ export class OldAetherPrologue{
     enemy.hpBg?.setVisible(true);enemy.hpFill?.setVisible(true);enemy.nameText?.setVisible(true);
     const baseTakeDamage=enemy.takeDamage.bind(enemy);
     enemy.takeDamage=(amount)=>{
+      if(enemy===this.wolf&&this.isWolfEntranceActive())return;
       if(!enemy.isAlive())return;
       baseTakeDamage(amount);
       enemy.attackPendingAt=0;
@@ -407,6 +501,8 @@ export class OldAetherPrologue{
     const seconds=Math.min(.05,Math.max(0,delta||0)/1000);
     for(const enemy of this.enemies){
       if(!enemy?.active||!enemy.isAlive())continue;
+      // Não executar IA, patrulha ou ataques durante a entrada cinematográfica.
+      if(enemy===this.wolf&&this.isWolfEntranceActive())continue;
       const data=enemy.prologue,iso=enemy.iso,player=this.scene.player;
       const du=player.isoX-iso.u,dv=player.isoY-iso.v,logicalDistance=Math.hypot(du,dv);
       const prior=this.scene.project(iso.u,iso.v);
@@ -461,8 +557,10 @@ export class OldAetherPrologue{
         enemy.prologueResolved=true;
         const id=enemy.prologue.id;
         if(id==='youngWolf'){
-          this.advance(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF,OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS,()=>{this.state.encounters.youngWolf='defeated';});
-          this.hud?.hint('O caminho adiante foi remexido por batedores.');
+          this.advance(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF,
+            this.state.tutorials.collectionComplete?OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS:OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE,
+            ()=>{this.state.encounters.youngWolf='defeated';});
+          this.hud?.hint(this.state.tutorials.collectionComplete?'Siga pela estrada.':'O lobo veio de trás do monumento. Investigue a pedra destruída.');
         }else if(id.startsWith('goblinScout')){
           const index=Number(id.replace('goblinScout',''));
           this.state.encounters.goblinScouts[index]='defeated';
@@ -483,6 +581,16 @@ export class OldAetherPrologue{
   }
 
   updateProgressTriggers(){
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.FOLLOW_OLD_ROAD)){
+      // A marca amarela fica na estrada, antes do marco arruinado.
+      const yellow=this.roadPoint(.202);
+      if(yellow&&Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,yellow.x,yellow.y)<=88){
+        this.advance(OLD_AETHER_PROLOGUE_STAGES.FOLLOW_OLD_ROAD,OLD_AETHER_PROLOGUE_STAGES.WOLF_ENTRANCE,()=>{
+          this.state.encounters.youngWolfIntroSeen=true;
+        });
+        this.spawnWolfEntrance();
+      }
+    }
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.VIEW_AETHER)&&this.isNear(this.anchors.cityVista,2.25))this.showCityVista();
     const u=this.scene.player.isoX,v=this.scene.player.isoY;
     const isInsideSouthGate=u>=11.72&&u<=16.28&&v<=25.02;
@@ -524,6 +632,7 @@ export class OldAetherPrologue{
 
   getInteractionTarget(){
     if(this.state.tutorials.movementComplete&&this.nearRoadSign())return{sprite:this.roadSignSprite(),label:'F - Investigar'};
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE)&&this.nearRuinedRoadWaystone())return{sprite:this.ruinedRoadWaystone(),label:'F - Investigar'};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES)&&this.isNear(this.anchors.travelSupplies,1.0))return{anchor:this.anchors.travelSupplies,label:'E — Coletar',lift:64};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ATTACKED_WAGON)&&this.isNear(this.anchors.attackedWagon,1.45))return{anchor:this.anchors.attackedWagon,label:'F — Examinar',lift:130};
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.SPEAK_TO_PATROL)&&this.patrol&&this.nearNpc(this.patrol,100))return{anchor:this.anchors.patrol,label:'F — Conversar',lift:138};
@@ -533,11 +642,16 @@ export class OldAetherPrologue{
   tryCollect(){
     if(!this.enabled||!this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES)||!this.isNear(this.anchors.travelSupplies,1.0))return false;
     this.collectibleTween?.stop();this.collectible?.destroy();this.collectible=null;
-    this.advance(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF,()=>{
+    this.advance(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS,()=>{
       this.state.tutorials.collectionComplete=true;this.scene.inv.add('healing_potion',1);
     });
     this.hud?.hint('Você encontrou uma poção simples. Ela pode ser usada com H.');
     return true;
+  }
+
+  nearRuinedRoadWaystone(){
+    const marker=this.ruinedRoadWaystone();
+    return !!marker?.active&&Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,marker.x,marker.y)<=115;
   }
 
   tryInteract(){
@@ -551,7 +665,18 @@ export class OldAetherPrologue{
         pages:['CIDADE DE AETHER — siga a Estrada Velha para o norte até o Portão Sul.\nContinue pela estrada principal para alcançar as muralhas da cidade.'],
         spriteKey:'outskirts_aether_sign_v2',completeOnClose:true
       },()=>{
-        this.advance(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN,OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,()=>{this.state.tutorials.interactionComplete=true;});
+        this.advance(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ROAD_SIGN,OLD_AETHER_PROLOGUE_STAGES.FOLLOW_OLD_ROAD,()=>{this.state.tutorials.interactionComplete=true;});
+      });
+      return true;
+    }
+    if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE)&&this.nearRuinedRoadWaystone()){
+      this.scene.openScriptedDialogue({name:'Monumento destruído',role:'Estrada Velha de Aether',
+        pages:['A pedra antiga está quebrada e coberta por marcas recentes. O lobo se escondia atrás dela.\nMais adiante, uma pequena caixa de suprimentos foi abandonada junto à estrada.'],
+        spriteKey:'old_road_waystone_ruined_01',completeOnClose:true
+      },()=>{
+        this.advance(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE,OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES,()=>{
+          this.state.waystone.ruinedExamined=true;
+        });
       });
       return true;
     }

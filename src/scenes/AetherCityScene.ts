@@ -2005,6 +2005,8 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   moveIsometric(delta = 16.667) {
+    // Durante a saída encenada do lobo, não permitir andar até ele parar na estrada.
+    if(this.prologue?.isWolfEntranceActive?.()){this.stopPlayer();return;}
     const ix = (this.cursors.right.isDown || this.keys.D.isDown ? 1 : 0) - (this.cursors.left.isDown || this.keys.A.isDown ? 1 : 0);
     const iy = (this.cursors.down.isDown || this.keys.S.isDown ? 1 : 0) - (this.cursors.up.isDown || this.keys.W.isDown ? 1 : 0);
     if (!(ix || iy)) { this.stopPlayer(); return; }
@@ -2036,6 +2038,7 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   handlePrologueCombat(){
+    if(this.prologue?.isWolfEntranceActive?.())return;
     const targets=this.prologue?.getCombatTargets?.()||[];
     if(!targets.length)return;
     if(Phaser.Input.Keyboard.JustDown(this.basicAttackKey)){
