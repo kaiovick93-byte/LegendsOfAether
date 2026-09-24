@@ -172,7 +172,11 @@ export class AetherCityScene extends Phaser.Scene {
 
     // O estado visual de Elara já fica pronto para a futura missão:
     // false/ausente = fé perdida; true = botica e curandeira restauradas.
-    this.worldFlags = {...(save?.worldFlags || this.registry.get('worldFlags') || {})};
+    // The registry may still contain the previous hero's state after returning
+    // to the menu. A genuine new game must NEVER use it as saved progress.
+    this.worldFlags = save
+      ? {...(save.worldFlags || this.registry.get('worldFlags') || {})}
+      : {};
     this.registry.set('worldFlags', this.worldFlags);
 
     if (save) {

@@ -104,7 +104,15 @@ export class MenuScene extends Phaser.Scene{
 
  newGame(){
   this.menuBusy=true;
+  // The save is not the only copy of progress: Phaser's registry survives
+  // scene changes. Without clearing it, a new hero inherits the prior
+  // prologue objective/checkpoint even after the saved game is deleted.
   this.sm.clear();
+  for(const key of [
+   'worldFlags','aetherActiveSector','aetherCityEntrance',
+   'aetherContinuousSpawn','transitionSpawn','selectedClass',
+   'selectedAppearance'
+  ])this.registry.remove(key);
   this.fade.out(()=>this.scene.start('PrologueScene'));
  }
  continueGame(){

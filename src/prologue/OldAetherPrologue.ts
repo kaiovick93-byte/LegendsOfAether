@@ -358,17 +358,25 @@ export class OldAetherPrologue{
 
   isWolfEntranceActive(){return this.enabled&&this.isAt(OLD_AETHER_PROLOGUE_STAGES.WOLF_ENTRANCE);}
 
-  // O caminho é medido contra o próprio marco do mapa real, não contra um
-  // objeto ou coordenada de tela fixos: entrada atrás da pedra -> beira -> estrada.
+  // O lobo começa atrás da pedra, contorna a extremidade ESQUERDA e só então
+  // desce até a estrada. A largura visível do sprite define a folga lateral:
+  // não usar um ponto intermediário dentro da base do monumento.
   wolfEntrancePath(){
     const monument=this.ruinedRoadWaystone();
     if(!monument?.active)return null;
     const destination=this.roadPoint(.292);
     if(!destination)return null;
+    const source=this.scene.textures.get(monument.texture.key).getSourceImage();
+    const leftClearance=Math.max(145,source.width*monument.scaleX/2+48);
+    const aroundX=monument.x-leftClearance;
     return [
-      {x:monument.x-29,y:monument.y-93},
-      {x:monument.x-62,y:monument.y-29},
-      {x:monument.x-112,y:monument.y+69},
+      // Primeiro trecho: ainda oculto pela pedra, saindo por trás dela.
+      {x:monument.x-29,y:monument.y-113},
+      // O segundo trecho só começa quando já saiu completamente pela lateral.
+      {x:aroundX,y:monument.y-113},
+      {x:aroundX,y:monument.y-18},
+      // Atravessa a faixa de grama junto à estrada, longe da base do marco.
+      {x:aroundX,y:monument.y+48},
       {x:destination.x,y:destination.y}
     ];
   }
@@ -399,7 +407,8 @@ export class OldAetherPrologue{
     wolf.iso.u=logical.u;wolf.iso.v=logical.v;
     this.playEnemyAnimation(wolf,'walk');
     this.syncEnemyVisual(wolf);
-    // Atrás do marco, o lobo é parcialmente ocultado pela pedra existente.
+    // Durante a saída por trás do marco, o lobo passa ATRÁS da pedra.
+    // A partir da lateral livre, volta à profundidade normal do mundo.
     const monument=this.ruinedRoadWaystone();
     if(segment===0&&monument?.active)wolf.setDepth(monument.depth-.01);
     if(ratio===1){
