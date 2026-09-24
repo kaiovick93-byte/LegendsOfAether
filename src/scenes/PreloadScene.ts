@@ -56,6 +56,9 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('road_blood_trail_03','assets/images/environment/outskirts/prologue/blood-trail/road_blood_trail_03.png');
     this.load.image('road_fallen_traveler_01','assets/images/environment/outskirts/prologue/blood-trail/road_fallen_traveler_01.png');
     this.load.image('road_fallen_traveler_02','assets/images/environment/outskirts/prologue/blood-trail/road_fallen_traveler_02.png');
+    this.load.image('road_wagon_scatter_crate_01','assets/images/environment/outskirts/prologue/wagon-scatter/road_wagon_scatter_crate_01.png');
+    this.load.image('road_wagon_scatter_barrel_01','assets/images/environment/outskirts/prologue/wagon-scatter/road_wagon_scatter_barrel_01.png');
+    this.load.image('road_wagon_scatter_supplies_01','assets/images/environment/outskirts/prologue/wagon-scatter/road_wagon_scatter_supplies_01.png');
     // Round 66: as ações usam células maiores para manter a mesma escala do
     // repouso, a mesma linha dos pés e espaço para gestos altos sem recorte.
     this.load.spritesheet('merchant_iso_action','assets/images/characters/npcs/isometric/merchant_iso_action.png',{frameWidth:256,frameHeight:256});

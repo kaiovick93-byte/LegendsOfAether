@@ -297,21 +297,21 @@ export class OldAetherPrologue{
         .setDepth(this.scene.depthAt(anchor.u,anchor.v,.09))
         .setFlipX(true);
     }
-    if(this.scene.textures.exists('street_crates')){
-      const source=this.scene.textures.get('street_crates').getSourceImage();
-      const decorate=(du,dv,height,angle=0,depthOffset=.06)=>{
-        const p=this.scene.project(anchor.u+du,anchor.v+dv);
-        const prop=this.scene.add.image(p.x,p.y,'street_crates')
-          .setOrigin(.5,1)
-          .setScale(height/source.height)
-          .setAngle(angle)
-          .setDepth(this.scene.depthAt(anchor.u+du,anchor.v+dv,depthOffset));
-        this.cartDecor.push(prop);
-      };
-      decorate(.72,.26,44,7,.04);
-      decorate(.38,.84,35,-9,.04);
-      decorate(1.06,-.05,28,14,.04);
-    }
+    const placeScatter=(key,du,dv,height,angle=0,depthOffset=.06,originX=.5,originY=1)=>{
+      if(!this.scene.textures.exists(key))return;
+      const source=this.scene.textures.get(key).getSourceImage();
+      const p=this.scene.project(anchor.u+du,anchor.v+dv);
+      const prop=this.scene.add.image(p.x,p.y,key)
+        .setOrigin(originX,originY)
+        .setScale(height/source.height)
+        .setAngle(angle)
+        .setDepth(this.scene.depthAt(anchor.u+du,anchor.v+dv,depthOffset));
+      this.cartDecor.push(prop);
+    };
+    // Substitui os três caixotes repetidos por carga variada derramada da carroça.
+    placeScatter('road_wagon_scatter_barrel_01',.92,.34,44,6,.04,.5,.82);
+    placeScatter('road_wagon_scatter_crate_01',.28,.90,48,-10,.04,.5,.86);
+    placeScatter('road_wagon_scatter_supplies_01',1.18,-.04,42,12,.04,.5,.86);
   }
 
   // Cena ambiental da emboscada na Estrada Velha. Cada PNG e posicionado
