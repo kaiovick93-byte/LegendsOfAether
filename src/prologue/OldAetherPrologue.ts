@@ -263,7 +263,7 @@ export class OldAetherPrologue{
   createCollectible(){
     if(this.state.tutorials.collectionComplete||!this.scene.textures.exists('street_crates'))return;
     const a=this.anchors.travelSupplies,p=this.scene.project(a.u,a.v),source=this.scene.textures.get('street_crates').getSourceImage();
-    this.collectible=this.scene.add.image(p.x,p.y,'street_crates').setOrigin(.5,1).setScale(33/source.height).setDepth(this.scene.depthAt(a.u,a.v,.08));
+    this.collectible=this.scene.add.image(p.x,p.y,'street_crates').setOrigin(.5,1).setScale(72/source.height).setDepth(this.scene.depthAt(a.u,a.v,.08));
     // O mesmo caixote permanece no local atual; só fica coletável após o lobo e o monumento.
     this.collectible.setVisible(this.isAt(OLD_AETHER_PROLOGUE_STAGES.COLLECT_TRAVEL_SUPPLIES));
     this.collectibleTween=this.scene.tweens.add({targets:this.collectible,y:{from:p.y,to:p.y-2},duration:800,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
