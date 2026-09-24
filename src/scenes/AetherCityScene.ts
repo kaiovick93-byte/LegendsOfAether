@@ -76,6 +76,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.ambientRouteStates=[];
     this.tavernRatTweens=[];
     this.southRiverBankDecorations=[];
+    this.southRiverBankGroundPatches=[];
     // Primeiro quadro já dentro da avenida: nenhuma torre encobre o herói.
     this.playerIsoStart = {x: 14, y: 25.02};
     this.playerIsoRadius = .27;
@@ -432,6 +433,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.createSouthRiverRockOutcrop();
     this.createSouthRiverBankDecorations();
     this.createSouthRiverFallenLog();
+    this.createSouthRiverBankGroundPatches();
     const safe=this.southRiverBridge.recoverPosition(this.player.isoX,this.player.isoY,this.playerIsoRadius,
       (u,v)=>!this.isBlocked(u,v,this.playerIsoRadius));
     if(safe)this.player.setIsoPosition(safe.u,safe.v,this.player.isoZ);
@@ -574,6 +576,70 @@ export class AetherCityScene extends Phaser.Scene {
       footprintHeight:22,
       footprintYOffset:-5
     });
+  }
+
+  createSouthRiverBankGroundPatches() {
+    const specs = [
+      {
+        id: 'south-river-bank-muddy-patch',
+        key: 'riverbank_muddy_patch_01',
+        // Entrada do rio sob a árvore/afloramento: reforça solo úmido e
+        // irregular sem mexer nas margens nem cobrir as raízes.
+        u: 5.90,
+        v: 31.96,
+        height: 94,
+        depthOffset: .010,
+        screenYOffset: 0,
+        flipX: false
+      },
+      {
+        id: 'south-river-bank-grassy-path-patch',
+        key: 'riverbank_grassy_path_patch_01',
+        // Saída da ponte, lado externo esquerdo: cria transição mais natural
+        // entre estrada de terra, ponte de pedra e barranca do rio.
+        u: 14.06,
+        v: 29.24,
+        height: 82,
+        depthOffset: .011,
+        screenYOffset: 0,
+        flipX: true
+      },
+      {
+        id: 'south-river-bank-grass-mud-transition',
+        key: 'riverbank_grass_mud_transition_01',
+        // Trecho médio da margem externa: quebra a repetição do gramado e
+        // aproxima o solo do aspecto úmido das beiradas do rio.
+        u: 20.86,
+        v: 29.86,
+        height: 88,
+        depthOffset: .010,
+        screenYOffset: 0,
+        flipX: false
+      },
+      {
+        id: 'south-river-bank-rocky-patch',
+        key: 'riverbank_rocky_patch_01',
+        // Curva final à frente do jogador: pequena clareira rochosa para dar
+        // leitura de erosão/depósito natural sem poluir a água.
+        u: 29.86,
+        v: 28.92,
+        height: 80,
+        depthOffset: .011,
+        screenYOffset: 0,
+        flipX: true
+      }
+    ];
+    this.southRiverBankGroundPatches?.forEach?.(patch => patch?.destroy?.());
+    this.southRiverBankGroundPatches = [];
+    for (const spec of specs) {
+      if (!this.textures.exists(spec.key)) continue;
+      const patch = this.addIsoImage(spec.key, spec.u, spec.v, spec.height, spec.depthOffset, spec.screenYOffset);
+      if (spec.flipX) patch.setFlipX(true);
+      patch.setData('environmentalAccent', spec.id);
+      patch.setData('aetherRenderClass', 'ground');
+      this.southRiverBankGroundPatches.push(patch);
+      this.aetherTerritory?.track?.(patch, spec.u, spec.v, {alwaysActive:true});
+    }
   }
 
   createAnimatedGrassDetails() {
@@ -1957,6 +2023,7 @@ export class AetherCityScene extends Phaser.Scene {
       0,velocity.y,dt,AetherCityScene.TILE_WIDTH,AetherCityScene.TILE_HEIGHT
     );
     const moved=this.tryMoveWithSliding(full,horizontal,vertical);
+    if(moved)this.prologue?.onPlayerMoved?.();
     this.player.updateFacing(velocity.inputX,velocity.inputY);
     this.player.playMove(moved);
     this.updatePlayerProjection();

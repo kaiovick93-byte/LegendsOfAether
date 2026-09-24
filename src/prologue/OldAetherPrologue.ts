@@ -65,10 +65,19 @@ class PrologueHud{
     this.hintText.setPosition(this.scene.scale.width/2,Math.max(104,top-26)).setWordWrapWidth(Math.min(520,this.scene.scale.width-56),true);
   }
   setObjective(text){this.objective.setText(text);}
-  hint(text){
+  hint(text,{persistent=false}={}){
     this.scene.tweens.killTweensOf(this.hintText);
     this.hintText.setText(text).setAlpha(0);
+    if(persistent){
+      // Mesma apresentação visual; sem o temporizador que apagava a dica.
+      this.scene.tweens.add({targets:this.hintText,alpha:1,duration:160,ease:'Sine.Out'});
+      return;
+    }
     this.scene.tweens.add({targets:this.hintText,alpha:1,duration:160,ease:'Sine.Out',yoyo:true,hold:2100,onComplete:()=>this.hintText.setText('')});
+  }
+  hideHint(){
+    this.scene.tweens.killTweensOf(this.hintText);
+    this.hintText.setText('').setAlpha(0);
   }
   destroy(){this.scene.scale.off(Phaser.Scale.Events.RESIZE,this.resizeHandler);this.root.destroy(true);this.hintText.destroy();}
 }
@@ -115,8 +124,12 @@ export class OldAetherPrologue{
     this.createRoadSetDressing();
     this.createCollectible();
     this.syncObjective();
-    if(!this.state.tutorials.movementComplete){
-      scene.time.delayedCall(420,()=>this.hud?.hint('Use WASD ou as setas para se mover. As diagonais também funcionam.'));
+    this.movementHintPending=!this.state.tutorials.movementComplete;
+    if(this.movementHintPending){
+      scene.time.delayedCall(420,()=>{
+        // Se o jogador já andou antes dos 420 ms, não mostrar a dica depois.
+        if(this.movementHintPending)this.hud?.hint('Use WASD ou as setas para se mover. As diagonais também funcionam.',{persistent:true});
+      });
     }
   }
 
@@ -251,6 +264,14 @@ export class OldAetherPrologue{
     this.resolveEnemyDeaths(time);
     this.updateProgressTriggers();
     this.updateCue();
+  }
+
+  onPlayerMoved(){
+    // Só um deslocamento de fato encerra a dica: pressionar contra uma
+    // colisão ou ficar parado não deve ocultá-la.
+    if(!this.enabled||!this.movementHintPending)return;
+    this.movementHintPending=false;
+    this.hud?.hideHint();
   }
 
   updateTutorials(){
