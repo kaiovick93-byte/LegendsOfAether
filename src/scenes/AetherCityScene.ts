@@ -1949,6 +1949,88 @@ export class AetherCityScene extends Phaser.Scene {
     this.tweens.add({targets: this.cityBanner, alpha: 0, delay: 2600, duration: 700});
   }
 
+
+  createDayNightOverlays(){
+    const width=this.scale.width||this.scale.gameSize?.width||1280;
+    const height=this.scale.height||this.scale.gameSize?.height||720;
+    this.sunsetOverlay=this.add.rectangle(0,0,width,height,0xe19a52)
+      .setOrigin(0)
+      .setScrollFactor(0)
+      .setDepth(980)
+      .setAlpha(0)
+      .setVisible(true);
+    this.nightOverlay=this.add.rectangle(0,0,width,height,0x10203a)
+      .setOrigin(0)
+      .setScrollFactor(0)
+      .setDepth(981)
+      .setAlpha(0)
+      .setVisible(true);
+    this.resizeDayNightOverlays();
+    this.updateDayNightOverlays();
+  }
+
+  resizeDayNightOverlays(){
+    const width=this.scale.width||this.scale.gameSize?.width||1280;
+    const height=this.scale.height||this.scale.gameSize?.height||720;
+    this.sunsetOverlay?.setDisplaySize(width,height);
+    this.nightOverlay?.setDisplaySize(width,height);
+  }
+
+  lerpScalar(a,b,t){return a+(b-a)*t}
+  clamp01(value){return Math.max(0,Math.min(1,value))}
+  rangeProgress(value,start,end){
+    if(end<=start)return value>=end?1:0;
+    return this.clamp01((value-start)/(end-start));
+  }
+
+  dayNightProfile(timeOfDayMs=worldClock.timeOfDayMs){
+    const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
+    let sunsetAlpha=0;
+    let nightAlpha=0;
+
+    if(minutes<270){
+      // 00:00–04:30: noite completa.
+      nightAlpha=.34;
+    }else if(minutes<360){
+      // 04:30–06:00: amanhecer gradual.
+      const t=this.rangeProgress(minutes,270,360);
+      sunsetAlpha=this.lerpScalar(.05,.02,t);
+      nightAlpha=this.lerpScalar(.34,0,t);
+    }else if(minutes<1050){
+      // 06:00–17:30: dia estável.
+      sunsetAlpha=0;
+      nightAlpha=0;
+    }else if(minutes<1110){
+      // 17:30–18:30: fim de tarde dourado.
+      const t=this.rangeProgress(minutes,1050,1110);
+      sunsetAlpha=this.lerpScalar(.02,.15,t);
+      nightAlpha=this.lerpScalar(0,.04,t);
+    }else if(minutes<1155){
+      // 18:30–19:15: crepúsculo mais evidente.
+      const t=this.rangeProgress(minutes,1110,1155);
+      sunsetAlpha=this.lerpScalar(.15,.11,t);
+      nightAlpha=this.lerpScalar(.04,.18,t);
+    }else if(minutes<1200){
+      // 19:15–20:00: hora azul; o tom frio assume gradualmente.
+      const t=this.rangeProgress(minutes,1155,1200);
+      sunsetAlpha=this.lerpScalar(.11,.03,t);
+      nightAlpha=this.lerpScalar(.18,.30,t);
+    }else{
+      // 20:00 em diante: noite estabelecida.
+      sunsetAlpha=.02;
+      nightAlpha=.34;
+    }
+
+    return {sunsetAlpha,nightAlpha};
+  }
+
+  updateDayNightOverlays(){
+    if(!this.sunsetOverlay||!this.nightOverlay)return;
+    const profile=this.dayNightProfile();
+    this.sunsetOverlay.setAlpha(profile.sunsetAlpha);
+    this.nightOverlay.setAlpha(profile.nightAlpha);
+  }
+
   update(_time, delta) {
     const activeSector=this.aetherTerritory.update(_time,this.player.isoX,this.player.isoY);
     this.isSafeZone=this.isPlayerInsideCity();
