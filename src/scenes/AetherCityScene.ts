@@ -42,6 +42,14 @@ export class AetherCityScene extends Phaser.Scene {
   static readonly MAP_SIZE = 28;
   static readonly CITY_MIN = 2;
   static readonly CITY_MAX = 26;
+  static readonly CITY_WALL_WEST = 2;
+  static readonly CITY_WALL_NORTH = -6;
+  static readonly CITY_WALL_EAST = 26;
+  static readonly CITY_WALL_SOUTH = 26;
+  static readonly CITY_NORTH_GATE_START = 10;
+  static readonly CITY_NORTH_GATE_END = 18;
+  static readonly CITY_EAST_BROKEN_START = 18;
+  static readonly CITY_EAST_BROKEN_END = 26;
   static readonly ORIGIN_X = 1600;
   static readonly ORIGIN_Y = 250;
   static readonly WORLD_LEFT = AETHER_WORLD_BOUNDS.left;
@@ -53,6 +61,19 @@ export class AetherCityScene extends Phaser.Scene {
   static readonly GATE_MIN = 12.70;
   static readonly GATE_MAX = 15.30;
   static readonly ISO_DEPTH_BASE = -20000;
+
+  getCityWallBounds() {
+    return {
+      west: AetherCityScene.CITY_WALL_WEST,
+      north: AetherCityScene.CITY_WALL_NORTH,
+      east: AetherCityScene.CITY_WALL_EAST,
+      south: AetherCityScene.CITY_WALL_SOUTH,
+      northGateStart: AetherCityScene.CITY_NORTH_GATE_START,
+      northGateEnd: AetherCityScene.CITY_NORTH_GATE_END,
+      eastBrokenStart: AetherCityScene.CITY_EAST_BROKEN_START,
+      eastBrokenEnd: AetherCityScene.CITY_EAST_BROKEN_END
+    };
+  }
 
   constructor() {
     super('AetherCityScene');
@@ -394,16 +415,17 @@ export class AetherCityScene extends Phaser.Scene {
     // até a base da muralha. Não há riacho, ponte ou props nesta etapa.
     const cityGround=this.add.image(C.ORIGIN_X, centerY, 'iso_city_grass')
       .setOrigin(.5).setDepth(C.ISO_DEPTH_BASE-59);
-    const north=this.project(C.CITY_MIN,C.CITY_MIN);
-    const east=this.project(C.CITY_MAX,C.CITY_MIN);
-    const south=this.project(C.CITY_MAX,C.CITY_MAX);
-    const west=this.project(C.CITY_MIN,C.CITY_MAX);
+    const perimeter=this.getCityWallBounds();
+    const northWest=this.project(perimeter.west,perimeter.north);
+    const northEast=this.project(perimeter.east,perimeter.north);
+    const southEast=this.project(perimeter.east,perimeter.south);
+    const southWest=this.project(perimeter.west,perimeter.south);
     const cityGroundMask=this.make.graphics({x:0,y:0,add:false});
     cityGroundMask.fillStyle(0xffffff,1).beginPath();
-    cityGroundMask.moveTo(north.x,north.y)
-      .lineTo(east.x,east.y)
-      .lineTo(south.x,south.y)
-      .lineTo(west.x,west.y)
+    cityGroundMask.moveTo(northWest.x,northWest.y)
+      .lineTo(northEast.x,northEast.y)
+      .lineTo(southEast.x,southEast.y)
+      .lineTo(southWest.x,southWest.y)
       .closePath().fillPath();
     cityGround.setMask(cityGroundMask.createGeometryMask());
     cityGround.setData?.('aetherRenderClass','ground');
@@ -692,34 +714,25 @@ export class AetherCityScene extends Phaser.Scene {
 
   createWallsAndGates() {
     const C = AetherCityScene;
+    const perimeter=this.getCityWallBounds();
     this.wallSprites = [];
     this.wallGroundShadows = [];
-    this.addWallRun('u', C.CITY_MIN, C.CITY_MIN, C.CITY_MAX, false);
-    this.addWallRun('v', C.CITY_MIN, C.CITY_MIN, C.CITY_MAX, true);
-    // As extensões redundantes foram removidas dos PNGs dos portões. Os
-    // módulos comuns chegam diretamente às torres, sem face terminal exposta.
-    // O novo conjunto usa um vão mais largo para os portões robustos. Os
-    // trechos restantes têm 8 tiles cada e recebem dois módulos longos de 4
-    // tiles, evitando comprimir a nova arte em peças minúsculas.
-    this.addWallRun('u', C.CITY_MAX, C.CITY_MIN, 10, false);
-    // A arte quebrada é projetada pelos dois pés do próprio PNG, no mesmo
-    // trecho Leste. A altura dos pilares independe da inclinação do chão;
-    // destroços e brecha continuam pertencendo a essa única peça aprovada.
-    this.addBrokenWallSection('u', C.CITY_MAX, 18, C.CITY_MAX, false, 0);
-    this.addWallRun('v', C.CITY_MAX, C.CITY_MIN, 10, true);
-    // O mesmo passo, escala e pivô em todo o perímetro mantêm os dois
-    // conectores no chão. Esticar só este trecho inclinava sua base e criava
-    // um degrau no encontro dos módulos junto ao Portão Sul.
-    this.addWallRun('v', C.CITY_MAX, 18, C.CITY_MAX, true);
+
+    // Round 39: a muralha acompanha a área ampliada atrás da taverna. O novo
+    // perímetro mantém os mesmos módulos aprovados, sem esticar ou comprimir
+    // nenhuma peça; apenas reposiciona torres, muros e portões.
+    this.addWallRun('u', perimeter.west, perimeter.north, perimeter.south, false);
+    this.addWallRun('v', perimeter.north, perimeter.west, perimeter.northGateStart, true);
+    this.addWallRun('v', perimeter.north, perimeter.northGateEnd, perimeter.east, true);
+    this.addWallRun('u', perimeter.east, perimeter.north, 10, false);
+    this.addBrokenWallSection('u', perimeter.east, perimeter.eastBrokenStart, perimeter.eastBrokenEnd, false, 0);
+    this.addWallRun('v', perimeter.south, perimeter.west, 10, true);
+    this.addWallRun('v', perimeter.south, 18, perimeter.east, true);
     this.createCornerTowers();
 
     const gateTargetWidth = 432;
     const eastGateSource = this.textures.get('iso_city_gate_east').getSourceImage();
     const eastGateScale=gateTargetWidth/eastGateSource.width;
-    // A arte v3 tem a linha real de contato com o chão no centro do PNG em
-    // aproximadamente 661 px de 862. Com escala 432/1152 = 0.375, o
-    // deslocamento correto do anchor dos pés é ~75 px, não os 126 px herdados
-    // do portão antigo. Isso alinha o rodapé do portão ao mesmo plano dos muros.
     const gateBaseIsoZ=-75;
     this.eastGateSprite = new IsoSprite({
       scene:this,isoX:26.03,isoY:14,isoZ:gateBaseIsoZ,
@@ -727,8 +740,6 @@ export class AetherCityScene extends Phaser.Scene {
       screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
       depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.15
     }).setScale(eastGateScale);
-    // Oclusão dos novos muros/portões fica deliberadamente fora desta etapa.
-    // A passagem continua física somente pelas torres laterais.
 
     const southGateSource = this.textures.get('iso_city_gate').getSourceImage();
     const southGateScale=gateTargetWidth/southGateSource.width;
@@ -738,16 +749,32 @@ export class AetherCityScene extends Phaser.Scene {
       screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
       depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.15
     }).setScale(southGateScale);
-    const southJoin=this.wallSprites.find(wall=>wall.isoY===C.CITY_MAX&&Math.abs(wall.isoX-19.65)<.001);
+    const southJoin=this.wallSprites.find(wall=>wall.isoY===perimeter.south&&Math.abs(wall.isoX-19.65)<.001);
     if(southJoin)southJoin.setTexture(southWallJoinTexture(this,southJoin,this.southGateSprite));
+
+    const northGateSource=this.textures.get('iso_city_gate_north_construction').getSourceImage();
+    const northGateScale=gateTargetWidth/northGateSource.width;
+    const northGateCenter=(perimeter.northGateStart+perimeter.northGateEnd)/2;
+    this.northGateSprite = new IsoSprite({
+      scene:this,isoX:northGateCenter,isoY:perimeter.north-.03,isoZ:gateBaseIsoZ,
+      texture:'iso_city_gate_north_construction',tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
+      screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
+      depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.14
+    }).setScale(northGateScale);
+
+    const northGateRect={u1:perimeter.northGateStart,v1:perimeter.north-.08,u2:perimeter.northGateEnd,v2:perimeter.north+.08,corner:.08};
+    this.addIsoGroundContact(northGateRect,.12);
+    this.registerSolidMask(this.northGateSprite,'iso_city_gate_north_construction',{
+      label:'Portão Norte em construção',mode:'isoRect',isoRect:northGateRect
+    });
+
     this.registerGateTowerFootprints();
-    // The existing rectangles stop short of the drawn pier feet. Sample
-    // their real bottom contour so the player cannot enter the masonry.
     this.registerSolidMask(this.southGateSprite,'iso_city_gate',{
       label:'bases e encontros do Portão Sul',mode:'groundContour',
       minHits:1,alphaThreshold:100
     });
   }
+
 
 
   addBrokenGoblinRamOutsideCity() {
@@ -795,51 +822,45 @@ export class AetherCityScene extends Phaser.Scene {
   createCornerTowers() {
     const key='iso_city_corner_tower';
     const source=this.textures.get(key).getSourceImage();
-    // A torre aprovada usa o pé frontal como pivô. No canto norte, esse pé
-    // fica à frente da quina, assim como no canto sul; usar o sinal contrário
-    // deixava a base atrás do terreno e apoiada visualmente sobre os muros.
-    // Os deslocamentos laterais dos outros cantos permanecem preservados.
     const scale=250/source.width;
     const originY=1417/source.height;
     const topBottomOffset=.58;
     const sideOffset=.38;
+    const perimeter=this.getCityWallBounds();
     const corners=[
       {
-        id:'north-west',label:'torre de arqueiros norte',
-        anchorU:AetherCityScene.CITY_MIN,anchorV:AetherCityScene.CITY_MIN,
-        spriteU:AetherCityScene.CITY_MIN+topBottomOffset,
-        spriteV:AetherCityScene.CITY_MIN+topBottomOffset,
+        id:'north-west',label:'torre de canto noroeste',
+        anchorU:perimeter.west,anchorV:perimeter.north,
+        spriteU:perimeter.west+topBottomOffset,
+        spriteV:perimeter.north+topBottomOffset,
         flipX:false
       },
       {
-        id:'north-east',label:'torre de arqueiros leste',
-        anchorU:AetherCityScene.CITY_MAX,anchorV:AetherCityScene.CITY_MIN,
-        spriteU:AetherCityScene.CITY_MAX+sideOffset,
-        spriteV:AetherCityScene.CITY_MIN-sideOffset,
+        id:'north-east',label:'torre de canto nordeste',
+        anchorU:perimeter.east,anchorV:perimeter.north,
+        spriteU:perimeter.east+sideOffset,
+        spriteV:perimeter.north-sideOffset,
         flipX:false
       },
       {
-        id:'south-west',label:'torre de arqueiros oeste',
-        anchorU:AetherCityScene.CITY_MIN,anchorV:AetherCityScene.CITY_MAX,
-        spriteU:AetherCityScene.CITY_MIN-sideOffset,
-        spriteV:AetherCityScene.CITY_MAX+sideOffset,
+        id:'south-west',label:'torre de canto sudoeste',
+        anchorU:perimeter.west,anchorV:perimeter.south,
+        spriteU:perimeter.west-sideOffset,
+        spriteV:perimeter.south+sideOffset,
         flipX:true
       },
       {
-        id:'south-east',label:'torre de arqueiros sul',
-        anchorU:AetherCityScene.CITY_MAX,anchorV:AetherCityScene.CITY_MAX,
-        spriteU:AetherCityScene.CITY_MAX+topBottomOffset,
-        spriteV:AetherCityScene.CITY_MAX+topBottomOffset,
+        id:'south-east',label:'torre de canto sudeste',
+        anchorU:perimeter.east,anchorV:perimeter.south,
+        spriteU:perimeter.east+topBottomOffset,
+        spriteV:perimeter.south+topBottomOffset,
         flipX:true
       }
     ];
     this.cornerTowerSprites=[];
     for(const tower of corners){
-      // A torre deve cobrir as pontas dos dois módulos que chegam à quina.
-      // Seu pivô externo continua no mesmo lugar; apenas a ordenação precisa
-      // considerar o módulo adjacente mais à frente, sem elevar a base.
       const frontWallSum=tower.anchorU+tower.anchorV+
-        (tower.anchorU===AetherCityScene.CITY_MIN||tower.anchorV===AetherCityScene.CITY_MIN?2:-2);
+        (tower.anchorU===perimeter.west||tower.anchorV===perimeter.north?2:-2);
       const towerSum=tower.spriteU+tower.spriteV;
       const cornerDepthOffset=.32+Math.max(0,frontWallSum-towerSum)*100;
       const sprite=new IsoSprite({
@@ -853,10 +874,6 @@ export class AetherCityScene extends Phaser.Scene {
       sprite.name=tower.id;
       this.wallSprites.push(sprite);
       this.cornerTowerSprites.push(sprite);
-      // A sombra continua cobrindo a base completa, mas a colisão usa um
-      // footprint de pés em tela, centrado no rodapé real do sprite. Isso evita
-      // bloquear o jogador pela caixa lógica antiga antes de ele encostar na
-      // pedra visível da torre.
       const shadowFootprint={u1:tower.anchorU-.78,v1:tower.anchorV-.78,u2:tower.anchorU+.78,v2:tower.anchorV+.78,corner:.24};
       this.addIsoGroundContact(shadowFootprint,.12);
       this.registerSolidMask(sprite,key,{
@@ -868,6 +885,7 @@ export class AetherCityScene extends Phaser.Scene {
       });
     }
   }
+
 
 
   addSouthWallLongSection(start, end, towardTower = 0) {
@@ -2067,7 +2085,8 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   isPlayerInsideCity(u=this.player.isoX,v=this.player.isoY){
-    return u>=AetherCityScene.CITY_MIN&&u<=AetherCityScene.CITY_MAX&&v>=AetherCityScene.CITY_MIN&&v<=AetherCityScene.CITY_MAX;
+    const perimeter=this.getCityWallBounds();
+    return u>=perimeter.west&&u<=perimeter.east&&v>=perimeter.north&&v<=perimeter.south;
   }
 
   setCityRegionActive(value){
