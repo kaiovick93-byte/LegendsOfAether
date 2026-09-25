@@ -1976,7 +1976,7 @@ export class AetherCityScene extends Phaser.Scene {
     // individual de muralhas, torres e outros sprites do cenário.
     this.dayNightLayer=this.add.layer();
     this.dayNightLayer.setDepth(650).setName?.('dayNightLightingLayer');
-    this.sunsetOverlay=this.add.rectangle(0,0,width,height,0xd58b42)
+    this.sunsetOverlay=this.add.rectangle(0,0,width,height,0xc67b4d)
       .setOrigin(0)
       .setScrollFactor(0)
       .setAlpha(0)
@@ -2015,37 +2015,37 @@ export class AetherCityScene extends Phaser.Scene {
     let nightAlpha=0;
 
     if(minutes<270){
-      // 00:00–04:30: noite completa, forte mas ainda legível.
-      sunsetAlpha=.02;
-      nightAlpha=.52;
+      // 00:00–04:30: noite completa, ligeiramente mais escura.
+      sunsetAlpha=.01;
+      nightAlpha=.56;
     }else if(minutes<360){
       // 04:30–06:00: amanhecer suave, sem degrau visual.
       const t=this.smoothRangeProgress(minutes,270,360);
-      sunsetAlpha=this.lerpScalar(.05,0,t);
-      nightAlpha=this.lerpScalar(.52,0,t);
+      sunsetAlpha=this.lerpScalar(.03,0,t);
+      nightAlpha=this.lerpScalar(.56,0,t);
     }else if(minutes<1050){
       // 06:00–17:30: dia estável.
       sunsetAlpha=0;
       nightAlpha=0;
     }else if(minutes<1110){
-      // 17:30–18:30: dourado de fim de tarde, agora com curva suave.
+      // 17:30–18:30: fim de tarde mais limpo, menos amarelado e um pouco mais escuro.
       const t=this.smoothRangeProgress(minutes,1050,1110);
-      sunsetAlpha=this.lerpScalar(.02,.17,t);
-      nightAlpha=this.lerpScalar(0,.08,t);
+      sunsetAlpha=this.lerpScalar(.01,.12,t);
+      nightAlpha=this.lerpScalar(0,.12,t);
     }else if(minutes<1155){
-      // 18:30–19:15: crepúsculo claramente perceptível.
+      // 18:30–19:15: crepúsculo com menos dourado residual e mais peso no frio.
       const t=this.smoothRangeProgress(minutes,1110,1155);
-      sunsetAlpha=this.lerpScalar(.17,.12,t);
-      nightAlpha=this.lerpScalar(.08,.30,t);
+      sunsetAlpha=this.lerpScalar(.12,.07,t);
+      nightAlpha=this.lerpScalar(.12,.34,t);
     }else if(minutes<1200){
-      // 19:15–20:00: hora azul forte, preservando leitura do cenário.
+      // 19:15–20:00: hora azul mais marcada.
       const t=this.smoothRangeProgress(minutes,1155,1200);
-      sunsetAlpha=this.lerpScalar(.12,.03,t);
-      nightAlpha=this.lerpScalar(.30,.52,t);
+      sunsetAlpha=this.lerpScalar(.07,.02,t);
+      nightAlpha=this.lerpScalar(.34,.56,t);
     }else{
       // 20:00 em diante: noite estabelecida.
-      sunsetAlpha=.02;
-      nightAlpha=.52;
+      sunsetAlpha=.01;
+      nightAlpha=.56;
     }
 
     return {sunsetAlpha,nightAlpha};
