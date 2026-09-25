@@ -122,11 +122,9 @@ export class OldRoadProps{
 
   lanternIntensity(timeOfDayMs=worldClock.timeOfDayMs){
     const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
-    if(minutes<1155)return 0; // antes de 19:15 fica apagada
-    if(minutes<1200)return Math.max(0,Math.min(1,(minutes-1155)/45)); // 19:15–20:00 acende gradualmente
-    if(minutes<1440)return 1; // 20:00–23:59 totalmente acesa
-    if(minutes<270)return 1; // 00:00–04:30 continua acesa
-    if(minutes<360)return Math.max(0,Math.min(1,1-(minutes-270)/90)); // 04:30–06:00 apaga gradualmente
+    if(minutes>=1200||minutes<270)return 1; // 20:00–04:30 permanece totalmente acesa
+    if(minutes>=1155)return Math.max(0,Math.min(1,(minutes-1155)/45)); // 19:15–20:00 acende gradualmente
+    if(minutes<360&&minutes>=270)return Math.max(0,Math.min(1,1-(minutes-270)/90)); // 04:30–06:00 apaga gradualmente
     return 0;
   }
 
@@ -139,16 +137,31 @@ export class OldRoadProps{
     const localY=(.64-originY)*sprite.height*prop.scale;
     const glowX=sprite.x+localX;
     const glowY=sprite.y+localY;
-    const outer=this.scene.add.ellipse(glowX,glowY+6,94,76,0xffc56a,.14)
-      .setDepth(sprite.depth+.03).setBlendMode(Phaser.BlendModes.ADD);
-    const mid=this.scene.add.ellipse(glowX,glowY+2,54,46,0xffd98c,.22)
-      .setDepth(sprite.depth+.04).setBlendMode(Phaser.BlendModes.ADD);
-    const core=this.scene.add.circle(glowX,glowY,10,0xfff1b8,.50)
-      .setDepth(sprite.depth+.05).setBlendMode(Phaser.BlendModes.ADD);
-    this.territory.track(outer,prop.x,prop.y,{alwaysActive:true});
-    this.territory.track(mid,prop.x,prop.y,{alwaysActive:true});
-    this.territory.track(core,prop.x,prop.y,{alwaysActive:true});
-    this.lanterns.push({sprite,outer,mid,core,dayKey:'old_road_sign_lantern_day_01',nightKey:'old_road_sign_lantern_night_01',isNightTexture:false,base:{outer:.14,mid:.22,core:.50}});
+    const groundX=glowX-4;
+    const groundY=sprite.y-5;
+    // A camada global de noite fica em depth 650. Estes brilhos locais ficam
+    // logo acima dela (e ainda abaixo da HUD) para a lanterna realmente
+    // devolver luz ao chão, à grama e à base da placa.
+    const lightDepth=660;
+    const groundOuter=this.scene.add.ellipse(groundX,groundY,190,92,0xffad4f,.085)
+      .setDepth(lightDepth).setBlendMode(Phaser.BlendModes.ADD);
+    const groundMid=this.scene.add.ellipse(groundX,groundY-2,132,66,0xffc568,.105)
+      .setDepth(lightDepth+.01).setBlendMode(Phaser.BlendModes.ADD);
+    const groundInner=this.scene.add.ellipse(groundX,groundY-5,78,40,0xffdfa0,.12)
+      .setDepth(lightDepth+.02).setBlendMode(Phaser.BlendModes.ADD);
+    const outer=this.scene.add.ellipse(glowX,glowY+5,78,66,0xffbd59,.16)
+      .setDepth(lightDepth+.03).setBlendMode(Phaser.BlendModes.ADD);
+    const mid=this.scene.add.ellipse(glowX,glowY+2,44,38,0xffd98c,.26)
+      .setDepth(lightDepth+.04).setBlendMode(Phaser.BlendModes.ADD);
+    const core=this.scene.add.circle(glowX,glowY,8,0xffffcf,.62)
+      .setDepth(lightDepth+.05).setBlendMode(Phaser.BlendModes.ADD);
+    for(const light of [groundOuter,groundMid,groundInner,outer,mid,core])
+      this.territory.track(light,prop.x,prop.y,{alwaysActive:true});
+    this.lanterns.push({
+      sprite,groundOuter,groundMid,groundInner,outer,mid,core,
+      dayKey:'old_road_sign_lantern_day_01',nightKey:'old_road_sign_lantern_night_01',isNightTexture:false,
+      base:{groundOuter:.085,groundMid:.105,groundInner:.12,outer:.16,mid:.26,core:.62}
+    });
     this.updateLanterns();
   }
 
@@ -161,9 +174,11 @@ export class OldRoadProps{
         lantern.isNightTexture=useNightTexture;
       }
       const visible=intensity>.001;
-      lantern.outer.setVisible(visible).setAlpha(lantern.base.outer*intensity);
-      lantern.mid.setVisible(visible).setAlpha(lantern.base.mid*intensity);
-      lantern.core.setVisible(visible).setAlpha(lantern.base.core*intensity);
+      for(const key of ['groundOuter','groundMid','groundInner','outer','mid','core']){
+        const light=lantern[key];
+        if(!light)continue;
+        light.setVisible(visible).setAlpha(lantern.base[key]*intensity);
+      }
     }
   }
 }
