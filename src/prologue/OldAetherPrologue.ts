@@ -321,19 +321,19 @@ export class OldAetherPrologue{
   createBloodTrailDressing(){
     this.bloodTrailDecor=[];
     this.skeletalRemainsDecor=[];
-    const place=(collection,key,u,v,width,depthOffset=.02,originX=.5,originY=.5)=>{
+    const place=(collection,key,u,v,width,depthOffset=.02,originX=.5,originY=.5,depthU=u,depthV=v)=>{
       if(!this.scene.textures.exists(key))return;
       const point=this.scene.project(u,v);
       const source=this.scene.textures.get(key).getSourceImage();
       const sprite=this.scene.add.image(point.x,point.y,key)
         .setOrigin(originX,originY)
         .setScale(width/source.width)
-        .setDepth(this.scene.depthAt(u,v,depthOffset));
+        .setDepth(this.scene.depthAt(depthU,depthV,depthOffset));
       collection.push(sprite);
       return sprite;
     };
-    place(this.bloodTrailDecor,'road_blood_pool_02',10.0,63.05,52,-.24);
-    place(this.bloodTrailDecor,'road_blood_pool_01',9.89,62.88,28,-.23);
+    place(this.bloodTrailDecor,'road_blood_pool_02',10.0,63.05,52,-.32,.5,.5,10.0,62.72);
+    place(this.bloodTrailDecor,'road_blood_pool_01',9.89,62.88,28,-.31,.5,.5,9.89,62.56);
     const trail=[
       [9.55,62.45,43],[9.20,61.70,39],[8.85,60.90,38],
       [8.45,60.15,43],[7.95,59.55,41],[7.40,58.75,48],
@@ -341,14 +341,14 @@ export class OldAetherPrologue{
       [5.98,56.02,47],[5.65,55.35,52],[5.43,54.72,41],
       [5.25,54.10,48]
     ];
-    trail.forEach(([u,v,width],index)=>place(this.bloodTrailDecor,`road_blood_trail_0${index%3+1}`,u,v,width,-.21));
-    place(this.bloodTrailDecor,'road_blood_pool_03',4.65,53.22,103,-.22);
-    place(this.bloodTrailDecor,'road_blood_pool_02',6.25,53.75,108,-.22);
-    place(this.bloodTrailDecor,'road_blood_pool_01',5.65,54.15,67,-.22);
-    place(this.bloodTrailDecor,'road_fallen_traveler_01',4.68,52.92,126,.04);
-    place(this.bloodTrailDecor,'road_fallen_traveler_02',6.20,53.54,119,.04);
-    place(this.skeletalRemainsDecor,'road_skeletal_remains_01',4.72,52.96,112,.05,.5,.58);
-    place(this.skeletalRemainsDecor,'road_skeletal_remains_02',6.18,53.66,106,.05,.5,.60);
+    trail.forEach(([u,v,width],index)=>place(this.bloodTrailDecor,`road_blood_trail_0${index%3+1}`,u,v,width,-.30,.5,.5,u,v-.28));
+    place(this.bloodTrailDecor,'road_blood_pool_03',4.65,53.22,103,-.34,.5,.5,4.65,52.72);
+    place(this.bloodTrailDecor,'road_blood_pool_02',6.25,53.75,108,-.34,.5,.5,6.25,53.18);
+    place(this.bloodTrailDecor,'road_blood_pool_01',5.65,54.15,67,-.33,.5,.5,5.65,53.60);
+    place(this.bloodTrailDecor,'road_fallen_traveler_01',4.68,52.92,126,-.18,.5,.74,4.68,52.12);
+    place(this.bloodTrailDecor,'road_fallen_traveler_02',6.20,53.54,119,-.18,.5,.76,6.20,52.72);
+    place(this.skeletalRemainsDecor,'road_skeletal_remains_01',4.72,52.96,112,-.20,.5,.72,4.72,52.18);
+    place(this.skeletalRemainsDecor,'road_skeletal_remains_02',6.18,53.66,106,-.20,.5,.74,6.18,52.86);
   }
 
   shouldUseSkeletalAftermath(){
