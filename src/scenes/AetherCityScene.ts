@@ -1958,6 +1958,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.updateNpcPrompts();
     this.updateActorDepths();
     this.updateDayNightOverlays();
+    this.aetherTerritory?.oldRoadProps?.updateLanterns?.();
 
     if (this.dialogueOpen) {
       this.stopPlayer();

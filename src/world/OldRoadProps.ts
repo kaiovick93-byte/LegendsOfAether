@@ -1,3 +1,4 @@
+import {worldClock} from './WorldClock';
 // @ts-nocheck
 // B4.2C: two translations from the supplied red marks; art and scale unchanged.
 const asset=(key,originY)=>({key,path:`assets/images/environment/outskirts/old-road-props/${key}.png`,originX:.5,originY});
@@ -11,7 +12,9 @@ export const OLD_ROAD_PROP_ASSETS={
   log:asset('old_road_log_fallen_moss_01',.9296),
   stump:asset('old_road_stump_moss_01',.9296),
   fence:asset('old_road_fence_rustic_01',.9346),
-  brokenFence:asset('old_road_fence_broken_01',.9346)
+  brokenFence:asset('old_road_fence_broken_01',.9346),
+  signLanternDay:asset('old_road_sign_lantern_day_01',.985),
+  signLanternNight:asset('old_road_sign_lantern_night_01',.985)
 };
 
 // Hand-spaced pockets with open gaps. Fractions follow the existing road;
@@ -34,7 +37,7 @@ const DRESSING=[
 
 export class OldRoadProps{
   constructor(territory){
-    this.territory=territory;this.scene=territory.scene;this.props=[];
+    this.territory=territory;this.scene=territory.scene;this.props=[];this.lanterns=[];
     // Read the authoritative guide without moving any road or cliff object.
     const guide=territory.oldRoadEscarpment.route;
     this.segments=[];this.length=0;
@@ -45,6 +48,7 @@ export class OldRoadProps{
       this.length+=length;
     }
     this.placeOnShoulder('aetherSign',.07,27.4,.60,{role:'start-sign'});
+    this.placeOnShoulder('signLanternDay',.073,22.2,.14,{role:'start-sign-lantern',light:'warm-lantern'});
     this.placeOnShoulder('waystone',1/3,21.5,1.36,{role:'ruined-waystone'});
     for(const [key,fraction,offset,scale,flipX=false,angle=0] of DRESSING)
       this.placeOnShoulder(key,fraction,offset,scale,{flipX,role:'roadside',
@@ -99,7 +103,7 @@ export class OldRoadProps{
       .setOrigin(art.originX,art.originY).setScale(scale).setRotation(rotation)
       .setFlipX(!!options.flipX).setDepth(this.territory.depthAt(logical.u,logical.v,.07));
     const data={id:`old-road-prop-${String(this.props.length+1).padStart(2,'0')}`,
-      asset:art.key,role:options.role,side:options.side??'junction-shoulder',
+      asset:art.key,role:options.role,side:options.side??'junction-shoulder',light:options.light??null,
       fraction:options.fraction??null,offset:options.offset??null,
       permanent:true,functional:false,directions:options.directions??null};
     sprite.setData('oldRoadProp',data);
@@ -107,7 +111,56 @@ export class OldRoadProps{
     this.territory.config.registerOccluder?.(sprite,art.key,y,{behindMargin:5});
     // These are scenery, including the ruined waystone: no interaction,
     // waypoint registration, quest hooks or additional solid masks.
-    this.props.push({...data,x,y,scale,flipX:!!options.flipX,...(rotation?{rotation}:{}),
-      originX:art.originX,originY:art.originY,sprite});
+    const stored={...data,x,y,scale,flipX:!!options.flipX,...(rotation?{rotation}:{}),
+      originX:art.originX,originY:art.originY,sprite};
+    this.props.push(stored);
+    if(options.light==='warm-lantern')this.attachLanternLight(stored);
+  }
+
+  lanternIntensity(timeOfDayMs=worldClock.timeOfDayMs){
+    const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
+    if(minutes<1155)return 0; // antes de 19:15 fica apagada
+    if(minutes<1200)return Math.max(0,Math.min(1,(minutes-1155)/45));
+    if(minutes<270)return 1;
+    if(minutes<360)return Math.max(0,Math.min(1,1-(minutes-270)/90));
+    return 0;
+  }
+
+  attachLanternLight(prop){
+    const sprite=prop?.sprite;
+    if(!sprite)return;
+    const originX=prop.originX??.5;
+    const originY=prop.originY??1;
+    const localX=(.765-originX)*sprite.width*prop.scale;
+    const localY=(.64-originY)*sprite.height*prop.scale;
+    const glowX=sprite.x+localX;
+    const glowY=sprite.y+localY;
+    const outer=this.scene.add.ellipse(glowX,glowY+6,94,76,0xffc56a,.14)
+      .setDepth(sprite.depth+.03).setBlendMode(Phaser.BlendModes.ADD);
+    const mid=this.scene.add.ellipse(glowX,glowY+2,54,46,0xffd98c,.22)
+      .setDepth(sprite.depth+.04).setBlendMode(Phaser.BlendModes.ADD);
+    const core=this.scene.add.circle(glowX,glowY,10,0xfff1b8,.50)
+      .setDepth(sprite.depth+.05).setBlendMode(Phaser.BlendModes.ADD);
+    this.territory.track(outer,prop.x,prop.y,{alwaysActive:true});
+    this.territory.track(mid,prop.x,prop.y,{alwaysActive:true});
+    this.territory.track(core,prop.x,prop.y,{alwaysActive:true});
+    this.lanterns.push({sprite,outer,mid,core,dayKey:'old_road_sign_lantern_day_01',nightKey:'old_road_sign_lantern_night_01',isNightTexture:false,base:{outer:.14,mid:.22,core:.50}});
+    this.updateLanterns();
+  }
+
+  updateLanterns(){
+    const intensity=this.lanternIntensity();
+    for(const lantern of this.lanterns){
+      const useNightTexture=intensity>.02;
+      if(useNightTexture!==lantern.isNightTexture){
+        lantern.sprite.setTexture(useNightTexture?lantern.nightKey:lantern.dayKey);
+        lantern.isNightTexture=useNightTexture;
+      }
+      const visible=intensity>.001;
+      lantern.outer.setVisible(visible).setAlpha(lantern.base.outer*intensity);
+      lantern.mid.setVisible(visible).setAlpha(lantern.base.mid*intensity);
+      lantern.core.setVisible(visible).setAlpha(lantern.base.core*intensity);
+    }
   }
 }
+
