@@ -245,10 +245,14 @@ export class AetherCityScene extends Phaser.Scene {
     const texture = this.textures.exists(this.player.getTextureKey()) ? this.player.getTextureKey() : 'player-fallback';
     const frame = texture === 'player-fallback' ? 0 : this.player.getIdleFrame();
     this.registry.set('playerTextureKey', texture);
-    // As folhas de 96 px têm cerca de 80 px realmente opacos. Em 1,28x o
-    // corpo visível fica entre 98 e 107 px, a mesma faixa dos NPCs urbanos.
+    // O Mercador Aldren é a referência de altura do jogo. A arte da Maga
+    // feminina ocupa mais área do quadro; 1,03x aproxima sua altura visual
+    // à do Mercador sem alterar a escala das demais aparências ou o corpo lógico.
+    // Manter a mesma proporção nas variantes de equipamento evita uma mudança
+    // brusca de tamanho ao equipar ou remover itens.
+    const playerVisualScale=this.player.appearanceId==='mage_f'?1.03:1.28;
     this.player.getVisualSprite()?.setTexture(texture,frame).setOrigin(.5,1);
-    this.player.setVisualScale(1.28).setVisualVisible(true).setVisualAlpha(1).clearVisualTint();
+    this.player.setVisualScale(playerVisualScale).setVisualVisible(true).setVisualAlpha(1).clearVisualTint();
     this.player.setActive(true);
     this.player.setCollideWorldBounds(false);
     this.player.configureLogicalBody();
