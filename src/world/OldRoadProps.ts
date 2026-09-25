@@ -120,9 +120,10 @@ export class OldRoadProps{
   lanternIntensity(timeOfDayMs=worldClock.timeOfDayMs){
     const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
     if(minutes<1155)return 0; // antes de 19:15 fica apagada
-    if(minutes<1200)return Math.max(0,Math.min(1,(minutes-1155)/45));
-    if(minutes<270)return 1;
-    if(minutes<360)return Math.max(0,Math.min(1,1-(minutes-270)/90));
+    if(minutes<1200)return Math.max(0,Math.min(1,(minutes-1155)/45)); // 19:15–20:00 acende gradualmente
+    if(minutes<1440)return 1; // 20:00–23:59 totalmente acesa
+    if(minutes<270)return 1; // 00:00–04:30 continua acesa
+    if(minutes<360)return Math.max(0,Math.min(1,1-(minutes-270)/90)); // 04:30–06:00 apaga gradualmente
     return 0;
   }
 

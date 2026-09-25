@@ -1971,18 +1971,22 @@ export class AetherCityScene extends Phaser.Scene {
   createDayNightOverlays(){
     const width=this.scale.width||this.scale.gameSize?.width||1280;
     const height=this.scale.height||this.scale.gameSize?.height||720;
-    this.sunsetOverlay=this.add.rectangle(0,0,width,height,0xe19a52)
+    // Round 40: a iluminação usa uma camada dedicada para manter a ordem
+    // de renderização mais estável sobre o mundo, sem depender da profundidade
+    // individual de muralhas, torres e outros sprites do cenário.
+    this.dayNightLayer=this.add.layer();
+    this.dayNightLayer.setDepth(650).setName?.('dayNightLightingLayer');
+    this.sunsetOverlay=this.add.rectangle(0,0,width,height,0xd58b42)
       .setOrigin(0)
       .setScrollFactor(0)
-      .setDepth(980)
       .setAlpha(0)
       .setVisible(true);
-    this.nightOverlay=this.add.rectangle(0,0,width,height,0x10203a)
+    this.nightOverlay=this.add.rectangle(0,0,width,height,0x0a1630)
       .setOrigin(0)
       .setScrollFactor(0)
-      .setDepth(981)
       .setAlpha(0)
       .setVisible(true);
+    this.dayNightLayer.add([this.sunsetOverlay,this.nightOverlay]);
     this.resizeDayNightOverlays();
     this.updateDayNightOverlays();
   }
@@ -2000,6 +2004,10 @@ export class AetherCityScene extends Phaser.Scene {
     if(end<=start)return value>=end?1:0;
     return this.clamp01((value-start)/(end-start));
   }
+  smoothRangeProgress(value,start,end){
+    const t=this.rangeProgress(value,start,end);
+    return t*t*(3-2*t);
+  }
 
   dayNightProfile(timeOfDayMs=worldClock.timeOfDayMs){
     const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
@@ -2007,36 +2015,37 @@ export class AetherCityScene extends Phaser.Scene {
     let nightAlpha=0;
 
     if(minutes<270){
-      // 00:00–04:30: noite completa.
-      nightAlpha=.34;
+      // 00:00–04:30: noite completa, forte mas ainda legível.
+      sunsetAlpha=.02;
+      nightAlpha=.52;
     }else if(minutes<360){
-      // 04:30–06:00: amanhecer gradual.
-      const t=this.rangeProgress(minutes,270,360);
-      sunsetAlpha=this.lerpScalar(.05,.02,t);
-      nightAlpha=this.lerpScalar(.34,0,t);
+      // 04:30–06:00: amanhecer suave, sem degrau visual.
+      const t=this.smoothRangeProgress(minutes,270,360);
+      sunsetAlpha=this.lerpScalar(.05,0,t);
+      nightAlpha=this.lerpScalar(.52,0,t);
     }else if(minutes<1050){
       // 06:00–17:30: dia estável.
       sunsetAlpha=0;
       nightAlpha=0;
     }else if(minutes<1110){
-      // 17:30–18:30: fim de tarde dourado.
-      const t=this.rangeProgress(minutes,1050,1110);
-      sunsetAlpha=this.lerpScalar(.02,.15,t);
-      nightAlpha=this.lerpScalar(0,.04,t);
+      // 17:30–18:30: dourado de fim de tarde, agora com curva suave.
+      const t=this.smoothRangeProgress(minutes,1050,1110);
+      sunsetAlpha=this.lerpScalar(.02,.17,t);
+      nightAlpha=this.lerpScalar(0,.08,t);
     }else if(minutes<1155){
-      // 18:30–19:15: crepúsculo mais evidente.
-      const t=this.rangeProgress(minutes,1110,1155);
-      sunsetAlpha=this.lerpScalar(.15,.11,t);
-      nightAlpha=this.lerpScalar(.04,.18,t);
+      // 18:30–19:15: crepúsculo claramente perceptível.
+      const t=this.smoothRangeProgress(minutes,1110,1155);
+      sunsetAlpha=this.lerpScalar(.17,.12,t);
+      nightAlpha=this.lerpScalar(.08,.30,t);
     }else if(minutes<1200){
-      // 19:15–20:00: hora azul; o tom frio assume gradualmente.
-      const t=this.rangeProgress(minutes,1155,1200);
-      sunsetAlpha=this.lerpScalar(.11,.03,t);
-      nightAlpha=this.lerpScalar(.18,.30,t);
+      // 19:15–20:00: hora azul forte, preservando leitura do cenário.
+      const t=this.smoothRangeProgress(minutes,1155,1200);
+      sunsetAlpha=this.lerpScalar(.12,.03,t);
+      nightAlpha=this.lerpScalar(.30,.52,t);
     }else{
       // 20:00 em diante: noite estabelecida.
       sunsetAlpha=.02;
-      nightAlpha=.34;
+      nightAlpha=.52;
     }
 
     return {sunsetAlpha,nightAlpha};
@@ -2543,6 +2552,7 @@ export class AetherCityScene extends Phaser.Scene {
       this.fountainWater?.destroy?.();
       this.sunsetOverlay?.destroy?.();
       this.nightOverlay?.destroy?.();
+      this.dayNightLayer?.destroy?.();
       window.removeEventListener('beforeunload', this._unload);
       this.scale.off(Phaser.Scale.Events.RESIZE,this.cityResizeHandler);
     });
