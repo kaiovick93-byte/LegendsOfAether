@@ -332,23 +332,32 @@ export class OldAetherPrologue{
       collection.push(sprite);
       return sprite;
     };
-    place(this.bloodTrailDecor,'road_blood_pool_02',10.0,63.05,52,-.32,.5,.5,10.0,62.72);
-    place(this.bloodTrailDecor,'road_blood_pool_01',9.89,62.88,28,-.31,.5,.5,9.89,62.56);
+    // Pequena poça inicial junto à estrada e um começo de rastro mais delicado,
+    // evitando que o sangue pareça “flutuar” e melhorando a leitura visual.
+    place(this.bloodTrailDecor,'road_blood_pool_02',10.02,63.00,48,-.33,.5,.5,10.02,62.70);
+    place(this.bloodTrailDecor,'road_blood_pool_01',9.88,62.84,24,-.32,.5,.5,9.88,62.52);
     const trail=[
-      [9.55,62.45,43],[9.20,61.70,39],[8.85,60.90,38],
-      [8.45,60.15,43],[7.95,59.55,41],[7.40,58.75,48],
-      [7.02,57.95,38],[6.65,57.25,46],[6.30,56.60,42],
-      [5.98,56.02,47],[5.65,55.35,52],[5.43,54.72,41],
-      [5.25,54.10,48]
+      [9.58,62.42,39],[9.22,61.70,35],[8.88,60.96,34],
+      [8.48,60.18,38],[8.00,59.54,37],[7.46,58.78,43],
+      [7.08,58.02,35],[6.72,57.30,42],[6.34,56.66,39],
+      [6.00,56.06,44],[5.70,55.42,47],[5.48,54.84,38],
+      [5.30,54.28,42]
     ];
-    trail.forEach(([u,v,width],index)=>place(this.bloodTrailDecor,`road_blood_trail_0${index%3+1}`,u,v,width,-.30,.5,.5,u,v-.28));
-    place(this.bloodTrailDecor,'road_blood_pool_03',4.65,53.22,103,-.34,.5,.5,4.65,52.72);
-    place(this.bloodTrailDecor,'road_blood_pool_02',6.25,53.75,108,-.34,.5,.5,6.25,53.18);
-    place(this.bloodTrailDecor,'road_blood_pool_01',5.65,54.15,67,-.33,.5,.5,5.65,53.60);
-    place(this.bloodTrailDecor,'road_fallen_traveler_01',4.68,52.92,126,-.18,.5,.74,4.68,52.12);
-    place(this.bloodTrailDecor,'road_fallen_traveler_02',6.20,53.54,119,-.18,.5,.76,6.20,52.72);
-    place(this.skeletalRemainsDecor,'road_skeletal_remains_01',4.72,52.96,112,-.20,.5,.72,4.72,52.18);
-    place(this.skeletalRemainsDecor,'road_skeletal_remains_02',6.18,53.66,106,-.20,.5,.74,6.18,52.86);
+    trail.forEach(([u,v,width],index)=>place(this.bloodTrailDecor,`road_blood_trail_0${index%3+1}`,u,v,width,-.31,.5,.5,u,v-.30));
+
+    // As poças principais ficam claramente abaixo dos viajantes abatidos.
+    place(this.bloodTrailDecor,'road_blood_pool_03',4.84,53.10,94,-.35,.5,.5,4.84,52.66);
+    place(this.bloodTrailDecor,'road_blood_pool_02',6.14,53.76,98,-.35,.5,.5,6.14,53.22);
+    place(this.bloodTrailDecor,'road_blood_pool_01',5.58,54.02,58,-.34,.5,.5,5.58,53.56);
+
+    // Corpos ligeiramente reposicionados para parecerem deitados sobre o sangue,
+    // mantendo a passagem do jogador por cima deles.
+    place(this.bloodTrailDecor,'road_fallen_traveler_01',4.76,52.96,122,-.17,.5,.75,4.76,52.14);
+    place(this.bloodTrailDecor,'road_fallen_traveler_02',6.14,53.50,116,-.17,.5,.77,6.14,52.70);
+
+    // Restos esqueléticos futuros seguem a mesma lógica de alinhamento.
+    place(this.skeletalRemainsDecor,'road_skeletal_remains_01',4.80,53.00,109,-.19,.5,.73,4.80,52.20);
+    place(this.skeletalRemainsDecor,'road_skeletal_remains_02',6.12,53.60,103,-.19,.5,.75,6.12,52.82);
   }
 
   shouldUseSkeletalAftermath(){
