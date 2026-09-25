@@ -27,6 +27,7 @@ import {SouthRiver} from '../world/SouthRiver';
 import {SouthRiverBridge} from '../world/SouthRiverBridge';
 import {createGroundedBrokenWall,southWallJoinTexture,foundationColumns,isFoundationContact} from '../world/CityWallGrounding';
 import {OldAetherPrologue} from '../prologue/OldAetherPrologue';
+import {worldClock} from '../world/WorldClock';
 
 /**
  * Round 67 — acabamento urbano, contato corporal e portões isométricos.
@@ -96,7 +97,11 @@ export class AetherCityScene extends Phaser.Scene {
     // até a muralha norte, a cidade continua descendo e o herói permanece na
     // zona central de leitura em vez de ficar preso ao topo da tela.
     this.configureCityCameraBounds();
-    this.cityResizeHandler=()=>this.configureCityCameraBounds();
+    this.createDayNightOverlays();
+    this.cityResizeHandler=()=>{
+      this.configureCityCameraBounds();
+      this.resizeDayNightOverlays();
+    };
     this.scale.on(Phaser.Scale.Events.RESIZE,this.cityResizeHandler);
     this.cameras.main.setDeadzone(180, 80);
     this.cameras.main.startFollow(this.player, true, .12, .12, 0, 54);
@@ -1952,6 +1957,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.registry.set('aetherActiveSector',activeSector);
     this.updateNpcPrompts();
     this.updateActorDepths();
+    this.updateDayNightOverlays();
 
     if (this.dialogueOpen) {
       this.stopPlayer();
@@ -2433,6 +2439,8 @@ export class AetherCityScene extends Phaser.Scene {
       this.aetherTerritory?.destroy?.();
       this.cityPavement?.destroy?.();
       this.fountainWater?.destroy?.();
+      this.sunsetOverlay?.destroy?.();
+      this.nightOverlay?.destroy?.();
       window.removeEventListener('beforeunload', this._unload);
       this.scale.off(Phaser.Scale.Events.RESIZE,this.cityResizeHandler);
     });

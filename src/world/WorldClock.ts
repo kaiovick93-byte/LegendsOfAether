@@ -20,6 +20,7 @@ export class WorldClock {
   get day() { return this.currentDay; }
   get hour() { return Math.floor(this.timeMs / 3600000); }
   get minute() { return Math.floor(this.timeMs / 60000) % 60; }
+  get timeOfDayMs() { return this.timeMs; }
 
   advance(realDeltaMs: number) {
     if (!Number.isFinite(realDeltaMs) || realDeltaMs <= 0) return;
