@@ -17,14 +17,14 @@ export function appearanceFor(id){return PLAYER_APPEARANCES[id]||PLAYER_APPEARAN
 export function playerTextureKey(appearanceId,state='base'){return `player-${appearanceFor(appearanceId).id}-${PLAYER_VISUAL_STATES.includes(state)?state:'base'}`}
 export function playerOutlineTextureKey(appearanceId,state='base'){return `${playerTextureKey(appearanceId,state)}-outline`}
 /**
- * The warrior_m source sheet was authored with only its two upper-diagonal
- * rows mirrored.  Keep input/facing global (mage_f is the reference sheet)
- * and correct that one visual asset at the frame lookup boundary.
+ * Some source sheets have the two upper-diagonal rows authored in the
+ * opposite order. Keep input/facing global and correct only the visual row
+ * lookup for those appearances so movement controls remain untouched.
  */
 export function playerDirectionRowForAppearance(appearanceId,facing='down'){
  const id=appearanceFor(appearanceId).id;
- if(id==='warrior_m'&&facing==='upLeft')return PLAYER_DIRECTION_ROWS.upRight;
- if(id==='warrior_m'&&facing==='upRight')return PLAYER_DIRECTION_ROWS.upLeft;
+ if((id==='warrior_m'||id==='mage_f')&&facing==='upLeft')return PLAYER_DIRECTION_ROWS.upRight;
+ if((id==='warrior_m'||id==='mage_f')&&facing==='upRight')return PLAYER_DIRECTION_ROWS.upLeft;
  return PLAYER_DIRECTION_ROWS[facing]??0;
 }
 export function idleFrameForFacing(facing='down',appearanceId=null){return playerDirectionRowForAppearance(appearanceId,facing)*4+1}
