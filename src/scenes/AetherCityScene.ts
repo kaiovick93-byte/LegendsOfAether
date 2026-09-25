@@ -276,7 +276,7 @@ export class AetherCityScene extends Phaser.Scene {
     // à do Mercador sem alterar a escala das demais aparências ou o corpo lógico.
     // Manter a mesma proporção nas variantes de equipamento evita uma mudança
     // brusca de tamanho ao equipar ou remover itens.
-    const playerVisualScale=this.player.appearanceId==='mage_f'?1.03:1.28;
+    const playerVisualScale=this.player.appearanceId==='mage_f'?0.96:1.28;
     this.player.getVisualSprite()?.setTexture(texture,frame).setOrigin(.5,1);
     this.player.setVisualScale(playerVisualScale).setVisualVisible(true).setVisualAlpha(1).clearVisualTint();
     this.player.setActive(true);
