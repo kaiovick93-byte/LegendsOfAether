@@ -1,7 +1,8 @@
 /** One in-game day lasts 72 real minutes (20 game seconds per real second). */
 export const REAL_DAY_MS = 72 * 60 * 1000;
 export const GAME_DAY_MS = 24 * 60 * 60 * 1000;
-const START_TIME_MS = 8 * 60 * 60 * 1000;
+const LEGACY_START_TIME_MS = 8 * 60 * 60 * 1000;
+const NEW_GAME_START_TIME_MS = 17 * 60 * 60 * 1000;
 
 export interface WorldClockState {
   version: 1;
@@ -12,7 +13,7 @@ export interface WorldClockState {
 
 export class WorldClock {
   private currentDay = 1;
-  private timeMs = START_TIME_MS;
+  private timeMs = LEGACY_START_TIME_MS;
   /** Changes only when starting/loading a session, never when changing maps. */
   revision = 0;
 
@@ -39,11 +40,17 @@ export class WorldClock {
     // Old saves have no clock. They start on day 1 at 08:00, without migration
     // of player data or using savedAt / Date.now() to simulate offline time.
     this.currentDay = valid ? state.day : 1;
-    this.timeMs = valid ? state.timeOfDayMs : START_TIME_MS;
+    this.timeMs = valid ? state.timeOfDayMs : LEGACY_START_TIME_MS;
     this.revision++;
   }
 
-  reset() { this.restore(); }
+  reset() {
+    // Novo Jogo começa no Dia 1 às 17:00. Mantemos restore(undefined) em
+    // 08:00 apenas para compatibilidade com saves antigos sem worldClock.
+    this.currentDay = 1;
+    this.timeMs = NEW_GAME_START_TIME_MS;
+    this.revision++;
+  }
 
   format() {
     return `Dia ${this.day} • ${String(this.hour).padStart(2, '0')}:${String(this.minute).padStart(2, '0')}`;

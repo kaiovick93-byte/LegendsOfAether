@@ -197,14 +197,14 @@ test('CONTINUAR restores the selected save; ordinary load() reads never rewind t
   assert.deepEqual(worldClock.serialize(), saved.worldClock);
 });
 
-test('legacy saves start at day 1, 08:00; new game resets only the clock/session', () => {
+test('legacy saves keep 08:00; a new game starts on day 1 at 17:00', () => {
   localStorage.setItem('legends-of-aether-save', JSON.stringify({version: 1, player: {hp: 88}}));
   const run = runtime();
   assert.equal(worldClock.format(), 'Dia 1 • 08:00');
   assert.equal(new SaveManager().load().player.hp, 88);
   run.frame(); run.frame(500000);
   new SaveManager().clear();
-  assert.equal(worldClock.format(), 'Dia 1 • 08:00');
+  assert.equal(worldClock.format(), 'Dia 1 • 17:00');
   assert.equal(new SaveManager().load(), null);
 });
 
