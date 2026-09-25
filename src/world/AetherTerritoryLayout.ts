@@ -6,13 +6,16 @@
  * uma pintura. Assim câmera, colisão, save, minimapa e descoberta consultam o
  * mesmo território.
  */
-export const AETHER_LOGICAL_BOUNDS={minU:0,minV:0,maxU:82,maxV:82};
+// Round 37: amplia a faixa dos Arredores atrás da muralha norte,
+// especialmente na região posterior à Taverna, preparando a futura expansão
+// da cidade sem mover as muralhas atuais nesta etapa.
+export const AETHER_LOGICAL_BOUNDS={minU:0,minV:-14,maxU:82,maxV:82};
 
 export const AETHER_WORLD_BOUNDS={
   left:-2700,
-  top:-420,
+  top:-820,
   width:8700,
-  height:5000
+  height:5400
 };
 
 // Novo Jogo: pés do personagem no começo da Estrada Velha, ao lado da borda
@@ -33,9 +36,10 @@ export const AETHER_PROLOGUE_ANCHORS=Object.freeze({
   // A âncora única controla tanto o sprite quanto a área de interação/coleta.
   travelSupplies:{u:9.8,v:63.8},
   youngWolf:{u:9.0,v:59.55},
-  // Round 27: a carroça abandonada foi reposicionada para a clareira acima
-  // da estrada, junto à cena da caravana atacada indicada na referência.
-  attackedWagon:{u:5.75,v:49.25},
+  // Round 47: a carroça abandonada foi reposicionada mais à esquerda,
+  // na clareira destacada pelo usuário, preservando a leitura da emboscada
+  // e movendo junto a área de interação e os itens espalhados.
+  attackedWagon:{u:3.55,v:47.95},
   goblinScouts:[{u:10.5,v:48.8},{u:12.15,v:47.25}],
   patrol:{u:11.9,v:41.55},
   cityVista:{u:13.1,v:34.5},
@@ -71,7 +75,9 @@ export const AETHER_SECTORS={
   CITY_SOUTH_GATE:{id:'CITY_SOUTH_GATE',shape:'rect',u1:11.7,v1:22.4,u2:16.3,v2:33.2},
   CITY_EAST_GATE:{id:'CITY_EAST_GATE',shape:'rect',u1:22.4,v1:11.7,u2:33.2,v2:16.3},
   OUTSKIRTS_OLD_AETHER_ROAD:{id:'OUTSKIRTS_OLD_AETHER_ROAD',shape:'rect',u1:0,v1:29,u2:18.5,v2:82},
-  OUTSKIRTS_NEAR_CITY:{id:'OUTSKIRTS_NEAR_CITY',shape:'rect',u1:0,v1:0,u2:39,v2:41},
+  // A faixa extra acima da cidade continua sendo tratada como Arredores
+  // próximos até que a muralha seja recuada numa etapa futura.
+  OUTSKIRTS_NEAR_CITY:{id:'OUTSKIRTS_NEAR_CITY',shape:'rect',u1:0,v1:-14,u2:39,v2:41},
   OUTSKIRTS_MAIN_ROAD:{id:'OUTSKIRTS_MAIN_ROAD',shape:'rect',u1:14,v1:27,u2:72,v2:50},
   OUTSKIRTS_STREAM:{id:'OUTSKIRTS_STREAM',shape:'rect',u1:36,v1:6,u2:51,v2:48},
   OUTSKIRTS_LAKE:{id:'OUTSKIRTS_LAKE',shape:'ellipse',u:52,v:50.2,radiusU:9.2,radiusV:7.7},
