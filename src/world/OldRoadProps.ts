@@ -48,10 +48,11 @@ export class OldRoadProps{
       this.length+=length;
     }
     this.placeOnShoulder('aetherSign',.07,27.4,.60,{role:'start-sign'});
-    // Round 48: move the lantern fully into the grass pocket to the left of
-    // the Aether sign, matching the user-marked position, and shrink it a bit
-    // more so it feels proportional to the signpost.
-    this.placeOnShoulder('signLanternDay',.060,48.0,.085,{role:'start-sign-lantern',light:'warm-lantern'});
+    // Round 50: push the lantern farther left into the yellow-marked pocket,
+    // close to the road edge, and guarantee it no longer hides behind the sign.
+    // If any overlap remained, the requested rule is to prefer moving it farther
+    // left until every visible lantern pixel clears the sign silhouette.
+    this.placeOnShoulder('signLanternDay',.064,63.0,.085,{role:'start-sign-lantern',light:'warm-lantern'});
     this.placeOnShoulder('waystone',1/3,21.5,1.36,{role:'ruined-waystone'});
     for(const [key,fraction,offset,scale,flipX=false,angle=0] of DRESSING)
       this.placeOnShoulder(key,fraction,offset,scale,{flipX,role:'roadside',
