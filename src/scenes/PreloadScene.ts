@@ -160,8 +160,11 @@ export class PreloadScene extends Phaser.Scene{
     for(const appearanceId of PLAYER_APPEARANCE_ORDER){
       for(const state of PLAYER_VISUAL_STATES){
         const key=playerTextureKey(appearanceId,state);
-        this.load.spritesheet(key,`assets/images/characters/player/${appearanceId}_${state}.png`,{frameWidth:96,frameHeight:96});
-        this.load.spritesheet(playerOutlineTextureKey(appearanceId,state),`assets/images/characters/player/${appearanceId}_${state}_outline.png`,{frameWidth:96,frameHeight:96});
+        const playerSheetConfig=appearanceId==='mage_f'
+          ?{frameWidth:96,frameHeight:96,margin:1,spacing:2}
+          :{frameWidth:96,frameHeight:96};
+        this.load.spritesheet(key,`assets/images/characters/player/${appearanceId}_${state}.png`,playerSheetConfig);
+        this.load.spritesheet(playerOutlineTextureKey(appearanceId,state),`assets/images/characters/player/${appearanceId}_${state}_outline.png`,playerSheetConfig);
       }
     }
 
