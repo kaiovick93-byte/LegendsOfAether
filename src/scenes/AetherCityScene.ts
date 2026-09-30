@@ -432,6 +432,40 @@ export class AetherCityScene extends Phaser.Scene {
     this.cityGround=cityGround;
     this.cityGroundMask=cityGroundMask;
 
+    // Round 59 — a faixa incorporada ao norte da cidade não pode revelar a
+    // cor de fundo da câmera. Ela usa exatamente o mesmo material contínuo dos
+    // Arredores, repetido como tile (sem stretch) e recortado apenas entre a
+    // antiga linha norte da cidade e o novo muro norte.
+    const expansionSouth=C.CITY_MIN;
+    const expansionCorners=[
+      this.project(perimeter.west,perimeter.north),
+      this.project(perimeter.east,perimeter.north),
+      this.project(perimeter.east,expansionSouth),
+      this.project(perimeter.west,expansionSouth)
+    ];
+    const expansionMinX=Math.min(...expansionCorners.map(point=>point.x));
+    const expansionMaxX=Math.max(...expansionCorners.map(point=>point.x));
+    const expansionMinY=Math.min(...expansionCorners.map(point=>point.y));
+    const expansionMaxY=Math.max(...expansionCorners.map(point=>point.y));
+    const expansionGround=this.add.tileSprite(
+      (expansionMinX+expansionMaxX)/2,
+      (expansionMinY+expansionMaxY)/2,
+      expansionMaxX-expansionMinX,
+      expansionMaxY-expansionMinY,
+      'outskirts_ground_b4_surface'
+    ).setOrigin(.5).setDepth(C.ISO_DEPTH_BASE-60);
+    const expansionMask=this.make.graphics({x:0,y:0,add:false});
+    expansionMask.fillStyle(0xffffff,1).beginPath();
+    expansionMask.moveTo(expansionCorners[0].x,expansionCorners[0].y)
+      .lineTo(expansionCorners[1].x,expansionCorners[1].y)
+      .lineTo(expansionCorners[2].x,expansionCorners[2].y)
+      .lineTo(expansionCorners[3].x,expansionCorners[3].y)
+      .closePath().fillPath();
+    expansionGround.setMask(expansionMask.createGeometryMask());
+    expansionGround.setData?.('aetherRenderClass','ground');
+    this.cityNorthExpansionGround=expansionGround;
+    this.cityNorthExpansionGroundMask=expansionMask;
+
     // A malha é composta por peças de rua, calçada, esquina, cruzamento,
     // entrada e praça. Não há mais uma imagem gigante de pavimento nem a
     // antiga borda marrom recortando a cidade inteira.
@@ -2224,17 +2258,26 @@ export class AetherCityScene extends Phaser.Scene {
 
   isOutsideCityWallEnvelope(u, v, radius) {
     const C = AetherCityScene;
-    // Bloqueia somente a faixa física da muralha. Estar do lado de fora não é
-    // mais inválido; o jogador atravessa a faixa pelos dois arcos e continua
-    // caminhando no mesmo sistema lógico.
+    const perimeter=this.getCityWallBounds();
+    // Round 59 — a colisão acompanha o perímetro visual expandido. A antiga
+    // linha norte (v≈2) deixa de existir como barreira invisível; oeste/leste
+    // passam a alcançar o novo muro em v=-6, e somente os vãos Sul/Leste
+    // continuam atravessáveis.
     const overlaps=(value,start,end)=>value+radius>=start&&value-radius<=end;
-    const alongWall=(value)=>overlaps(value,1.15,26.85);
+    const alongVerticalWall=(value)=>overlaps(value,perimeter.north-.85,perimeter.south+.85);
+    const alongHorizontalWall=(value)=>overlaps(value,perimeter.west-.85,perimeter.east+.85);
     const insideEastGate=v-radius>C.GATE_MIN&&v+radius<C.GATE_MAX;
     const insideSouthGate=u-radius>C.GATE_MIN&&u+radius<C.GATE_MAX;
-    if(overlaps(u,1.18,3.12)&&alongWall(v))return true;
-    if(overlaps(v,1.18,3.12)&&alongWall(u))return true;
-    if(overlaps(u,25.22,27.35)&&alongWall(v)&&!insideEastGate)return true;
-    if(overlaps(v,25.22,27.35)&&alongWall(u)&&!insideSouthGate)return true;
+
+    // Oeste — mesma posição física, agora prolongada até o novo canto norte.
+    if(overlaps(u,perimeter.west-.82,perimeter.west+1.12)&&alongVerticalWall(v))return true;
+    // Norte — novo muro real. O portão norte está em construção e permanece
+    // fechado, portanto não existe abertura caminhável nesta faixa.
+    if(overlaps(v,perimeter.north-.82,perimeter.north+1.12)&&alongHorizontalWall(u))return true;
+    // Leste — preserva somente o vão real do Portão Leste.
+    if(overlaps(u,perimeter.east-.78,perimeter.east+1.35)&&alongVerticalWall(v)&&!insideEastGate)return true;
+    // Sul — preserva somente o vão real do Portão Sul.
+    if(overlaps(v,perimeter.south-.78,perimeter.south+1.35)&&alongHorizontalWall(u)&&!insideSouthGate)return true;
     return false;
   }
 

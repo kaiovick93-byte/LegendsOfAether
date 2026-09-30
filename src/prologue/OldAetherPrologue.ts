@@ -103,12 +103,12 @@ class PrologueCue{
     this.root=scene.add.container(0,0).setDepth(1800).setScrollFactor(1).setVisible(false);
     this.back=scene.add.graphics();
     this.keycap=scene.add.graphics();
-    this.key=scene.add.text(-61,0,'F',{fontFamily:'Arial',fontSize:11,color:'#17202b',fontStyle:'bold'}).setOrigin(.5);
-    this.text=scene.add.text(-42,0,'Investigar',{fontFamily:'Georgia, serif',fontSize:11,color:'#273342',fontStyle:'bold'}).setOrigin(0,.5);
-    this.back.fillStyle(0xffffff,.92).fillRoundedRect(-96,-29,192,58,9)
-      .lineStyle(1,0xc4ccd5,.96).strokeRoundedRect(-96,-29,192,58,9);
-    this.keycap.fillStyle(0xf4f6f8,1).fillRoundedRect(-72,-10,22,20,5)
-      .lineStyle(1,0x8c98a5,1).strokeRoundedRect(-72,-10,22,20,5);
+    this.key=scene.add.text(-53,0,'F',{fontFamily:'Arial',fontSize:10,color:'#17202b',fontStyle:'bold'}).setOrigin(.5);
+    this.text=scene.add.text(-34,0,'Investigar',{fontFamily:'Georgia, serif',fontSize:10,color:'#273342',fontStyle:'bold'}).setOrigin(0,.5);
+    this.back.fillStyle(0xffffff,.92).fillRoundedRect(-75,-22,150,44,8)
+      .lineStyle(1,0xc4ccd5,.96).strokeRoundedRect(-75,-22,150,44,8);
+    this.keycap.fillStyle(0xf4f6f8,1).fillRoundedRect(-63,-9,20,18,5)
+      .lineStyle(1,0x8c98a5,1).strokeRoundedRect(-63,-9,20,18,5);
     this.root.add([this.back,this.keycap,this.key,this.text]);
   }
   show(x,y,_depth,label){
@@ -321,21 +321,30 @@ export class OldAetherPrologue{
   createBloodTrailDressing(){
     this.bloodTrailDecor=[];
     this.skeletalRemainsDecor=[];
-    const place=(collection,key,u,v,width,depthOffset=.02,originX=.5,originY=.5,depthU=u,depthV=v)=>{
+    // Round 58: sangue e corpos são elementos de chão. Eles não participam do
+    // Y-sorting isométrico dos atores, pois isso fazia um corpo/poça ganhar
+    // profundidade maior que o jogador e cobrir a personagem. A ordem fixa é:
+    // terreno/estrada -> sangue -> corpos/restos -> atores.
+    const groundDepth=(layer)=>this.scene.aetherTerritory?.groundDepth?.(layer)??(this.scene.depthAt(0,0,layer));
+    const BLOOD_GROUND_LAYER=-69.70;
+    const BODY_GROUND_LAYER=-69.35;
+    const SKELETON_GROUND_LAYER=-69.30;
+    const place=(collection,key,u,v,width,groundLayer,originX=.5,originY=.5)=>{
       if(!this.scene.textures.exists(key))return;
       const point=this.scene.project(u,v);
       const source=this.scene.textures.get(key).getSourceImage();
       const sprite=this.scene.add.image(point.x,point.y,key)
         .setOrigin(originX,originY)
         .setScale(width/source.width)
-        .setDepth(this.scene.depthAt(depthU,depthV,depthOffset));
+        .setDepth(groundDepth(groundLayer));
+      sprite.setData?.('aetherRenderClass','ground-decal');
       collection.push(sprite);
       return sprite;
     };
     // Pequena poça inicial junto à estrada e um começo de rastro mais delicado,
     // evitando que o sangue pareça “flutuar” e melhorando a leitura visual.
-    place(this.bloodTrailDecor,'road_blood_pool_02',10.02,63.00,48,-.33,.5,.5,10.02,62.70);
-    place(this.bloodTrailDecor,'road_blood_pool_01',9.88,62.84,24,-.32,.5,.5,9.88,62.52);
+    place(this.bloodTrailDecor,'road_blood_pool_02',10.02,63.00,48,BLOOD_GROUND_LAYER,.5,.5);
+    place(this.bloodTrailDecor,'road_blood_pool_01',9.88,62.84,24,BLOOD_GROUND_LAYER,.5,.5);
     const trail=[
       [9.58,62.42,39],[9.22,61.70,35],[8.88,60.96,34],
       [8.48,60.18,38],[8.00,59.54,37],[7.46,58.78,43],
@@ -343,21 +352,21 @@ export class OldAetherPrologue{
       [6.00,56.06,44],[5.70,55.42,47],[5.48,54.84,38],
       [5.30,54.28,42]
     ];
-    trail.forEach(([u,v,width],index)=>place(this.bloodTrailDecor,`road_blood_trail_0${index%3+1}`,u,v,width,-.31,.5,.5,u,v-.30));
+    trail.forEach(([u,v,width],index)=>place(this.bloodTrailDecor,`road_blood_trail_0${index%3+1}`,u,v,width,BLOOD_GROUND_LAYER,.5,.5));
 
     // As poças principais ficam claramente abaixo dos viajantes abatidos.
-    place(this.bloodTrailDecor,'road_blood_pool_03',4.84,53.10,94,-.35,.5,.5,4.84,52.66);
-    place(this.bloodTrailDecor,'road_blood_pool_02',6.14,53.76,98,-.35,.5,.5,6.14,53.22);
-    place(this.bloodTrailDecor,'road_blood_pool_01',5.58,54.02,58,-.34,.5,.5,5.58,53.56);
+    place(this.bloodTrailDecor,'road_blood_pool_03',4.84,53.10,94,BLOOD_GROUND_LAYER,.5,.5);
+    place(this.bloodTrailDecor,'road_blood_pool_02',6.14,53.76,98,BLOOD_GROUND_LAYER,.5,.5);
+    place(this.bloodTrailDecor,'road_blood_pool_01',5.58,54.02,58,BLOOD_GROUND_LAYER,.5,.5);
 
     // Corpos ligeiramente reposicionados para parecerem deitados sobre o sangue,
     // mantendo a passagem do jogador por cima deles.
-    place(this.bloodTrailDecor,'road_fallen_traveler_01',4.76,52.96,122,-.17,.5,.75,4.76,52.14);
-    place(this.bloodTrailDecor,'road_fallen_traveler_02',6.14,53.50,116,-.17,.5,.77,6.14,52.70);
+    place(this.bloodTrailDecor,'road_fallen_traveler_01',4.76,52.96,122,BODY_GROUND_LAYER,.5,.75);
+    place(this.bloodTrailDecor,'road_fallen_traveler_02',6.14,53.50,116,BODY_GROUND_LAYER,.5,.77);
 
     // Restos esqueléticos futuros seguem a mesma lógica de alinhamento.
-    place(this.skeletalRemainsDecor,'road_skeletal_remains_01',4.80,53.00,109,-.19,.5,.73,4.80,52.20);
-    place(this.skeletalRemainsDecor,'road_skeletal_remains_02',6.12,53.60,103,-.19,.5,.75,6.12,52.82);
+    place(this.skeletalRemainsDecor,'road_skeletal_remains_01',4.80,53.00,109,SKELETON_GROUND_LAYER,.5,.73);
+    place(this.skeletalRemainsDecor,'road_skeletal_remains_02',6.12,53.60,103,SKELETON_GROUND_LAYER,.5,.75);
   }
 
   shouldUseSkeletalAftermath(){
@@ -408,7 +417,7 @@ export class OldAetherPrologue{
     const player=this.scene.player;
     // Mesmo sistema de distância em pixels usado pelos NPCs, com margem para
     // o poste e a base visual da placa, sem exigir entrar em sua colisão.
-    return Phaser.Math.Distance.Between(player.x,player.y,sign.x,sign.y)<=120;
+    return Phaser.Math.Distance.Between(player.x,player.y,sign.x,sign.y)<=80;
   }
   distanceTo(anchor){return Math.hypot(this.scene.player.isoX-anchor.u,this.scene.player.isoY-anchor.v);}
   isNear(anchor,radius=1.12){return this.distanceTo(anchor)<=radius;}
@@ -869,7 +878,7 @@ export class OldAetherPrologue{
 
   nearRuinedRoadWaystone(){
     const marker=this.ruinedRoadWaystone();
-    return !!marker?.active&&Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,marker.x,marker.y)<=115;
+    return !!marker?.active&&Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,marker.x,marker.y)<=80;
   }
 
   tryInteract(){
