@@ -47,12 +47,19 @@ export class OldRoadProps{
       this.segments.push({a,b,dx:dx/length,dy:dy/length,length,start:this.length});
       this.length+=length;
     }
-    this.placeOnShoulder('aetherSign',.07,27.4,.60,{role:'start-sign'});
-    // Round 50: push the lantern farther left into the yellow-marked pocket,
-    // close to the road edge, and guarantee it no longer hides behind the sign.
-    // If any overlap remained, the requested rule is to prefer moving it farther
-    // left until every visible lantern pixel clears the sign silhouette.
-    this.placeOnShoulder('signLanternDay',.064,63.0,.085,{role:'start-sign-lantern',light:'warm-lantern'});
+    const signRoutePoint=this.roadPoint(.07);
+    const signX=signRoutePoint.x+signRoutePoint.dy*27.4;
+    const signY=signRoutePoint.y-signRoutePoint.dx*27.4;
+    this.place('aetherSign',signX,signY,.60,{role:'start-sign',fraction:.07,offset:27.4,side:'left-towards-city'});
+
+    // Round 60: posicionamento real em tela, independente do normal da estrada.
+    // A lanterna fica totalmente à esquerda da placa, dentro da área marcada pelo
+    // usuário. O deslocamento de 118 px deixa uma folga visível entre os alpha
+    // bounds dos dois sprites, garantindo que nenhum pixel da lanterna fique
+    // escondido atrás do poste, do suporte ou da placa Aether.
+    this.place('signLanternDay',signX-118,signY+4,.085,{
+      role:'start-sign-lantern',light:'warm-lantern',side:'left-of-aether-sign'
+    });
     this.placeOnShoulder('waystone',1/3,21.5,1.36,{role:'ruined-waystone'});
     for(const [key,fraction,offset,scale,flipX=false,angle=0] of DRESSING)
       this.placeOnShoulder(key,fraction,offset,scale,{flipX,role:'roadside',
