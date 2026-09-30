@@ -145,30 +145,34 @@ export class OldRoadProps{
     const localY=(.64-originY)*sprite.height*prop.scale;
     const glowX=sprite.x+localX;
     const glowY=sprite.y+localY;
-    const groundX=glowX-4;
-    const groundY=sprite.y-5;
+    const groundX=glowX-8;
+    const groundY=sprite.y-4;
     // A camada global de noite fica em depth 650. Estes brilhos locais ficam
     // logo acima dela (e ainda abaixo da HUD) para a lanterna realmente
     // devolver luz ao chão, à grama e à base da placa.
+    //
+    // O objetivo aqui é evitar um "orb" artificial desenhado por cima do lampião.
+    // Portanto, a maior parte da luz fica espalhada no chão e na base da placa,
+    // enquanto perto da lanterna existe apenas um halo pequeno e suave.
     const lightDepth=660;
-    const groundOuter=this.scene.add.ellipse(groundX,groundY,210,104,0xffad4f,.12)
+    const groundOuter=this.scene.add.ellipse(groundX,groundY,228,116,0xffab4b,.115)
       .setDepth(lightDepth).setBlendMode(Phaser.BlendModes.ADD);
-    const groundMid=this.scene.add.ellipse(groundX,groundY-2,150,74,0xffc568,.16)
+    const groundMid=this.scene.add.ellipse(groundX+2,groundY-2,164,82,0xffc772,.145)
       .setDepth(lightDepth+.01).setBlendMode(Phaser.BlendModes.ADD);
-    const groundInner=this.scene.add.ellipse(groundX,groundY-5,92,46,0xffdfa0,.20)
+    const groundInner=this.scene.add.ellipse(groundX+4,groundY-6,104,54,0xffe2a8,.16)
       .setDepth(lightDepth+.02).setBlendMode(Phaser.BlendModes.ADD);
-    const outer=this.scene.add.ellipse(glowX,glowY+5,78,66,0xffbd59,.16)
+    const postFill=this.scene.add.ellipse(groundX+14,groundY-18,64,50,0xffc66d,.10)
       .setDepth(lightDepth+.03).setBlendMode(Phaser.BlendModes.ADD);
-    const mid=this.scene.add.ellipse(glowX,glowY+2,44,38,0xffd98c,.26)
+    const haloOuter=this.scene.add.ellipse(glowX,glowY+1,26,20,0xffd58d,.10)
       .setDepth(lightDepth+.04).setBlendMode(Phaser.BlendModes.ADD);
-    const core=this.scene.add.circle(glowX,glowY,8,0xffffcf,.62)
+    const haloInner=this.scene.add.ellipse(glowX,glowY,14,11,0xffffdd,.16)
       .setDepth(lightDepth+.05).setBlendMode(Phaser.BlendModes.ADD);
-    for(const light of [groundOuter,groundMid,groundInner,outer,mid,core])
+    for(const light of [groundOuter,groundMid,groundInner,postFill,haloOuter,haloInner])
       this.territory.track(light,prop.x,prop.y,{alwaysActive:true});
     this.lanterns.push({
-      sprite,groundOuter,groundMid,groundInner,outer,mid,core,
+      sprite,groundOuter,groundMid,groundInner,postFill,haloOuter,haloInner,
       dayKey:'old_road_sign_lantern_day_01',nightKey:'old_road_sign_lantern_night_01',isNightTexture:false,
-      base:{groundOuter:.12,groundMid:.16,groundInner:.20,outer:.16,mid:.26,core:.62}
+      base:{groundOuter:.115,groundMid:.145,groundInner:.16,postFill:.10,haloOuter:.10,haloInner:.16}
     });
     this.updateLanterns();
   }
@@ -178,7 +182,8 @@ export class OldRoadProps{
     // A chama continua acendendo gradualmente, mas a luz devolvida ao ambiente
     // cresce mais rápido. Assim, poucos minutos depois das 19:15 já existe uma
     // mancha âmbar perceptível no chão em vez de apenas o lampião parecer aceso.
-    const ambientIntensity=intensity<=0?0:Math.min(1,.32+.68*Math.sqrt(intensity));
+    const ambientIntensity=intensity<=0?0:Math.min(1,.36+.64*Math.sqrt(intensity));
+    const haloIntensity=intensity<=0?0:Math.min(1,.18+.82*intensity);
     for(const lantern of this.lanterns){
       const useNightTexture=intensity>.02;
       if(useNightTexture!==lantern.isNightTexture){
@@ -186,15 +191,15 @@ export class OldRoadProps{
         lantern.isNightTexture=useNightTexture;
       }
       const visible=intensity>.001;
-      for(const key of ['groundOuter','groundMid','groundInner']){
+      for(const key of ['groundOuter','groundMid','groundInner','postFill']){
         const light=lantern[key];
         if(!light)continue;
         light.setVisible(visible).setAlpha(lantern.base[key]*ambientIntensity);
       }
-      for(const key of ['outer','mid','core']){
+      for(const key of ['haloOuter','haloInner']){
         const light=lantern[key];
         if(!light)continue;
-        light.setVisible(visible).setAlpha(lantern.base[key]*intensity);
+        light.setVisible(visible).setAlpha(lantern.base[key]*haloIntensity);
       }
     }
   }
