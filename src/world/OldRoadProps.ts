@@ -154,17 +154,17 @@ export class OldRoadProps{
     // Portanto, a maior parte da luz fica espalhada no chão e na base da placa,
     // enquanto perto da lanterna existe apenas um halo pequeno e suave.
     const lightDepth=660;
-    const groundOuter=this.scene.add.ellipse(groundX,groundY,228,116,0xffab4b,.115)
+    const groundOuter=this.scene.add.ellipse(groundX-2,groundY+1,248,126,0xffa347,.18)
       .setDepth(lightDepth).setBlendMode(Phaser.BlendModes.ADD);
-    const groundMid=this.scene.add.ellipse(groundX+2,groundY-2,164,82,0xffc772,.145)
+    const groundMid=this.scene.add.ellipse(groundX+2,groundY-2,182,92,0xffc772,.22)
       .setDepth(lightDepth+.01).setBlendMode(Phaser.BlendModes.ADD);
-    const groundInner=this.scene.add.ellipse(groundX+4,groundY-6,104,54,0xffe2a8,.16)
+    const groundInner=this.scene.add.ellipse(groundX+5,groundY-6,118,60,0xffe6b1,.20)
       .setDepth(lightDepth+.02).setBlendMode(Phaser.BlendModes.ADD);
-    const postFill=this.scene.add.ellipse(groundX+14,groundY-18,64,50,0xffc66d,.10)
+    const postFill=this.scene.add.ellipse(groundX+16,groundY-18,74,56,0xffcb78,.14)
       .setDepth(lightDepth+.03).setBlendMode(Phaser.BlendModes.ADD);
-    const haloOuter=this.scene.add.ellipse(glowX,glowY+1,26,20,0xffd58d,.10)
+    const haloOuter=this.scene.add.ellipse(glowX,glowY+1,24,18,0xffd58d,.06)
       .setDepth(lightDepth+.04).setBlendMode(Phaser.BlendModes.ADD);
-    const haloInner=this.scene.add.ellipse(glowX,glowY,14,11,0xffffdd,.16)
+    const haloInner=this.scene.add.ellipse(glowX,glowY,12,10,0xffffdd,.10)
       .setDepth(lightDepth+.05).setBlendMode(Phaser.BlendModes.ADD);
     for(const light of [groundOuter,groundMid,groundInner,postFill,haloOuter,haloInner])
       this.territory.track(light,prop.x,prop.y,{alwaysActive:true});
@@ -181,8 +181,8 @@ export class OldRoadProps{
     // A chama continua acendendo gradualmente, mas a luz devolvida ao ambiente
     // cresce mais rápido. Assim, poucos minutos depois das 19:15 já existe uma
     // mancha âmbar perceptível no chão em vez de apenas o lampião parecer aceso.
-    const ambientIntensity=intensity<=0?0:Math.min(1,.36+.64*Math.sqrt(intensity));
-    const haloIntensity=intensity<=0?0:Math.min(1,.18+.82*intensity);
+    const ambientIntensity=intensity<=0?0:Math.min(1,.58+.42*intensity);
+    const haloIntensity=intensity<=0?0:Math.min(1,.14+.56*intensity);
     for(const lantern of this.lanterns){
       const useNightTexture=intensity>.02;
       if(useNightTexture!==lantern.isNightTexture){
