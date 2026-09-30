@@ -52,16 +52,11 @@ export class OldRoadProps{
     const signY=signRoutePoint.y-signRoutePoint.dx*27.4;
     this.place('aetherSign',signX,signY,.60,{role:'start-sign',fraction:.07,offset:27.4,side:'left-towards-city'});
 
-    // Round 60: posicionamento real em tela, independente do normal da estrada.
-    // A lanterna fica totalmente à esquerda da placa, dentro da área marcada pelo
-    // usuário. O deslocamento de 118 px deixa uma folga visível entre os alpha
-    // bounds dos dois sprites, garantindo que nenhum pixel da lanterna fique
-    // escondido atrás do poste, do suporte ou da placa Aether.
-    // Round 63: mantém o X aprovado do Round 60 e desloca o sprite inteiro
-    // 78 px para cima. O objetivo é alinhar o limite inferior visível do PNG
-    // da lanterna com a marca amarela indicada pelo usuário, sem redimensionar,
-    // recortar ou alterar a posição horizontal do conjunto.
-    this.place('signLanternDay',signX-118,signY-74,.085,{
+    // Round 65: revisão fina pela marcação visual do usuário.
+    // Mantém a escala e a arte intactas e move o conjunto completo somente o
+    // necessário para que o último pixel visível da base toque o chão no ponto
+    // amarelo: pequeno ajuste para a direita e deslocamento adicional para baixo.
+    this.place('signLanternDay',signX-50,signY+151,.085,{
       role:'start-sign-lantern',light:'warm-lantern',side:'left-of-aether-sign'
     });
     this.placeOnShoulder('waystone',1/3,21.5,1.36,{role:'ruined-waystone'});
