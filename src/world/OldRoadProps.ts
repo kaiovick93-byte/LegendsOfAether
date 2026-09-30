@@ -151,11 +151,11 @@ export class OldRoadProps{
     // logo acima dela (e ainda abaixo da HUD) para a lanterna realmente
     // devolver luz ao chão, à grama e à base da placa.
     const lightDepth=660;
-    const groundOuter=this.scene.add.ellipse(groundX,groundY,190,92,0xffad4f,.085)
+    const groundOuter=this.scene.add.ellipse(groundX,groundY,210,104,0xffad4f,.12)
       .setDepth(lightDepth).setBlendMode(Phaser.BlendModes.ADD);
-    const groundMid=this.scene.add.ellipse(groundX,groundY-2,132,66,0xffc568,.105)
+    const groundMid=this.scene.add.ellipse(groundX,groundY-2,150,74,0xffc568,.16)
       .setDepth(lightDepth+.01).setBlendMode(Phaser.BlendModes.ADD);
-    const groundInner=this.scene.add.ellipse(groundX,groundY-5,78,40,0xffdfa0,.12)
+    const groundInner=this.scene.add.ellipse(groundX,groundY-5,92,46,0xffdfa0,.20)
       .setDepth(lightDepth+.02).setBlendMode(Phaser.BlendModes.ADD);
     const outer=this.scene.add.ellipse(glowX,glowY+5,78,66,0xffbd59,.16)
       .setDepth(lightDepth+.03).setBlendMode(Phaser.BlendModes.ADD);
@@ -168,13 +168,17 @@ export class OldRoadProps{
     this.lanterns.push({
       sprite,groundOuter,groundMid,groundInner,outer,mid,core,
       dayKey:'old_road_sign_lantern_day_01',nightKey:'old_road_sign_lantern_night_01',isNightTexture:false,
-      base:{groundOuter:.085,groundMid:.105,groundInner:.12,outer:.16,mid:.26,core:.62}
+      base:{groundOuter:.12,groundMid:.16,groundInner:.20,outer:.16,mid:.26,core:.62}
     });
     this.updateLanterns();
   }
 
   updateLanterns(){
     const intensity=this.lanternIntensity();
+    // A chama continua acendendo gradualmente, mas a luz devolvida ao ambiente
+    // cresce mais rápido. Assim, poucos minutos depois das 19:15 já existe uma
+    // mancha âmbar perceptível no chão em vez de apenas o lampião parecer aceso.
+    const ambientIntensity=intensity<=0?0:Math.min(1,.32+.68*Math.sqrt(intensity));
     for(const lantern of this.lanterns){
       const useNightTexture=intensity>.02;
       if(useNightTexture!==lantern.isNightTexture){
@@ -182,7 +186,12 @@ export class OldRoadProps{
         lantern.isNightTexture=useNightTexture;
       }
       const visible=intensity>.001;
-      for(const key of ['groundOuter','groundMid','groundInner','outer','mid','core']){
+      for(const key of ['groundOuter','groundMid','groundInner']){
+        const light=lantern[key];
+        if(!light)continue;
+        light.setVisible(visible).setAlpha(lantern.base[key]*ambientIntensity);
+      }
+      for(const key of ['outer','mid','core']){
         const light=lantern[key];
         if(!light)continue;
         light.setVisible(visible).setAlpha(lantern.base[key]*intensity);
