@@ -57,7 +57,11 @@ export class OldRoadProps{
     // usuário. O deslocamento de 118 px deixa uma folga visível entre os alpha
     // bounds dos dois sprites, garantindo que nenhum pixel da lanterna fique
     // escondido atrás do poste, do suporte ou da placa Aether.
-    this.place('signLanternDay',signX-118,signY+4,.085,{
+    // Round 63: mantém o X aprovado do Round 60 e desloca o sprite inteiro
+    // 78 px para cima. O objetivo é alinhar o limite inferior visível do PNG
+    // da lanterna com a marca amarela indicada pelo usuário, sem redimensionar,
+    // recortar ou alterar a posição horizontal do conjunto.
+    this.place('signLanternDay',signX-118,signY-74,.085,{
       role:'start-sign-lantern',light:'warm-lantern',side:'left-of-aether-sign'
     });
     this.placeOnShoulder('waystone',1/3,21.5,1.36,{role:'ruined-waystone'});
