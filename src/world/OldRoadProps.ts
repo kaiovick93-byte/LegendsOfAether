@@ -52,20 +52,18 @@ export class OldRoadProps{
     const signY=signRoutePoint.y-signRoutePoint.dx*27.4;
     this.place('aetherSign',signX,signY,.60,{role:'start-sign',fraction:.07,offset:27.4,side:'left-towards-city'});
 
-    // Round 74: regra definitiva aplicada literalmente.
-    // Alinhar a base visível do poste com a marcação do usuário: a lanterna
-    // deve ficar totalmente fora da estrada, sobre a faixa de grama à esquerda
-    // da placa, e o último pixel inferior visível do poste precisa tocar o chão.
-    // Nada de aproximação relativa ao centro do sprite: usamos o ponto da base.
+    // Round 76: posicionamento medido diretamente no print de referência.
+    // A base visível atual do poste e a marcação amarela foram medidas na mesma
+    // captura. O delta de tela resultante foi convertido para pixels do jogo,
+    // evitando nova estimativa visual. O conjunto inteiro é movido para a faixa
+    // de grama marcada, com a base fora da estrada e sem mudar escala ou arte.
     // Métricas visuais dos PNGs na escala atual:
     // - base visível da placa ≈ (signX + 1.8, signY - 11.4)
     // - base visível do poste da lanterna ≈ (lanternX - 21.3, lanternY - 1.0)
     const signGroundX=signX+1.8;
     const signGroundY=signY-11.4;
-    // Deslocamento absoluto aprovado para levar o poste para a grama à esquerda,
-    // sem invadir a estrada e sem sobrepor a placa.
-    const lanternGroundX=signGroundX-124;
-    const lanternGroundY=signGroundY-3;
+    const lanternGroundX=signGroundX-106.3;
+    const lanternGroundY=signGroundY-24.3;
     const lanternX=lanternGroundX+21.3;
     const lanternY=lanternGroundY+1.0;
     this.place('signLanternDay',lanternX,lanternY,.085,{

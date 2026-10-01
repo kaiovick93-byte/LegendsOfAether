@@ -309,12 +309,15 @@ export class OldAetherPrologue{
         .setDepth(this.scene.depthAt(anchor.u+du,anchor.v+dv,depthOffset));
       this.cartDecor.push(prop);
     };
-    // Espalha a carga em três pontos visivelmente separados ao redor da carroça,
-    // para a cena parecer saqueada e não um bloco único de props sob o asset.
-    // Distribuição: um item à esquerda, um item ao centro e um item à direita.
-    placeScatter('road_wagon_scatter_barrel_01',-.98,.54,44,6,.04,.5,.82);
-    placeScatter('road_wagon_scatter_crate_01',.18,1.06,48,-10,.04,.5,.86);
-    placeScatter('road_wagon_scatter_supplies_01',1.28,.78,42,12,.04,.5,.86);
+    // Round 75: regras definitivas para a carga caída da carroça.
+    // 1) Nenhum item pode ficar "solto" longe da carroça.
+    // 2) Todo item deve permanecer visualmente ligado à frente / lateral imediata
+    //    do veículo, formando um pequeno agrupamento saqueado no chão.
+    // 3) A distribuição continua tendo leitura esquerda / centro / direita, mas
+    //    agora compacta e ancorada ao footprint da carroça.
+    placeScatter('road_wagon_scatter_barrel_01',-.20,.62,44,6,.04,.5,.82);
+    placeScatter('road_wagon_scatter_crate_01',.34,.80,48,-8,.04,.5,.86);
+    placeScatter('road_wagon_scatter_supplies_01',.82,.46,42,10,.04,.5,.86);
   }
 
   // Cena ambiental da emboscada na Estrada Velha. Cada PNG e posicionado
