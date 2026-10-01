@@ -417,7 +417,7 @@ export class OldAetherPrologue{
     const player=this.scene.player;
     // Mesmo sistema de distância em pixels usado pelos NPCs, com margem para
     // o poste e a base visual da placa, sem exigir entrar em sua colisão.
-    return Phaser.Math.Distance.Between(player.x,player.y,sign.x,sign.y)<=80;
+    return Phaser.Math.Distance.Between(player.x,player.y,sign.x,sign.y)<=50;
   }
   distanceTo(anchor){return Math.hypot(this.scene.player.isoX-anchor.u,this.scene.player.isoY-anchor.v);}
   isNear(anchor,radius=1.12){return this.distanceTo(anchor)<=radius;}
@@ -878,7 +878,7 @@ export class OldAetherPrologue{
 
   nearRuinedRoadWaystone(){
     const marker=this.ruinedRoadWaystone();
-    return !!marker?.active&&Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,marker.x,marker.y)<=80;
+    return !!marker?.active&&Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,marker.x,marker.y)<=50;
   }
 
   tryInteract(){
