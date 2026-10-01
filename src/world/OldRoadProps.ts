@@ -52,22 +52,20 @@ export class OldRoadProps{
     const signY=signRoutePoint.y-signRoutePoint.dx*27.4;
     this.place('aetherSign',signX,signY,.60,{role:'start-sign',fraction:.07,offset:27.4,side:'left-towards-city'});
 
-    // Round 73: correção definitiva da posição da lanterna inicial.
-    // A lanterna precisa ficar realmente fora da estrada, na faixa de grama
-    // à esquerda da placa Aether. O ponto-alvo é a pequena bolsa de terreno
-    // imediatamente à esquerda do arbusto, mantendo o poste tocando o chão e
-    // sem sobrepor a placa. Trabalhamos com a base visível da placa e com o
-    // pé visível do poste para aplicar um deslocamento absoluto, em vez de uma
-    // aproximação visual relativa ao centro do sprite.
+    // Round 74: regra definitiva aplicada literalmente.
+    // Alinhar a base visível do poste com a marcação do usuário: a lanterna
+    // deve ficar totalmente fora da estrada, sobre a faixa de grama à esquerda
+    // da placa, e o último pixel inferior visível do poste precisa tocar o chão.
+    // Nada de aproximação relativa ao centro do sprite: usamos o ponto da base.
     // Métricas visuais dos PNGs na escala atual:
     // - base visível da placa ≈ (signX + 1.8, signY - 11.4)
     // - base visível do poste da lanterna ≈ (lanternX - 21.3, lanternY - 1.0)
     const signGroundX=signX+1.8;
     const signGroundY=signY-11.4;
-    // alvo validado: bem mais à esquerda da placa e alguns pixels abaixo da
-    // tentativa anterior, para o poste tocar a grama e não invadir a estrada.
-    const lanternGroundX=signGroundX-72;
-    const lanternGroundY=signGroundY-6;
+    // Deslocamento absoluto aprovado para levar o poste para a grama à esquerda,
+    // sem invadir a estrada e sem sobrepor a placa.
+    const lanternGroundX=signGroundX-124;
+    const lanternGroundY=signGroundY-3;
     const lanternX=lanternGroundX+21.3;
     const lanternY=lanternGroundY+1.0;
     this.place('signLanternDay',lanternX,lanternY,.085,{
