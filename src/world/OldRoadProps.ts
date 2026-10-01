@@ -52,17 +52,19 @@ export class OldRoadProps{
     const signY=signRoutePoint.y-signRoutePoint.dx*27.4;
     this.place('aetherSign',signX,signY,.60,{role:'start-sign',fraction:.07,offset:27.4,side:'left-towards-city'});
 
-    // Round 70: realinhamento definitivo da lanterna inicial.
-    // Em vez de empurrar o sprite por tentativas em pixels absolutos, alinhar o
-    // pé visível do poste da lanterna com o mesmo plano de chão da placa de
-    // Aether e mantê-lo à esquerda da placa, já totalmente dentro do terreno.
+    // Round 72: reposicionamento real da lanterna inicial.
+    // A referência do usuário mostra que a lanterna deve ficar na faixa de
+    // grama/terra à esquerda da placa, sem invadir a estrada e sem cair no
+    // vazio do canto do mapa. Para isso, usamos o pé visível da placa como
+    // referência e deslocamos o pé visível do poste da lanterna para a bolsão
+    // de terreno logo à esquerda e um pouco acima da placa.
     // Métricas visuais dos PNGs na escala atual:
     // - base visível da placa ≈ (signX + 1.8, signY - 11.4)
     // - base visível do poste da lanterna ≈ (lanternX - 21.3, lanternY - 1.0)
     const signGroundX=signX+1.8;
     const signGroundY=signY-11.4;
-    const lanternGroundX=signGroundX-52;
-    const lanternGroundY=signGroundY;
+    const lanternGroundX=signGroundX-36;
+    const lanternGroundY=signGroundY-15;
     const lanternX=lanternGroundX+21.3;
     const lanternY=lanternGroundY+1.0;
     this.place('signLanternDay',lanternX,lanternY,.085,{
