@@ -35,6 +35,45 @@ const DRESSING=[
   ['bush',.910,40.0,.74,true],['rocks',.944,42.9,.44]
 ];
 
+
+function ensureLanternLightTexture(scene,key,{innerColor='rgba(255,255,255,1)',midColor='rgba(255,255,255,0.35)',outerColor='rgba(255,255,255,0)',width=256,height=256,stops=[[0,1],[0.4,0.35],[1,0]],shape='radial'}={}){
+  if(scene.textures.exists(key))return key;
+  const texture=scene.textures.createCanvas(key,width,height);
+  const ctx=texture?.getContext?.();
+  if(!ctx)return key;
+  ctx.clearRect(0,0,width,height);
+  let gradient;
+  if(shape==='linear-vertical'){
+    gradient=ctx.createLinearGradient(width*.5,0,width*.5,height);
+    for(const [offset,alpha] of stops)gradient.addColorStop(offset,midColor.replace(/\d?\.\d+\)$/,''));
+  }
+  const cx=width*.5, cy=height*.5;
+  const rx=width*.5, ry=height*.5;
+  // Draw with manual concentric ellipses for predictable feathering.
+  for(let i=stops.length-1;i>=0;i--){
+    const [offset,alpha]=stops[i];
+    const r=1-offset;
+    const color=(i===0?innerColor:(i===stops.length-1?outerColor:midColor)).replace(/rgba\(([^,]+),([^,]+),([^,]+),[^\)]+\)/,'rgba($1,$2,$3,'+alpha+')');
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,Math.max(1,rx*r),Math.max(1,ry*r),0,0,Math.PI*2);
+    ctx.fill();
+  }
+  texture.refresh();
+  return key;
+}
+
+function addSoftLight(scene,key,x,y,width,height,{alpha=1,blend=Phaser.BlendModes.SCREEN,depth=660,rotation=0,originX=.5,originY=.5,tint=0xffffff}={}){
+  return scene.add.image(x,y,key)
+    .setOrigin(originX,originY)
+    .setDisplaySize(width,height)
+    .setTint(tint)
+    .setAlpha(alpha)
+    .setRotation(rotation)
+    .setBlendMode(blend)
+    .setDepth(depth);
+}
+
 export class OldRoadProps{
   constructor(territory){
     this.territory=territory;this.scene=territory.scene;this.props=[];this.lanterns=[];
@@ -154,39 +193,74 @@ export class OldRoadProps{
     const localY=(.64-originY)*sprite.height*prop.scale;
     const glowX=sprite.x+localX;
     const glowY=sprite.y+localY;
-    const groundX=glowX-8;
+    const groundX=glowX-6;
     const groundY=sprite.y-4;
-    // A camada global de noite fica em depth 650. Estes brilhos locais ficam
-    // logo acima dela (e ainda abaixo da HUD), mas agora a maior parte do efeito
-    // usa SCREEN em tons quase neutros para "abrir" a escuridão ao redor da
-    // lanterna, em vez de simplesmente pintar um círculo amarelo por cima.
-    //
-    // Estrutura do efeito:
-    // - 3 elipses largas e frias/quase neutras levantam a leitura do chão;
-    // - 1 núcleo âmbar pequeno aquece somente a área mais próxima da chama;
-    // - 1 lavagem discreta ajuda a placa/poste a receber luz;
-    // - 2 halos pequenos ficam só no lampião, sem formar orb artificial.
+
+    ensureLanternLightTexture(this.scene,'old-road-lantern-ground-soft',{
+      width:512,height:320,
+      innerColor:'rgba(255,250,236,0.92)',
+      midColor:'rgba(255,235,185,0.38)',
+      outerColor:'rgba(255,240,205,0)',
+      stops:[[0,.92],[.18,.58],[.42,.26],[.72,.09],[1,0]]
+    });
+    ensureLanternLightTexture(this.scene,'old-road-lantern-ground-warm',{
+      width:320,height:200,
+      innerColor:'rgba(255,226,150,0.74)',
+      midColor:'rgba(255,205,116,0.28)',
+      outerColor:'rgba(255,205,116,0)',
+      stops:[[0,.74],[.22,.46],[.48,.18],[.82,.05],[1,0]]
+    });
+    ensureLanternLightTexture(this.scene,'old-road-lantern-sign-bounce',{
+      width:220,height:240,
+      innerColor:'rgba(255,228,160,0.26)',
+      midColor:'rgba(255,220,145,0.12)',
+      outerColor:'rgba(255,220,145,0)',
+      stops:[[0,.26],[.35,.17],[.68,.07],[1,0]]
+    });
+    ensureLanternLightTexture(this.scene,'old-road-lantern-lamp-aura',{
+      width:128,height:128,
+      innerColor:'rgba(255,244,205,0.90)',
+      midColor:'rgba(255,227,160,0.26)',
+      outerColor:'rgba(255,227,160,0)',
+      stops:[[0,.90],[.22,.44],[.55,.12],[1,0]]
+    });
+    ensureLanternLightTexture(this.scene,'old-road-lantern-core',{
+      width:72,height:72,
+      innerColor:'rgba(255,252,236,1)',
+      midColor:'rgba(255,246,214,0.42)',
+      outerColor:'rgba(255,246,214,0)',
+      stops:[[0,1],[.28,.48],[.64,.12],[1,0]]
+    });
+
     const lightDepth=660;
-    const ambientOuter=this.scene.add.ellipse(groundX-10,groundY+8,330,182,0xf2f6ff,.16)
-      .setDepth(lightDepth).setBlendMode(Phaser.BlendModes.SCREEN);
-    const ambientMid=this.scene.add.ellipse(groundX-2,groundY+2,236,126,0xffffff,.20)
-      .setDepth(lightDepth+.01).setBlendMode(Phaser.BlendModes.SCREEN);
-    const ambientInner=this.scene.add.ellipse(groundX+4,groundY-3,150,82,0xfff8e4,.16)
-      .setDepth(lightDepth+.02).setBlendMode(Phaser.BlendModes.SCREEN);
-    const warmGround=this.scene.add.ellipse(groundX+8,groundY-4,110,62,0xffd387,.18)
-      .setDepth(lightDepth+.03).setBlendMode(Phaser.BlendModes.ADD);
-    const signWash=this.scene.add.ellipse(groundX+20,groundY-24,88,60,0xffdb9a,.08)
-      .setDepth(lightDepth+.04).setBlendMode(Phaser.BlendModes.SCREEN);
-    const lampAura=this.scene.add.ellipse(glowX,glowY+1,20,16,0xffe7b2,.08)
-      .setDepth(lightDepth+.05).setBlendMode(Phaser.BlendModes.SCREEN);
-    const emberCore=this.scene.add.ellipse(glowX,glowY,10,8,0xffffec,.14)
-      .setDepth(lightDepth+.06).setBlendMode(Phaser.BlendModes.ADD);
+    const ambientOuter=addSoftLight(this.scene,'old-road-lantern-ground-soft',groundX-18,groundY+10,330,180,{
+      alpha:.30,blend:Phaser.BlendModes.SCREEN,depth:lightDepth,rotation:-.14
+    });
+    const ambientMid=addSoftLight(this.scene,'old-road-lantern-ground-soft',groundX-4,groundY+4,244,126,{
+      alpha:.22,blend:Phaser.BlendModes.SCREEN,depth:lightDepth+.01,rotation:-.14,tint:0xfff6de
+    });
+    const ambientInner=addSoftLight(this.scene,'old-road-lantern-ground-warm',groundX+14,groundY-1,146,78,{
+      alpha:.24,blend:Phaser.BlendModes.SCREEN,depth:lightDepth+.02,rotation:-.14,tint:0xffe3a8
+    });
+    const warmGround=addSoftLight(this.scene,'old-road-lantern-ground-warm',groundX+18,groundY-3,112,58,{
+      alpha:.30,blend:Phaser.BlendModes.ADD,depth:lightDepth+.03,rotation:-.14,tint:0xffcb77
+    });
+    const signWash=addSoftLight(this.scene,'old-road-lantern-sign-bounce',groundX+22,groundY-32,90,104,{
+      alpha:.16,blend:Phaser.BlendModes.SCREEN,depth:lightDepth+.04,rotation:-.06,tint:0xffe1a6
+    });
+    const lampAura=addSoftLight(this.scene,'old-road-lantern-lamp-aura',glowX,glowY+1,26,24,{
+      alpha:.18,blend:Phaser.BlendModes.SCREEN,depth:lightDepth+.05,tint:0xffebba
+    });
+    const emberCore=addSoftLight(this.scene,'old-road-lantern-core',glowX,glowY,11,11,{
+      alpha:.24,blend:Phaser.BlendModes.ADD,depth:lightDepth+.06,tint:0xfff8ea
+    });
+
     for(const light of [ambientOuter,ambientMid,ambientInner,warmGround,signWash,lampAura,emberCore])
       this.territory.track(light,prop.x,prop.y,{alwaysActive:true});
     this.lanterns.push({
       sprite,ambientOuter,ambientMid,ambientInner,warmGround,signWash,lampAura,emberCore,
       dayKey:'old_road_sign_lantern_day_01',nightKey:'old_road_sign_lantern_night_01',isNightTexture:false,
-      base:{ambientOuter:.18,ambientMid:.20,ambientInner:.16,warmGround:.14,signWash:.08,lampAura:.11,emberCore:.17}
+      base:{ambientOuter:.32,ambientMid:.22,ambientInner:.22,warmGround:.28,signWash:.16,lampAura:.18,emberCore:.25}
     });
     this.updateLanterns();
   }
@@ -196,9 +270,9 @@ export class OldRoadProps{
     // O efeito agora privilegia a "abertura" da escuridão em volta da lanterna:
     // a faixa ampla usa SCREEN quase neutro, a área próxima recebe calor âmbar,
     // e só a chama/lâmpada usam um núcleo mais luminoso.
-    const ambientLift=intensity<=0?0:Math.min(1,.24+.76*intensity);
-    const warmLift=intensity<=0?0:Math.min(1,.16+.84*intensity);
-    const coreLift=intensity<=0?0:Math.min(1,.12+.88*intensity);
+    const ambientLift=intensity<=0?0:Math.min(1,.10+.90*intensity);
+    const warmLift=intensity<=0?0:Math.min(1,.08+.92*intensity);
+    const coreLift=intensity<=0?0:Math.min(1,.06+.94*intensity);
     for(const lantern of this.lanterns){
       const useNightTexture=intensity>.02;
       if(useNightTexture!==lantern.isNightTexture){
