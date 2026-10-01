@@ -36,10 +36,10 @@ export const AETHER_PROLOGUE_ANCHORS=Object.freeze({
   // A âncora única controla tanto o sprite quanto a área de interação/coleta.
   travelSupplies:{u:9.8,v:63.8},
   youngWolf:{u:9.0,v:59.55},
-  // Round 47: a carroça abandonada foi reposicionada mais à esquerda,
-  // na clareira destacada pelo usuário, preservando a leitura da emboscada
-  // e movendo junto a área de interação e os itens espalhados.
-  attackedWagon:{u:3.55,v:47.95},
+  // Round 67: reposiciona a carroça atacada para a clareira correta,
+  // mais à esquerda e ligeiramente mais abaixo, alinhando o prop real,
+  // a área de interação e os itens espalhados à marcação validada.
+  attackedWagon:{u:3.10,v:49.40},
   goblinScouts:[{u:10.5,v:48.8},{u:12.15,v:47.25}],
   patrol:{u:11.9,v:41.55},
   cityVista:{u:13.1,v:34.5},
