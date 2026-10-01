@@ -309,10 +309,12 @@ export class OldAetherPrologue{
         .setDepth(this.scene.depthAt(anchor.u+du,anchor.v+dv,depthOffset));
       this.cartDecor.push(prop);
     };
-    // Substitui os três caixotes repetidos por carga variada derramada da carroça.
-    placeScatter('road_wagon_scatter_barrel_01',.92,.34,44,6,.04,.5,.82);
-    placeScatter('road_wagon_scatter_crate_01',.28,.90,48,-10,.04,.5,.86);
-    placeScatter('road_wagon_scatter_supplies_01',1.18,-.04,42,12,.04,.5,.86);
+    // Espalha a carga em três pontos visivelmente separados ao redor da carroça,
+    // para a cena parecer saqueada e não um bloco único de props sob o asset.
+    // Distribuição: um item à esquerda, um item ao centro e um item à direita.
+    placeScatter('road_wagon_scatter_barrel_01',-.98,.54,44,6,.04,.5,.82);
+    placeScatter('road_wagon_scatter_crate_01',.18,1.06,48,-10,.04,.5,.86);
+    placeScatter('road_wagon_scatter_supplies_01',1.28,.78,42,12,.04,.5,.86);
   }
 
   // Cena ambiental da emboscada na Estrada Velha. Cada PNG e posicionado
