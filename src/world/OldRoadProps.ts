@@ -157,42 +157,48 @@ export class OldRoadProps{
     const groundX=glowX-8;
     const groundY=sprite.y-4;
     // A camada global de noite fica em depth 650. Estes brilhos locais ficam
-    // logo acima dela (e ainda abaixo da HUD) para a lanterna realmente
-    // devolver luz ao chão, à grama e à base da placa.
+    // logo acima dela (e ainda abaixo da HUD), mas agora a maior parte do efeito
+    // usa SCREEN em tons quase neutros para "abrir" a escuridão ao redor da
+    // lanterna, em vez de simplesmente pintar um círculo amarelo por cima.
     //
-    // O objetivo aqui é evitar um "orb" artificial desenhado por cima do lampião.
-    // Portanto, a maior parte da luz fica espalhada no chão e na base da placa,
-    // enquanto perto da lanterna existe apenas um halo pequeno e suave.
+    // Estrutura do efeito:
+    // - 3 elipses largas e frias/quase neutras levantam a leitura do chão;
+    // - 1 núcleo âmbar pequeno aquece somente a área mais próxima da chama;
+    // - 1 lavagem discreta ajuda a placa/poste a receber luz;
+    // - 2 halos pequenos ficam só no lampião, sem formar orb artificial.
     const lightDepth=660;
-    const groundOuter=this.scene.add.ellipse(groundX-2,groundY+1,248,126,0xffa347,.18)
-      .setDepth(lightDepth).setBlendMode(Phaser.BlendModes.ADD);
-    const groundMid=this.scene.add.ellipse(groundX+2,groundY-2,182,92,0xffc772,.22)
-      .setDepth(lightDepth+.01).setBlendMode(Phaser.BlendModes.ADD);
-    const groundInner=this.scene.add.ellipse(groundX+5,groundY-6,118,60,0xffe6b1,.20)
-      .setDepth(lightDepth+.02).setBlendMode(Phaser.BlendModes.ADD);
-    const postFill=this.scene.add.ellipse(groundX+16,groundY-18,74,56,0xffcb78,.14)
+    const ambientOuter=this.scene.add.ellipse(groundX-10,groundY+8,330,182,0xf2f6ff,.16)
+      .setDepth(lightDepth).setBlendMode(Phaser.BlendModes.SCREEN);
+    const ambientMid=this.scene.add.ellipse(groundX-2,groundY+2,236,126,0xffffff,.20)
+      .setDepth(lightDepth+.01).setBlendMode(Phaser.BlendModes.SCREEN);
+    const ambientInner=this.scene.add.ellipse(groundX+4,groundY-3,150,82,0xfff8e4,.16)
+      .setDepth(lightDepth+.02).setBlendMode(Phaser.BlendModes.SCREEN);
+    const warmGround=this.scene.add.ellipse(groundX+8,groundY-4,110,62,0xffd387,.18)
       .setDepth(lightDepth+.03).setBlendMode(Phaser.BlendModes.ADD);
-    const haloOuter=this.scene.add.ellipse(glowX,glowY+1,24,18,0xffd58d,.06)
-      .setDepth(lightDepth+.04).setBlendMode(Phaser.BlendModes.ADD);
-    const haloInner=this.scene.add.ellipse(glowX,glowY,12,10,0xffffdd,.10)
-      .setDepth(lightDepth+.05).setBlendMode(Phaser.BlendModes.ADD);
-    for(const light of [groundOuter,groundMid,groundInner,postFill,haloOuter,haloInner])
+    const signWash=this.scene.add.ellipse(groundX+20,groundY-24,88,60,0xffdb9a,.08)
+      .setDepth(lightDepth+.04).setBlendMode(Phaser.BlendModes.SCREEN);
+    const lampAura=this.scene.add.ellipse(glowX,glowY+1,20,16,0xffe7b2,.08)
+      .setDepth(lightDepth+.05).setBlendMode(Phaser.BlendModes.SCREEN);
+    const emberCore=this.scene.add.ellipse(glowX,glowY,10,8,0xffffec,.14)
+      .setDepth(lightDepth+.06).setBlendMode(Phaser.BlendModes.ADD);
+    for(const light of [ambientOuter,ambientMid,ambientInner,warmGround,signWash,lampAura,emberCore])
       this.territory.track(light,prop.x,prop.y,{alwaysActive:true});
     this.lanterns.push({
-      sprite,groundOuter,groundMid,groundInner,postFill,haloOuter,haloInner,
+      sprite,ambientOuter,ambientMid,ambientInner,warmGround,signWash,lampAura,emberCore,
       dayKey:'old_road_sign_lantern_day_01',nightKey:'old_road_sign_lantern_night_01',isNightTexture:false,
-      base:{groundOuter:.115,groundMid:.145,groundInner:.16,postFill:.10,haloOuter:.10,haloInner:.16}
+      base:{ambientOuter:.18,ambientMid:.20,ambientInner:.16,warmGround:.14,signWash:.08,lampAura:.11,emberCore:.17}
     });
     this.updateLanterns();
   }
 
   updateLanterns(){
     const intensity=this.lanternIntensity();
-    // A chama continua acendendo gradualmente, mas a luz devolvida ao ambiente
-    // cresce mais rápido. Assim, poucos minutos depois das 19:15 já existe uma
-    // mancha âmbar perceptível no chão em vez de apenas o lampião parecer aceso.
-    const ambientIntensity=intensity<=0?0:Math.min(1,.58+.42*intensity);
-    const haloIntensity=intensity<=0?0:Math.min(1,.14+.56*intensity);
+    // O efeito agora privilegia a "abertura" da escuridão em volta da lanterna:
+    // a faixa ampla usa SCREEN quase neutro, a área próxima recebe calor âmbar,
+    // e só a chama/lâmpada usam um núcleo mais luminoso.
+    const ambientLift=intensity<=0?0:Math.min(1,.24+.76*intensity);
+    const warmLift=intensity<=0?0:Math.min(1,.16+.84*intensity);
+    const coreLift=intensity<=0?0:Math.min(1,.12+.88*intensity);
     for(const lantern of this.lanterns){
       const useNightTexture=intensity>.02;
       if(useNightTexture!==lantern.isNightTexture){
@@ -200,15 +206,20 @@ export class OldRoadProps{
         lantern.isNightTexture=useNightTexture;
       }
       const visible=intensity>.001;
-      for(const key of ['groundOuter','groundMid','groundInner','postFill']){
+      for(const key of ['ambientOuter','ambientMid','ambientInner','signWash']){
         const light=lantern[key];
         if(!light)continue;
-        light.setVisible(visible).setAlpha(lantern.base[key]*ambientIntensity);
+        light.setVisible(visible).setAlpha(lantern.base[key]*ambientLift);
       }
-      for(const key of ['haloOuter','haloInner']){
+      for(const key of ['warmGround']){
         const light=lantern[key];
         if(!light)continue;
-        light.setVisible(visible).setAlpha(lantern.base[key]*haloIntensity);
+        light.setVisible(visible).setAlpha(lantern.base[key]*warmLift);
+      }
+      for(const key of ['lampAura','emberCore']){
+        const light=lantern[key];
+        if(!light)continue;
+        light.setVisible(visible).setAlpha(lantern.base[key]*coreLift);
       }
     }
   }
