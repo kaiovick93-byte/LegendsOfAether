@@ -2,6 +2,7 @@
 import {OLD_ROAD_B4D_TEXTURES} from './OldRoadVisuals';
 import {OldRoadEscarpment} from './OldRoadEscarpment';
 import {OldRoadProps} from './OldRoadProps';
+import {OldRoadAncientForest} from './OldRoadAncientForest';
 import {AETHER_FUTURE_NEW_GAME_SPAWN,AETHER_LANDMARKS,AETHER_LOGICAL_BOUNDS,getAetherSector} from './AetherTerritoryLayout';
 import {ensureAetherTerritoryMap} from './AetherTerritoryMap';
 
@@ -205,6 +206,7 @@ export class AetherTerritory{
     this.createOldRoadPrototype();
     this.oldRoadEscarpment=new OldRoadEscarpment(this);
     this.oldRoadProps=new OldRoadProps(this);
+    this.oldRoadAncientForest=new OldRoadAncientForest(this);
     this.polishOldRoadJunction();
     this.scene.registry.set('aetherOutskirtsVisualResetV1',{
       mode:'grass-old-road-south-gate',
@@ -414,8 +416,11 @@ export class AetherTerritory{
     // contínua aprovada no Round96 continua sendo a barreira autoritativa.
     if(this.oldRoadEscarpment?.isBlocked?.(u,v,radius))return true;
 
+    // Round 79.3: a floresta ocupa exatamente o polígono marcado pelo usuário.
+    if(this.oldRoadAncientForest?.isBlocked?.(u,v,radius))return true;
+
     return false;
   }
 
-  destroy(){this.oldRoadEscarpment?.destroy();this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0}
+  destroy(){this.oldRoadAncientForest?.destroy();this.oldRoadEscarpment?.destroy();this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0}
 }

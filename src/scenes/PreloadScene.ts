@@ -5,12 +5,14 @@ import {OLD_ROAD_B4D_TEXTURES} from '../world/OldRoadVisuals';
 import {ESCARPMENT_ASSETS} from '../world/OldRoadEscarpmentAssets';
 import {ESCARPMENT_NATURAL_ASSETS} from '../world/OldRoadEscarpmentNaturalAssets';
 import {OLD_ROAD_PROP_ASSETS} from '../world/OldRoadProps';
+import {OLD_ROAD_ANCIENT_FOREST_ASSETS} from '../world/OldRoadAncientForest';
 import {PLAYER_APPEARANCE_ORDER,PLAYER_DIRECTION_ROWS,PLAYER_VISUAL_STATES,playerDirectionRowForAppearance,playerOutlineTextureKey,playerTextureKey} from '../character/PlayerAppearance';
 export class PreloadScene extends Phaser.Scene{
   constructor(){super('PreloadScene')}
   preload(){
     this.load.image('aether_main_menu','assets/images/ui/main_menu_aether.png');
     for(const asset of Object.values(OLD_ROAD_PROP_ASSETS))this.load.image(asset.key,asset.path);
+    for(const asset of Object.values(OLD_ROAD_ANCIENT_FOREST_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(ESCARPMENT_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(ESCARPMENT_NATURAL_ASSETS))this.load.image(asset.key,asset.path);
     for(const key of Object.values(OLD_ROAD_B4D_TEXTURES).flat())

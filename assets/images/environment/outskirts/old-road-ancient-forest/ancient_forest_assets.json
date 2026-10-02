@@ -1,5 +1,5 @@
 {
-  "status": "GATE_1_APPROVED_ASSETS_PREPARED_NOT_INTEGRATED",
+  "status": "INTEGRATED_ROUND_79_3_EXACT_MARKED_POLYGON",
   "asset_count": 49,
   "assets": [
     {
@@ -22,7 +22,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_large_02.png",
@@ -44,7 +44,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_large_03.png",
@@ -66,7 +66,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_large_04.png",
@@ -88,7 +88,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_large_05.png",
@@ -110,7 +110,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_large_06.png",
@@ -132,7 +132,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_medium_01.png",
@@ -154,7 +154,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_medium_02.png",
@@ -176,7 +176,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_medium_03.png",
@@ -198,7 +198,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_medium_04.png",
@@ -220,7 +220,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_dead_01.png",
@@ -242,7 +242,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_dead_02.png",
@@ -264,7 +264,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_tree_dead_03.png",
@@ -286,7 +286,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "fallen_ancient_log_01.png",
@@ -308,7 +308,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "fallen_ancient_log_02.png",
@@ -330,7 +330,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "fallen_ancient_log_03.png",
@@ -352,7 +352,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "fallen_ancient_log_04.png",
@@ -374,7 +374,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "fallen_ancient_log_05.png",
@@ -396,7 +396,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_root_cluster_01.png",
@@ -418,7 +418,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_root_cluster_02.png",
@@ -440,7 +440,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_root_cluster_03.png",
@@ -462,7 +462,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_root_cluster_04.png",
@@ -484,7 +484,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_root_cluster_05.png",
@@ -506,7 +506,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_root_cluster_06.png",
@@ -528,7 +528,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_cluster_01.png",
@@ -550,7 +550,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_cluster_02.png",
@@ -572,7 +572,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_cluster_03.png",
@@ -594,7 +594,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_cluster_04.png",
@@ -616,7 +616,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_cluster_05.png",
@@ -638,7 +638,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_cluster_06.png",
@@ -660,7 +660,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_cluster_07.png",
@@ -682,7 +682,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_cluster_08.png",
@@ -704,7 +704,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_forest_floor_01.png",
@@ -726,7 +726,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_forest_floor_02.png",
@@ -748,7 +748,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_forest_floor_03.png",
@@ -770,7 +770,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_forest_floor_04.png",
@@ -792,7 +792,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_forest_floor_05.png",
@@ -814,7 +814,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_forest_floor_06.png",
@@ -836,7 +836,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_forest_floor_07.png",
@@ -858,7 +858,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_forest_floor_08.png",
@@ -880,7 +880,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_stump_01.png",
@@ -902,7 +902,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_stump_02.png",
@@ -924,7 +924,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_stump_03.png",
@@ -946,7 +946,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_underbrush_01.png",
@@ -968,7 +968,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_underbrush_02.png",
@@ -990,7 +990,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_underbrush_03.png",
@@ -1012,7 +1012,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_wall_01.png",
@@ -1034,7 +1034,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_wall_02.png",
@@ -1056,7 +1056,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     },
     {
       "file": "ancient_thorn_wall_03.png",
@@ -1078,7 +1078,7 @@
       ],
       "transparent_padding_px": 12,
       "approved_kit_derivative": true,
-      "integration_status": "NOT_INTEGRATED"
+      "integration_status": "INTEGRATED_ROUND_79_3"
     }
   ]
 }
