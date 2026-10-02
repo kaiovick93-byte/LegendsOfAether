@@ -1,6 +1,7 @@
 // @ts-nocheck
 import {OLD_ROAD_B4D_TEXTURES} from './OldRoadVisuals';
 import {OldRoadEscarpment} from './OldRoadEscarpment';
+import {OldRoadAncientForest} from './OldRoadAncientForest';
 import {OldRoadProps} from './OldRoadProps';
 import {AETHER_FUTURE_NEW_GAME_SPAWN,AETHER_LANDMARKS,AETHER_LOGICAL_BOUNDS,getAetherSector} from './AetherTerritoryLayout';
 import {ensureAetherTerritoryMap} from './AetherTerritoryMap';
@@ -204,6 +205,7 @@ export class AetherTerritory{
     this.createGroundMosaic();
     this.createOldRoadPrototype();
     this.oldRoadEscarpment=new OldRoadEscarpment(this);
+    this.oldRoadAncientForest=new OldRoadAncientForest(this);
     this.oldRoadProps=new OldRoadProps(this);
     this.polishOldRoadJunction();
     this.scene.registry.set('aetherOutskirtsVisualResetV1',{
@@ -414,8 +416,12 @@ export class AetherTerritory{
     // contínua aprovada no Round96 continua sendo a barreira autoritativa.
     if(this.oldRoadEscarpment?.isBlocked?.(u,v,radius))return true;
 
+    // Round 80: a Floresta Antiga é a barreira visível do lado oposto da
+    // Estrada Velha. O perfil abre as clareiras narrativas antes de bloquear.
+    if(this.oldRoadAncientForest?.isBlocked?.(u,v,radius))return true;
+
     return false;
   }
 
-  destroy(){this.oldRoadEscarpment?.destroy();this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0}
+  destroy(){this.oldRoadAncientForest?.destroy();this.oldRoadEscarpment?.destroy();this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0}
 }
