@@ -228,13 +228,50 @@ export class OldRoadAncientForest{
       this.addVertical(name,u,v,scale,flipX);
     });
 
+    // Round 79.4 — a posição/escala/arte da lanterna aprovada não muda.
+    // Apenas sua ordem de desenho é corrigida quando algum sprite da floresta
+    // realmente ocupa a mesma área visual: a lanterna sobe somente o mínimo
+    // necessário para ficar à frente desses sprites sobrepostos. Isso evita um
+    // depth global exagerado e não altera a composição da floresta.
+    this.keepStartLanternInFrontOfForest();
+
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.3',
+      version:'Round79.4',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
       assetBases:{trees:TREE_BASES.length,structures:STRUCTURE_BASES.length,ground:GROUND_BASES.length},
       polygon:OLD_ROAD_ANCIENT_FOREST_POLYGON.map(p=>({...p}))
+    });
+  }
+
+
+  keepStartLanternInFrontOfForest(){
+    const lanternEntry=this.territory.oldRoadProps?.props?.find?.(prop=>prop.role==='start-sign-lantern');
+    const lantern=lanternEntry?.sprite;
+    if(!lantern?.getBounds)return;
+
+    const lanternBounds=lantern.getBounds();
+    let highestOverlappingForestDepth=-Infinity;
+    let overlapCount=0;
+    for(const sprite of this.sprites){
+      if(!sprite?.getBounds)continue;
+      const bounds=sprite.getBounds();
+      if(!Phaser.Geom.Intersects.RectangleToRectangle(lanternBounds,bounds))continue;
+      highestOverlappingForestDepth=Math.max(highestOverlappingForestDepth,sprite.depth);
+      overlapCount++;
+    }
+
+    if(highestOverlappingForestDepth>-Infinity&&lantern.depth<=highestOverlappingForestDepth)
+      lantern.setDepth(highestOverlappingForestDepth+.01);
+
+    lantern.setData('oldRoadLanternForestDepthFix',{
+      version:'Round79.4',
+      overlapCount,
+      lanternDepth:lantern.depth,
+      highestOverlappingForestDepth:highestOverlappingForestDepth===-Infinity?null:highestOverlappingForestDepth,
+      positionPreserved:true,
+      scalePreserved:true
     });
   }
 
