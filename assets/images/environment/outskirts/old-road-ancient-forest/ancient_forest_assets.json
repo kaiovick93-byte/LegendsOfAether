@@ -1,0 +1,1084 @@
+{
+  "status": "GATE_1_APPROVED_ASSETS_PREPARED_NOT_INTEGRATED",
+  "asset_count": 49,
+  "assets": [
+    {
+      "file": "ancient_tree_large_01.png",
+      "category": "ancient_tree_large",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        0,
+        0,
+        329,
+        342
+      ],
+      "seed_world_in_sheet": [
+        145,
+        280
+      ],
+      "size": [
+        337,
+        363
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_large_02.png",
+      "category": "ancient_tree_large",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        262,
+        2,
+        517,
+        330
+      ],
+      "seed_world_in_sheet": [
+        350,
+        280
+      ],
+      "size": [
+        259,
+        332
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_large_03.png",
+      "category": "ancient_tree_large",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        430,
+        0,
+        739,
+        342
+      ],
+      "seed_world_in_sheet": [
+        545,
+        280
+      ],
+      "size": [
+        313,
+        366
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_large_04.png",
+      "category": "ancient_tree_large",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        654,
+        0,
+        962,
+        342
+      ],
+      "seed_world_in_sheet": [
+        760,
+        280
+      ],
+      "size": [
+        312,
+        366
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_large_05.png",
+      "category": "ancient_tree_large",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        901,
+        0,
+        1223,
+        342
+      ],
+      "seed_world_in_sheet": [
+        1010,
+        280
+      ],
+      "size": [
+        326,
+        356
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_large_06.png",
+      "category": "ancient_tree_large",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1163,
+        8,
+        1448,
+        342
+      ],
+      "seed_world_in_sheet": [
+        1320,
+        280
+      ],
+      "size": [
+        293,
+        346
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_medium_01.png",
+      "category": "ancient_tree_medium",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        0,
+        343,
+        256,
+        565
+      ],
+      "seed_world_in_sheet": [
+        95,
+        525
+      ],
+      "size": [
+        264,
+        272
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_medium_02.png",
+      "category": "ancient_tree_medium",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        182,
+        343,
+        457,
+        565
+      ],
+      "seed_world_in_sheet": [
+        300,
+        525
+      ],
+      "size": [
+        279,
+        276
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_medium_03.png",
+      "category": "ancient_tree_medium",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        393,
+        343,
+        654,
+        565
+      ],
+      "seed_world_in_sheet": [
+        515,
+        525
+      ],
+      "size": [
+        265,
+        269
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_medium_04.png",
+      "category": "ancient_tree_medium",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        623,
+        343,
+        905,
+        565
+      ],
+      "seed_world_in_sheet": [
+        750,
+        525
+      ],
+      "size": [
+        286,
+        269
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_dead_01.png",
+      "category": "ancient_tree_dead",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        881,
+        343,
+        1139,
+        565
+      ],
+      "seed_world_in_sheet": [
+        975,
+        525
+      ],
+      "size": [
+        262,
+        246
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_dead_02.png",
+      "category": "ancient_tree_dead",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1098,
+        343,
+        1290,
+        565
+      ],
+      "seed_world_in_sheet": [
+        1170,
+        525
+      ],
+      "size": [
+        196,
+        246
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_tree_dead_03.png",
+      "category": "ancient_tree_dead",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1268,
+        343,
+        1448,
+        565
+      ],
+      "seed_world_in_sheet": [
+        1365,
+        525
+      ],
+      "size": [
+        188,
+        241
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "fallen_ancient_log_01.png",
+      "category": "fallen_ancient_log",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        0,
+        566,
+        310,
+        671
+      ],
+      "seed_world_in_sheet": [
+        145,
+        623
+      ],
+      "size": [
+        316,
+        129
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "fallen_ancient_log_02.png",
+      "category": "fallen_ancient_log",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        296,
+        566,
+        582,
+        671
+      ],
+      "seed_world_in_sheet": [
+        435,
+        623
+      ],
+      "size": [
+        290,
+        129
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "fallen_ancient_log_03.png",
+      "category": "fallen_ancient_log",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        565,
+        566,
+        881,
+        671
+      ],
+      "seed_world_in_sheet": [
+        715,
+        623
+      ],
+      "size": [
+        320,
+        129
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "fallen_ancient_log_04.png",
+      "category": "fallen_ancient_log",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        873,
+        566,
+        1160,
+        671
+      ],
+      "seed_world_in_sheet": [
+        1000,
+        623
+      ],
+      "size": [
+        291,
+        121
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "fallen_ancient_log_05.png",
+      "category": "fallen_ancient_log",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1152,
+        566,
+        1448,
+        671
+      ],
+      "seed_world_in_sheet": [
+        1300,
+        623
+      ],
+      "size": [
+        303,
+        129
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_root_cluster_01.png",
+      "category": "ancient_root_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        0,
+        672,
+        240,
+        755
+      ],
+      "seed_world_in_sheet": [
+        110,
+        717
+      ],
+      "size": [
+        247,
+        107
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_root_cluster_02.png",
+      "category": "ancient_root_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        225,
+        672,
+        433,
+        755
+      ],
+      "seed_world_in_sheet": [
+        330,
+        717
+      ],
+      "size": [
+        212,
+        107
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_root_cluster_03.png",
+      "category": "ancient_root_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        420,
+        672,
+        703,
+        755
+      ],
+      "seed_world_in_sheet": [
+        540,
+        717
+      ],
+      "size": [
+        287,
+        107
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_root_cluster_04.png",
+      "category": "ancient_root_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        691,
+        672,
+        912,
+        755
+      ],
+      "seed_world_in_sheet": [
+        760,
+        717
+      ],
+      "size": [
+        225,
+        105
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_root_cluster_05.png",
+      "category": "ancient_root_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        897,
+        672,
+        1093,
+        755
+      ],
+      "seed_world_in_sheet": [
+        1000,
+        717
+      ],
+      "size": [
+        200,
+        107
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_root_cluster_06.png",
+      "category": "ancient_root_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1250,
+        672,
+        1448,
+        755
+      ],
+      "seed_world_in_sheet": [
+        1300,
+        717
+      ],
+      "size": [
+        206,
+        107
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_cluster_01.png",
+      "category": "ancient_thorn_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        0,
+        756,
+        193,
+        839
+      ],
+      "seed_world_in_sheet": [
+        90,
+        801
+      ],
+      "size": [
+        198,
+        107
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_cluster_02.png",
+      "category": "ancient_thorn_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        179,
+        756,
+        356,
+        839
+      ],
+      "seed_world_in_sheet": [
+        270,
+        801
+      ],
+      "size": [
+        181,
+        107
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_cluster_03.png",
+      "category": "ancient_thorn_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        344,
+        756,
+        536,
+        839
+      ],
+      "seed_world_in_sheet": [
+        445,
+        801
+      ],
+      "size": [
+        196,
+        107
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_cluster_04.png",
+      "category": "ancient_thorn_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        524,
+        756,
+        689,
+        839
+      ],
+      "seed_world_in_sheet": [
+        625,
+        801
+      ],
+      "size": [
+        133,
+        95
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_cluster_05.png",
+      "category": "ancient_thorn_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        640,
+        756,
+        885,
+        839
+      ],
+      "seed_world_in_sheet": [
+        805,
+        801
+      ],
+      "size": [
+        181,
+        93
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_cluster_06.png",
+      "category": "ancient_thorn_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        973,
+        756,
+        1150,
+        839
+      ],
+      "seed_world_in_sheet": [
+        985,
+        801
+      ],
+      "size": [
+        181,
+        106
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_cluster_07.png",
+      "category": "ancient_thorn_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1131,
+        756,
+        1295,
+        839
+      ],
+      "seed_world_in_sheet": [
+        1165,
+        801
+      ],
+      "size": [
+        168,
+        105
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_cluster_08.png",
+      "category": "ancient_thorn_cluster",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1281,
+        756,
+        1448,
+        839
+      ],
+      "seed_world_in_sheet": [
+        1365,
+        801
+      ],
+      "size": [
+        173,
+        107
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_forest_floor_01.png",
+      "category": "ancient_forest_floor",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        0,
+        840,
+        165,
+        938
+      ],
+      "seed_world_in_sheet": [
+        80,
+        893
+      ],
+      "size": [
+        171,
+        120
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_forest_floor_02.png",
+      "category": "ancient_forest_floor",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        149,
+        840,
+        297,
+        938
+      ],
+      "seed_world_in_sheet": [
+        245,
+        893
+      ],
+      "size": [
+        152,
+        121
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_forest_floor_03.png",
+      "category": "ancient_forest_floor",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        283,
+        840,
+        442,
+        937
+      ],
+      "seed_world_in_sheet": [
+        410,
+        893
+      ],
+      "size": [
+        163,
+        111
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_forest_floor_04.png",
+      "category": "ancient_forest_floor",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        430,
+        840,
+        622,
+        938
+      ],
+      "seed_world_in_sheet": [
+        585,
+        893
+      ],
+      "size": [
+        196,
+        122
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_forest_floor_05.png",
+      "category": "ancient_forest_floor",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        752,
+        840,
+        961,
+        938
+      ],
+      "seed_world_in_sheet": [
+        790,
+        893
+      ],
+      "size": [
+        213,
+        117
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_forest_floor_06.png",
+      "category": "ancient_forest_floor",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        945,
+        840,
+        1104,
+        938
+      ],
+      "seed_world_in_sheet": [
+        995,
+        893
+      ],
+      "size": [
+        163,
+        113
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_forest_floor_07.png",
+      "category": "ancient_forest_floor",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1089,
+        840,
+        1300,
+        938
+      ],
+      "seed_world_in_sheet": [
+        1175,
+        893
+      ],
+      "size": [
+        215,
+        118
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_forest_floor_08.png",
+      "category": "ancient_forest_floor",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1285,
+        840,
+        1448,
+        938
+      ],
+      "seed_world_in_sheet": [
+        1360,
+        893
+      ],
+      "size": [
+        170,
+        121
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_stump_01.png",
+      "category": "ancient_stump",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        0,
+        939,
+        199,
+        1086
+      ],
+      "seed_world_in_sheet": [
+        90,
+        1019
+      ],
+      "size": [
+        205,
+        163
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_stump_02.png",
+      "category": "ancient_stump",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        175,
+        939,
+        332,
+        1086
+      ],
+      "seed_world_in_sheet": [
+        250,
+        1019
+      ],
+      "size": [
+        161,
+        161
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_stump_03.png",
+      "category": "ancient_stump",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        304,
+        939,
+        505,
+        1086
+      ],
+      "seed_world_in_sheet": [
+        410,
+        1019
+      ],
+      "size": [
+        205,
+        161
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_underbrush_01.png",
+      "category": "ancient_underbrush",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        483,
+        939,
+        719,
+        1081
+      ],
+      "seed_world_in_sheet": [
+        600,
+        1019
+      ],
+      "size": [
+        240,
+        154
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_underbrush_02.png",
+      "category": "ancient_underbrush",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        702,
+        939,
+        893,
+        1081
+      ],
+      "seed_world_in_sheet": [
+        780,
+        1019
+      ],
+      "size": [
+        195,
+        151
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_underbrush_03.png",
+      "category": "ancient_underbrush",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        846,
+        939,
+        1021,
+        1071
+      ],
+      "seed_world_in_sheet": [
+        930,
+        1019
+      ],
+      "size": [
+        179,
+        138
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_wall_01.png",
+      "category": "ancient_thorn_wall",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1007,
+        939,
+        1156,
+        1084
+      ],
+      "seed_world_in_sheet": [
+        1070,
+        1019
+      ],
+      "size": [
+        153,
+        159
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_wall_02.png",
+      "category": "ancient_thorn_wall",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1139,
+        939,
+        1292,
+        1086
+      ],
+      "seed_world_in_sheet": [
+        1210,
+        1019
+      ],
+      "size": [
+        157,
+        162
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    },
+    {
+      "file": "ancient_thorn_wall_03.png",
+      "category": "ancient_thorn_wall",
+      "source_master": "ancient_forest_approved_master_sheet.png",
+      "source_bounds": [
+        1275,
+        939,
+        1441,
+        1085
+      ],
+      "seed_world_in_sheet": [
+        1380,
+        1019
+      ],
+      "size": [
+        170,
+        160
+      ],
+      "transparent_padding_px": 12,
+      "approved_kit_derivative": true,
+      "integration_status": "NOT_INTEGRATED"
+    }
+  ]
+}
