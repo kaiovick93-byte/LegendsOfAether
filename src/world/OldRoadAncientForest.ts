@@ -106,8 +106,10 @@ const TREE_BASES=Object.freeze([
   [2.543,77.490],[0.742,77.517]
 ]);
 
+// Round 79.5: removida somente a instância do toco marcada pelo usuário em
+// u=0.581, v=57.286. O asset permanece no kit e o restante da floresta é preservado.
 const STRUCTURE_BASES=Object.freeze([
-  [0.769,52.886],[3.108,55.757],[0.581,57.286],[1.763,58.708],
+  [0.769,52.886],[3.108,55.757],[1.763,58.708],
   [2.167,59.647],[3.753,61.177],[5.043,61.284],[6.306,62.304],
   [1.790,62.465],[1.387,64.262],[0.661,66.892],[1.683,67.401],
   [1.629,69.870],[3.242,69.950],[4.156,71.399],[3.215,71.962],
@@ -136,7 +138,7 @@ const TREE_VARIANTS=Object.freeze([
 ]);
 
 const STRUCTURE_VARIANTS=Object.freeze([
-  ['root01',.86,false],['log01',.77,true],['stump01',.82,false],['root02',.88,true],
+  ['root01',.86,false],['log01',.77,true],['root02',.88,true],
   ['log02',.75,false],['root03',.84,false],['wall01',.86,false],['wall02',.84,true],
   ['log03',.76,true],['root04',.88,false],['stump02',.84,true],['root05',.86,true],
   ['log04',.74,false],['root06',.88,false],['wall03',.84,false],['stump03',.82,false],
@@ -236,7 +238,7 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.4',
+      version:'Round79.5',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
