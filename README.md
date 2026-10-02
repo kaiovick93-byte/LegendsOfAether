@@ -1,4 +1,6 @@
-# Legends of Aether — v0.3.0 Round 7 — Apoio da muralha quebrada e Portão Sul
+> **REGRAS OBRIGATÓRIAS DO PROJETO:** antes de qualquer alteração, leia `AGENTS.md` e `PROJECT_RULES.md`. Marcações visuais do usuário são geometria exata, nunca aproximada.
+
+# Legends of Aether — v0.3.0 Round 79.1 — Regras Obrigatórias Projeto
 
 Base exclusiva: `legends-of-aether-v0.3.0-round6-river-bank-props-integration.zip`.
 SHA-256 da base anexada: `865c7f6cdb875deeff878b658dabe937be0a780f5fd3531cba1376e38da6e562`.
