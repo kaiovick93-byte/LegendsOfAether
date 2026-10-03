@@ -106,10 +106,8 @@ const TREE_BASES=Object.freeze([
   [2.543,77.490],[0.742,77.517]
 ]);
 
-// Round 79.5: removida somente a instância do toco marcada pelo usuário em
-// u=0.581, v=57.286. O asset permanece no kit e o restante da floresta é preservado.
 const STRUCTURE_BASES=Object.freeze([
-  [0.769,52.886],[3.108,55.757],[1.763,58.708],
+  [0.769,52.886],[3.108,55.757],[0.581,57.286],[1.763,58.708],
   [2.167,59.647],[3.753,61.177],[5.043,61.284],[6.306,62.304],
   [1.790,62.465],[1.387,64.262],[0.661,66.892],[1.683,67.401],
   [1.629,69.870],[3.242,69.950],[4.156,71.399],[3.215,71.962],
@@ -123,9 +121,14 @@ const GROUND_BASES=Object.freeze([
   [0.392,60.372],[3.403,61.847],[2.489,63.538],[0.419,64.209],
   [1.683,65.067],[1.118,66.328],[0.134,67.723],[2.059,68.126],
   [1.683,68.984],[0.258,69.628],[1.253,71.748],[0.312,74.511],
-  [1.737,75.209],[0.957,76.255],[3.027,76.443],[2.328,78.241],
-  [1.602,78.536]
+  [1.737,75.209],[0.957,76.255],
+  // Round 79.6 — remover somente o thorn cluster ao lado da placa/lanterna.
+  // A entrada [3.027,76.443] correspondia ao ancient_thorn_cluster_06.png
+  // marcado pelo usuário e foi retirada sem alterar os demais props.
+  [2.328,78.241],[1.602,78.536]
 ]);
+
+const REMOVED_THORN06_CLEAR_ZONE=Object.freeze({u:3.027,v:76.443,radius:.42});
 
 const TREE_VARIANTS=Object.freeze([
   ['large01',.94,false],['medium01',.92,true],['large02',.88,true],['dead01',.92,false],
@@ -138,7 +141,7 @@ const TREE_VARIANTS=Object.freeze([
 ]);
 
 const STRUCTURE_VARIANTS=Object.freeze([
-  ['root01',.86,false],['log01',.77,true],['root02',.88,true],
+  ['root01',.86,false],['log01',.77,true],['stump01',.82,false],['root02',.88,true],
   ['log02',.75,false],['root03',.84,false],['wall01',.86,false],['wall02',.84,true],
   ['log03',.76,true],['root04',.88,false],['stump02',.84,true],['root05',.86,true],
   ['log04',.74,false],['root06',.88,false],['wall03',.84,false],['stump03',.82,false],
@@ -163,6 +166,12 @@ function pointInPolygon(u,v,polygon=OLD_ROAD_ANCIENT_FOREST_POLYGON){
 }
 
 function circleTouchesPolygon(u,v,_radius){
+  // Round 79.6 — a vegetação removida ao lado da placa/lanterna não deve
+  // deixar colisão fantasma. Abrir somente esse pequeno bolso local.
+  const du=u-REMOVED_THORN06_CLEAR_ZONE.u;
+  const dv=v-REMOVED_THORN06_CLEAR_ZONE.v;
+  if((du*du+dv*dv)<=REMOVED_THORN06_CLEAR_ZONE.radius*REMOVED_THORN06_CLEAR_ZONE.radius)return false;
+
   // A marcação é o limite físico exato. Não dilatar o polígono pelo raio do
   // ator: isso criaria colisão fora da área vermelha e violaria a referência.
   return pointInPolygon(u,v);
@@ -238,7 +247,7 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.5',
+      version:'Round79.6',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
@@ -268,7 +277,7 @@ export class OldRoadAncientForest{
       lantern.setDepth(highestOverlappingForestDepth+.01);
 
     lantern.setData('oldRoadLanternForestDepthFix',{
-      version:'Round79.4',
+      version:'Round79.6',
       overlapCount,
       lanternDepth:lantern.depth,
       highestOverlappingForestDepth:highestOverlappingForestDepth===-Infinity?null:highestOverlappingForestDepth,
