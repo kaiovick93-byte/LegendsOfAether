@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 /**
- * Round 79.3 — Floresta Ancestral da Estrada Velha.
+ * Round 79.7 — Floresta Ancestral da Estrada Velha (atmosfera assustadora base).
  *
  * IMPORTANTE:
  * - A borda laranja abaixo foi reconstruída a partir da marcação vermelha
@@ -155,6 +155,45 @@ const GROUND_VARIANTS=Object.freeze([
   'thorn04','floor05','thorn06','floor07','thorn08'
 ]);
 
+// Round 79.7 — primeira passagem de atmosfera assustadora.
+// Objetivo: fechar visualmente a mata, criar silhuetas mais estranhas e
+// aumentar a sensação de pressão sobre a estrada sem mexer em gameplay.
+const ATMOSPHERE_TREE_ACCENTS=Object.freeze([
+  ['large05',0.462,54.870,.98,false],
+  ['dead03',2.625,55.784,.96,true],
+  ['large06',1.092,59.915,.95,false],
+  ['dead02',4.516,60.935,.93,true],
+  ['large03',1.215,68.662,.97,false],
+  ['dead01',2.758,70.191,.95,true],
+  ['large01',0.618,73.572,.98,false],
+  ['dead03',2.973,74.672,.96,true],
+  ['large04',0.984,76.658,.99,false],
+  ['dead02',2.220,77.329,.95,true]
+]);
+
+const ATMOSPHERE_STRUCTURE_ACCENTS=Object.freeze([
+  ['wall01',2.194,54.255,.90,false],
+  ['root03',1.334,58.252,.88,true],
+  ['wall02',4.613,61.069,.87,true],
+  ['log04',2.838,69.521,.78,false],
+  ['root06',1.495,71.238,.90,false],
+  ['wall03',3.215,73.706,.86,false],
+  ['root02',1.468,75.987,.88,true],
+  ['wall01',2.597,77.248,.88,false]
+]);
+
+const ATMOSPHERE_GROUND_ACCENTS=Object.freeze([
+  ['thorn07',1.118,54.523,.86,false,-.04],
+  ['thorn05',3.833,56.937,.84,true,.03],
+  ['thorn08',2.516,60.935,.87,false,0],
+  ['under03',1.898,64.799,.82,true,.05],
+  ['thorn06',1.898,69.843,.86,true,-.02],
+  ['under01',2.032,71.989,.84,false,.02],
+  ['thorn07',1.226,73.384,.88,false,.04],
+  ['under02',2.140,75.799,.82,true,-.03],
+  ['thorn08',1.280,77.302,.86,true,.03]
+]);
+
 function pointInPolygon(u,v,polygon=OLD_ROAD_ANCIENT_FOREST_POLYGON){
   let inside=false;
   for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
@@ -223,6 +262,16 @@ export class OldRoadAncientForest{
     return sprite;
   }
 
+  tryAddVertical(assetName,u,v,scale,flipX=false){
+    if(!pointInPolygon(u,v))return null;
+    return this.addVertical(assetName,u,v,scale,flipX);
+  }
+
+  tryAddGround(assetName,u,v,scale=.86,flipX=false,rotation=0){
+    if(!pointInPolygon(u,v))return null;
+    return this.addGround(assetName,u,v,scale,flipX,rotation);
+  }
+
   build(){
     GROUND_BASES.forEach(([u,v],i)=>{
       const name=GROUND_VARIANTS[i%GROUND_VARIANTS.length];
@@ -239,6 +288,18 @@ export class OldRoadAncientForest{
       this.addVertical(name,u,v,scale,flipX);
     });
 
+    ATMOSPHERE_GROUND_ACCENTS.forEach(([name,u,v,scale,flipX,rotation])=>{
+      this.tryAddGround(name,u,v,scale,flipX,rotation);
+    });
+
+    ATMOSPHERE_STRUCTURE_ACCENTS.forEach(([name,u,v,scale,flipX])=>{
+      this.tryAddVertical(name,u,v,scale,flipX);
+    });
+
+    ATMOSPHERE_TREE_ACCENTS.forEach(([name,u,v,scale,flipX])=>{
+      this.tryAddVertical(name,u,v,scale,flipX);
+    });
+
     // Round 79.4 — a posição/escala/arte da lanterna aprovada não muda.
     // Apenas sua ordem de desenho é corrigida quando algum sprite da floresta
     // realmente ocupa a mesma área visual: a lanterna sobe somente o mínimo
@@ -247,11 +308,13 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.6',
+      version:'Round79.7',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
       assetBases:{trees:TREE_BASES.length,structures:STRUCTURE_BASES.length,ground:GROUND_BASES.length},
+      atmosphereAccents:{trees:ATMOSPHERE_TREE_ACCENTS.length,structures:ATMOSPHERE_STRUCTURE_ACCENTS.length,ground:ATMOSPHERE_GROUND_ACCENTS.length},
+      clearZoneRemovedThorn06:{...REMOVED_THORN06_CLEAR_ZONE},
       polygon:OLD_ROAD_ANCIENT_FOREST_POLYGON.map(p=>({...p}))
     });
   }
@@ -277,7 +340,7 @@ export class OldRoadAncientForest{
       lantern.setDepth(highestOverlappingForestDepth+.01);
 
     lantern.setData('oldRoadLanternForestDepthFix',{
-      version:'Round79.6',
+      version:'Round79.7',
       overlapCount,
       lanternDepth:lantern.depth,
       highestOverlappingForestDepth:highestOverlappingForestDepth===-Infinity?null:highestOverlappingForestDepth,
