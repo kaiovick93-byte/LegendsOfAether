@@ -1,7 +1,8 @@
+import {worldClock} from './WorldClock';
 // @ts-nocheck
 
 /**
- * Round 79.7 — Floresta Ancestral da Estrada Velha (atmosfera assustadora base).
+ * Round 79.8 — Floresta Ancestral da Estrada Velha (sombra local da mata).
  *
  * IMPORTANTE:
  * - A borda laranja abaixo foi reconstruída a partir da marcação vermelha
@@ -194,6 +195,40 @@ const ATMOSPHERE_GROUND_ACCENTS=Object.freeze([
   ['thorn08',1.280,77.302,.86,true,.03]
 ]);
 
+const FOREST_SHADOW_PATCHES=Object.freeze([
+  ['broad',1.118,54.684,310,168,-.18,.18],
+  ['broad',2.301,58.333,428,210,-.16,.22],
+  ['broad',1.656,61.955,448,228,-.12,.24],
+  ['dense',1.414,65.228,352,196,-.14,.27],
+  ['broad',1.952,69.655,478,246,-.10,.30],
+  ['dense',1.575,72.875,390,214,-.08,.32],
+  ['dense',1.307,75.853,336,188,-.06,.28],
+  ['soft',1.763,77.248,248,140,-.05,.16]
+]);
+
+function ensureForestShadowTexture(scene,key,{width=512,height=320,stops=[[0,.52],[.28,.34],[.58,.16],[1,0]]}={}){
+  if(scene.textures.exists(key))return key;
+  const texture=scene.textures.createCanvas(key,width,height);
+  const ctx=texture?.getContext?.();
+  if(!ctx)return key;
+  ctx.clearRect(0,0,width,height);
+  const cx=width*.5, cy=height*.5, rx=width*.5, ry=height*.5;
+  for(let i=stops.length-1;i>=0;i--){
+    const [offset,alpha]=stops[i];
+    const r=Math.max(.01,1-offset);
+    ctx.fillStyle=`rgba(0,0,0,${alpha})`;
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,Math.max(1,rx*r),Math.max(1,ry*r),0,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle=`rgba(0,0,0,${Math.max(0,alpha*.68)})`;
+    ctx.beginPath();
+    ctx.ellipse(cx-width*.06,cy+height*.03,Math.max(1,rx*r*.86),Math.max(1,ry*r*.74),-.22,0,Math.PI*2);
+    ctx.fill();
+  }
+  texture.refresh();
+  return key;
+}
+
 function pointInPolygon(u,v,polygon=OLD_ROAD_ANCIENT_FOREST_POLYGON){
   let inside=false;
   for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
@@ -222,7 +257,10 @@ export class OldRoadAncientForest{
     this.territory=territory;
     this.scene=territory.scene;
     this.sprites=[];
+    this.shadowSprites=[];
     this.build();
+    this.scene.events.on('update',this.updateShadowLayer,this);
+    this.scene.events.once('shutdown',()=>this.destroy());
   }
 
   assertBaseInside(u,v,label){
@@ -272,6 +310,57 @@ export class OldRoadAncientForest{
     return this.addGround(assetName,u,v,scale,flipX,rotation);
   }
 
+  forestShadowIntensity(timeOfDayMs=worldClock.timeOfDayMs){
+    const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
+    if(minutes>=1170||minutes<300)return 1; // 19:30–05:00
+    if(minutes>=990)return .74+((minutes-990)/180)*.26; // 16:30–19:30
+    if(minutes>=300&&minutes<360)return .90-((minutes-300)/60)*.16; // 05:00–06:00
+    return .74;
+  }
+
+  buildShadowLayer(){
+    ensureForestShadowTexture(this.scene,'old-road-forest-shadow-soft',{
+      width:360,height:220,stops:[[0,.42],[.28,.24],[.56,.11],[1,0]]
+    });
+    ensureForestShadowTexture(this.scene,'old-road-forest-shadow-broad',{
+      width:520,height:320,stops:[[0,.54],[.26,.33],[.56,.17],[1,0]]
+    });
+    ensureForestShadowTexture(this.scene,'old-road-forest-shadow-dense',{
+      width:420,height:260,stops:[[0,.62],[.22,.40],[.50,.22],[1,0]]
+    });
+
+    const textureByType={
+      soft:'old-road-forest-shadow-soft',
+      broad:'old-road-forest-shadow-broad',
+      dense:'old-road-forest-shadow-dense'
+    };
+    const depth=this.territory.groundDepth(-70.34);
+
+    FOREST_SHADOW_PATCHES.forEach(([type,u,v,width,height,rotation,baseAlpha],index)=>{
+      this.assertBaseInside(u,v,`forest-shadow-${index+1}`);
+      const p=this.territory.project(u,v);
+      const sprite=this.scene.add.image(p.x,p.y,textureByType[type])
+        .setOrigin(.5,.5)
+        .setDisplaySize(width,height)
+        .setRotation(rotation)
+        .setAlpha(baseAlpha*this.forestShadowIntensity())
+        .setBlendMode(Phaser.BlendModes.MULTIPLY)
+        .setDepth(depth+.001*index);
+      sprite.setData('oldRoadAncientForestShadow',{type,u,v,width,height,rotation,baseAlpha,stage:'Round79.8'});
+      this.territory.track(sprite,u,v,{visibleRadius:40,activeRadius:46});
+      this.shadowSprites.push(sprite);
+    });
+  }
+
+  updateShadowLayer(){
+    const intensity=this.forestShadowIntensity();
+    for(const sprite of this.shadowSprites){
+      const data=sprite?.getData?.('oldRoadAncientForestShadow');
+      if(!data)continue;
+      sprite.setAlpha(data.baseAlpha*intensity);
+    }
+  }
+
   build(){
     GROUND_BASES.forEach(([u,v],i)=>{
       const name=GROUND_VARIANTS[i%GROUND_VARIANTS.length];
@@ -300,6 +389,8 @@ export class OldRoadAncientForest{
       this.tryAddVertical(name,u,v,scale,flipX);
     });
 
+    this.buildShadowLayer();
+
     // Round 79.4 — a posição/escala/arte da lanterna aprovada não muda.
     // Apenas sua ordem de desenho é corrigida quando algum sprite da floresta
     // realmente ocupa a mesma área visual: a lanterna sobe somente o mínimo
@@ -308,12 +399,13 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.7',
+      version:'Round79.8',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
       assetBases:{trees:TREE_BASES.length,structures:STRUCTURE_BASES.length,ground:GROUND_BASES.length},
       atmosphereAccents:{trees:ATMOSPHERE_TREE_ACCENTS.length,structures:ATMOSPHERE_STRUCTURE_ACCENTS.length,ground:ATMOSPHERE_GROUND_ACCENTS.length},
+      localShadowPatches:FOREST_SHADOW_PATCHES.length,
       clearZoneRemovedThorn06:{...REMOVED_THORN06_CLEAR_ZONE},
       polygon:OLD_ROAD_ANCIENT_FOREST_POLYGON.map(p=>({...p}))
     });
@@ -340,7 +432,7 @@ export class OldRoadAncientForest{
       lantern.setDepth(highestOverlappingForestDepth+.01);
 
     lantern.setData('oldRoadLanternForestDepthFix',{
-      version:'Round79.7',
+      version:'Round79.8',
       overlapCount,
       lanternDepth:lantern.depth,
       highestOverlappingForestDepth:highestOverlappingForestDepth===-Infinity?null:highestOverlappingForestDepth,
@@ -352,7 +444,10 @@ export class OldRoadAncientForest{
   isBlocked(u,v,radius=.27){return circleTouchesPolygon(u,v,radius)}
 
   destroy(){
+    this.scene?.events?.off?.('update',this.updateShadowLayer,this);
+    for(const sprite of this.shadowSprites)sprite?.destroy?.();
     for(const sprite of this.sprites)sprite?.destroy?.();
+    this.shadowSprites.length=0;
     this.sprites.length=0;
   }
 }
