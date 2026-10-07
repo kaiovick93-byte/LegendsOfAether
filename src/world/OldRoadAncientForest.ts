@@ -2,7 +2,7 @@
 import {worldClock} from './WorldClock';
 
 /**
- * Round 79.16 — Floresta Ancestral da Estrada Velha (névoa global dedicada).
+ * Round 79.17 — Floresta Ancestral da Estrada Velha (névoa pseudo-volumétrica).
  *
  * IMPORTANTE:
  * - A borda laranja abaixo foi reconstruída a partir da marcação vermelha
@@ -206,16 +206,17 @@ const FOREST_SHADOW_PATCHES=Object.freeze([
   ['soft',1.763,77.248,248,140,-.05,.16]
 ]);
 
-// Round 79.16 — zonas de névoa registradas no WorldFogSystem. A entrada
-// próxima à placa/lanterna continua limpa; a densidade cresce no interior.
+// Round 79.17 — as posições continuam marcando pontos de chão da mata,
+// mas não são mais faixas visíveis. O shader usa esses pontos como campos de
+// densidade baixa, quebrados por ruído volumétrico e queda vertical rápida.
 const FOREST_FOG_BANDS=Object.freeze([
-  ['ribbon',1.145,54.657,280,94,-.12,.30,16,3,.42,.30],
-  ['broad',2.382,58.494,402,120,-.10,.36,22,4,.34,1.10],
-  ['ribbon',1.629,62.062,370,102,-.08,.40,19,3,.38,2.05],
-  ['pocket',1.468,65.604,270,108,-.06,.44,13,5,.30,2.80],
-  ['broad',2.005,69.655,432,130,-.05,.46,24,4,.28,3.55],
-  ['ribbon',1.602,72.714,350,100,-.04,.40,17,3,.32,4.25],
-  ['soft',1.361,74.109,238,82,-.03,.28,11,2,.36,5.10]
+  ['ribbon',1.145,54.657,300,58,-.12,.72,14,2,.30,.30],
+  ['broad',2.382,58.494,420,66,-.10,.82,18,3,.27,1.10],
+  ['ribbon',1.629,62.062,392,62,-.08,.86,16,2,.30,2.05],
+  ['pocket',1.468,65.604,286,58,-.06,.90,11,3,.24,2.80],
+  ['broad',2.005,69.655,450,72,-.05,.95,20,3,.22,3.55],
+  ['ribbon',1.602,72.714,364,62,-.04,.88,14,2,.26,4.25],
+  ['soft',1.361,74.109,252,52,-.03,.70,9,2,.28,5.10]
 ]);
 
 function ensureForestShadowTexture(scene,key,{width=512,height=320,stops=[[0,.52],[.28,.34],[.58,.16],[1,0]]}={}){
@@ -377,11 +378,11 @@ export class OldRoadAncientForest{
   forestFogIntensity(timeOfDayMs=worldClock.timeOfDayMs){
     const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
     if(minutes>=1200||minutes<300)return 1; // 20:00–05:00
-    if(minutes>=1140)return .78+((minutes-1140)/60)*.22; // 19:00–20:00
-    if(minutes>=1080)return .62+((minutes-1080)/60)*.16; // 18:00–19:00
-    if(minutes>=1020)return .48+((minutes-1020)/60)*.14; // 17:00–18:00
-    if(minutes>=300&&minutes<390)return 1-((minutes-300)/90)*.52; // 05:00–06:30
-    return .48;
+    if(minutes>=1140)return .72+((minutes-1140)/60)*.28; // 19:00–20:00
+    if(minutes>=1080)return .40+((minutes-1080)/60)*.32; // 18:00–19:00
+    if(minutes>=1020)return .18+((minutes-1020)/60)*.22; // 17:00–18:00
+    if(minutes>=300&&minutes<390)return 1-((minutes-300)/90)*.82; // 05:00–06:30
+    return .18;
   }
 
   registerGlobalFogZone(){
@@ -399,7 +400,11 @@ export class OldRoadAncientForest{
       id:'old-road-ancient-forest',
       polygon,
       bands,
-      color:0xcbd5d2,
+      color:0x809087,
+      density:.34,
+      coverage:.47,
+      groundOffsetY:14,
+      heightScale:.86,
       schedule:(timeOfDayMs)=>this.forestFogIntensity(timeOfDayMs)
     });
   }
@@ -443,7 +448,7 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.16',
+      version:'Round79.17',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
@@ -452,8 +457,10 @@ export class OldRoadAncientForest{
       localShadowPatches:FOREST_SHADOW_PATCHES.length,
       lowFogBands:FOREST_FOG_BANDS.length,
       fogSystem:'WorldFogSystem',
+      fogRenderer:'webgl-pseudo-volumetric-height-fog',
       fogLayerDepth:655,
       fogAboveWorldLighting:true,
+      fogReactsToLights:true,
       fogCollision:false,
       clearZoneRemovedThorn06:{...REMOVED_THORN06_CLEAR_ZONE},
       polygon:OLD_ROAD_ANCIENT_FOREST_POLYGON.map(p=>({...p}))
