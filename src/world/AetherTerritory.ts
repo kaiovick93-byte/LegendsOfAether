@@ -422,5 +422,5 @@ export class AetherTerritory{
     return false;
   }
 
-  destroy(){this.oldRoadAncientForest?.destroy();this.oldRoadEscarpment?.destroy();this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0}
+  destroy(){this.oldRoadProps?.destroy?.();this.oldRoadAncientForest?.destroy();this.oldRoadEscarpment?.destroy();this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0}
 }

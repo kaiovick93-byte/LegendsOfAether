@@ -27,7 +27,7 @@ import {SouthRiver} from '../world/SouthRiver';
 import {SouthRiverBridge} from '../world/SouthRiverBridge';
 import {createGroundedBrokenWall,southWallJoinTexture,foundationColumns,isFoundationContact} from '../world/CityWallGrounding';
 import {OldAetherPrologue} from '../prologue/OldAetherPrologue';
-import {worldClock} from '../world/WorldClock';
+import {WorldLightingSystem} from '../render/WorldLightingSystem';
 
 /**
  * Round 67 — acabamento urbano, contato corporal e portões isométricos.
@@ -118,10 +118,10 @@ export class AetherCityScene extends Phaser.Scene {
     // até a muralha norte, a cidade continua descendo e o herói permanece na
     // zona central de leitura em vez de ficar preso ao topo da tela.
     this.configureCityCameraBounds();
-    this.createDayNightOverlays();
+    this.worldLighting=new WorldLightingSystem(this,{depth:650,renderScale:.5,maxFps:30});
     this.cityResizeHandler=()=>{
       this.configureCityCameraBounds();
-      this.resizeDayNightOverlays();
+      this.worldLighting?.resize?.();
     };
     this.scale.on(Phaser.Scale.Events.RESIZE,this.cityResizeHandler);
     this.cameras.main.setDeadzone(180, 80);
@@ -2002,95 +2002,6 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
 
-  createDayNightOverlays(){
-    const width=this.scale.width||this.scale.gameSize?.width||1280;
-    const height=this.scale.height||this.scale.gameSize?.height||720;
-    // Round 40: a iluminação usa uma camada dedicada para manter a ordem
-    // de renderização mais estável sobre o mundo, sem depender da profundidade
-    // individual de muralhas, torres e outros sprites do cenário.
-    this.dayNightLayer=this.add.layer();
-    this.dayNightLayer.setDepth(650).setName?.('dayNightLightingLayer');
-    this.sunsetOverlay=this.add.rectangle(0,0,width,height,0xc67b4d)
-      .setOrigin(0)
-      .setScrollFactor(0)
-      .setAlpha(0)
-      .setVisible(true);
-    this.nightOverlay=this.add.rectangle(0,0,width,height,0x0a1630)
-      .setOrigin(0)
-      .setScrollFactor(0)
-      .setAlpha(0)
-      .setVisible(true);
-    this.dayNightLayer.add([this.sunsetOverlay,this.nightOverlay]);
-    this.resizeDayNightOverlays();
-    this.updateDayNightOverlays();
-  }
-
-  resizeDayNightOverlays(){
-    const width=this.scale.width||this.scale.gameSize?.width||1280;
-    const height=this.scale.height||this.scale.gameSize?.height||720;
-    this.sunsetOverlay?.setDisplaySize(width,height);
-    this.nightOverlay?.setDisplaySize(width,height);
-  }
-
-  lerpScalar(a,b,t){return a+(b-a)*t}
-  clamp01(value){return Math.max(0,Math.min(1,value))}
-  rangeProgress(value,start,end){
-    if(end<=start)return value>=end?1:0;
-    return this.clamp01((value-start)/(end-start));
-  }
-  smoothRangeProgress(value,start,end){
-    const t=this.rangeProgress(value,start,end);
-    return t*t*(3-2*t);
-  }
-
-  dayNightProfile(timeOfDayMs=worldClock.timeOfDayMs){
-    const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
-    let sunsetAlpha=0;
-    let nightAlpha=0;
-
-    if(minutes<270){
-      // 00:00–04:30: noite completa, ligeiramente mais escura.
-      sunsetAlpha=.01;
-      nightAlpha=.56;
-    }else if(minutes<360){
-      // 04:30–06:00: amanhecer suave, sem degrau visual.
-      const t=this.smoothRangeProgress(minutes,270,360);
-      sunsetAlpha=this.lerpScalar(.03,0,t);
-      nightAlpha=this.lerpScalar(.56,0,t);
-    }else if(minutes<1050){
-      // 06:00–17:30: dia estável.
-      sunsetAlpha=0;
-      nightAlpha=0;
-    }else if(minutes<1110){
-      // 17:30–18:30: fim de tarde mais limpo, menos amarelado e um pouco mais escuro.
-      const t=this.smoothRangeProgress(minutes,1050,1110);
-      sunsetAlpha=this.lerpScalar(.01,.12,t);
-      nightAlpha=this.lerpScalar(0,.12,t);
-    }else if(minutes<1155){
-      // 18:30–19:15: crepúsculo com menos dourado residual e mais peso no frio.
-      const t=this.smoothRangeProgress(minutes,1110,1155);
-      sunsetAlpha=this.lerpScalar(.12,.07,t);
-      nightAlpha=this.lerpScalar(.12,.34,t);
-    }else if(minutes<1200){
-      // 19:15–20:00: hora azul mais marcada.
-      const t=this.smoothRangeProgress(minutes,1155,1200);
-      sunsetAlpha=this.lerpScalar(.07,.02,t);
-      nightAlpha=this.lerpScalar(.34,.56,t);
-    }else{
-      // 20:00 em diante: noite estabelecida.
-      sunsetAlpha=.01;
-      nightAlpha=.56;
-    }
-
-    return {sunsetAlpha,nightAlpha};
-  }
-
-  updateDayNightOverlays(){
-    if(!this.sunsetOverlay||!this.nightOverlay)return;
-    const profile=this.dayNightProfile();
-    this.sunsetOverlay.setAlpha(profile.sunsetAlpha);
-    this.nightOverlay.setAlpha(profile.nightAlpha);
-  }
 
   update(_time, delta) {
     const activeSector=this.aetherTerritory.update(_time,this.player.isoX,this.player.isoY);
@@ -2100,8 +2011,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.registry.set('aetherActiveSector',activeSector);
     this.updateNpcPrompts();
     this.updateActorDepths();
-    this.updateDayNightOverlays();
-    this.aetherTerritory?.oldRoadProps?.updateLanterns?.();
+    this.worldLighting?.update?.(_time,delta);
 
     if (this.dialogueOpen) {
       this.stopPlayer();
@@ -2591,11 +2501,9 @@ export class AetherCityScene extends Phaser.Scene {
       this.saveGame();
       this.prologue?.destroy?.();
       this.aetherTerritory?.destroy?.();
+      this.worldLighting?.destroy?.();
       this.cityPavement?.destroy?.();
       this.fountainWater?.destroy?.();
-      this.sunsetOverlay?.destroy?.();
-      this.nightOverlay?.destroy?.();
-      this.dayNightLayer?.destroy?.();
       window.removeEventListener('beforeunload', this._unload);
       this.scale.off(Phaser.Scale.Events.RESIZE,this.cityResizeHandler);
     });

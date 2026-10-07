@@ -1,4 +1,3 @@
-import {worldClock} from './WorldClock';
 // @ts-nocheck
 // B4.2C: two translations from the supplied red marks; art and scale unchanged.
 const asset=(key,originY)=>({key,path:`assets/images/environment/outskirts/old-road-props/${key}.png`,originX:.5,originY});
@@ -36,47 +35,10 @@ const DRESSING=[
 ];
 
 
-function ensureLanternLightTexture(scene,key,{innerColor='rgba(255,255,255,1)',midColor='rgba(255,255,255,0.35)',outerColor='rgba(255,255,255,0)',width=256,height=256,stops=[[0,1],[0.4,0.35],[1,0]],shape='radial'}={}){
-  if(scene.textures.exists(key))return key;
-  const texture=scene.textures.createCanvas(key,width,height);
-  const ctx=texture?.getContext?.();
-  if(!ctx)return key;
-  ctx.clearRect(0,0,width,height);
-  let gradient;
-  if(shape==='linear-vertical'){
-    gradient=ctx.createLinearGradient(width*.5,0,width*.5,height);
-    for(const [offset,alpha] of stops)gradient.addColorStop(offset,midColor.replace(/\d?\.\d+\)$/,''));
-  }
-  const cx=width*.5, cy=height*.5;
-  const rx=width*.5, ry=height*.5;
-  // Draw with manual concentric ellipses for predictable feathering.
-  for(let i=stops.length-1;i>=0;i--){
-    const [offset,alpha]=stops[i];
-    const r=1-offset;
-    const color=(i===0?innerColor:(i===stops.length-1?outerColor:midColor)).replace(/rgba\(([^,]+),([^,]+),([^,]+),[^\)]+\)/,'rgba($1,$2,$3,'+alpha+')');
-    ctx.fillStyle=color;
-    ctx.beginPath();
-    ctx.ellipse(cx,cy,Math.max(1,rx*r),Math.max(1,ry*r),0,0,Math.PI*2);
-    ctx.fill();
-  }
-  texture.refresh();
-  return key;
-}
-
-function addSoftLight(scene,key,x,y,width,height,{alpha=1,blend=Phaser.BlendModes.SCREEN,depth=660,rotation=0,originX=.5,originY=.5,tint=0xffffff}={}){
-  return scene.add.image(x,y,key)
-    .setOrigin(originX,originY)
-    .setDisplaySize(width,height)
-    .setTint(tint)
-    .setAlpha(alpha)
-    .setRotation(rotation)
-    .setBlendMode(blend)
-    .setDepth(depth);
-}
 
 export class OldRoadProps{
   constructor(territory){
-    this.territory=territory;this.scene=territory.scene;this.props=[];this.lanterns=[];
+    this.territory=territory;this.scene=territory.scene;this.props=[];this.lightHandles=[];
     // Read the authoritative guide without moving any road or cliff object.
     const guide=territory.oldRoadEscarpment.route;
     this.segments=[];this.length=0;
@@ -173,129 +135,59 @@ export class OldRoadProps{
     const stored={...data,x,y,scale,flipX:!!options.flipX,...(rotation?{rotation}:{}),
       originX:art.originX,originY:art.originY,sprite};
     this.props.push(stored);
-    if(options.light==='warm-lantern')this.attachLanternLight(stored);
+    if(options.light==='warm-lantern')this.registerGlobalLanternLight(stored);
   }
 
-  lanternIntensity(timeOfDayMs=worldClock.timeOfDayMs){
-    const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
-    if(minutes>=1200||minutes<270)return 1; // 20:00–04:30 permanece totalmente acesa
-    if(minutes>=1155)return Math.max(0,Math.min(1,(minutes-1155)/45)); // 19:15–20:00 acende gradualmente
-    if(minutes<360&&minutes>=270)return Math.max(0,Math.min(1,1-(minutes-270)/90)); // 04:30–06:00 apaga gradualmente
-    return 0;
-  }
-
-  attachLanternLight(prop){
+  registerGlobalLanternLight(prop){
     const sprite=prop?.sprite;
-    if(!sprite)return;
+    const lighting=this.scene.worldLighting;
+    if(!sprite||!lighting?.registerLight)return;
+
     const originX=prop.originX??.5;
     const originY=prop.originY??1;
     const localX=(.765-originX)*sprite.width*prop.scale;
     const localY=(.64-originY)*sprite.height*prop.scale;
-    const glowX=sprite.x+localX;
-    const glowY=sprite.y+localY;
-    const groundX=glowX-6;
-    const groundY=sprite.y-4;
+    const groundOffsetX=-6;
+    const groundOffsetY=(sprite.y-4)-(sprite.y+localY);
+    let isNightTexture=false;
 
-    ensureLanternLightTexture(this.scene,'old-road-lantern-ground-soft',{
-      width:512,height:320,
-      innerColor:'rgba(255,250,236,0.92)',
-      midColor:'rgba(255,235,185,0.38)',
-      outerColor:'rgba(255,240,205,0)',
-      stops:[[0,.92],[.18,.58],[.42,.26],[.72,.09],[1,0]]
-    });
-    ensureLanternLightTexture(this.scene,'old-road-lantern-ground-warm',{
-      width:320,height:200,
-      innerColor:'rgba(255,226,150,0.74)',
-      midColor:'rgba(255,205,116,0.28)',
-      outerColor:'rgba(255,205,116,0)',
-      stops:[[0,.74],[.22,.46],[.48,.18],[.82,.05],[1,0]]
-    });
-    ensureLanternLightTexture(this.scene,'old-road-lantern-sign-bounce',{
-      width:220,height:240,
-      innerColor:'rgba(255,228,160,0.26)',
-      midColor:'rgba(255,220,145,0.12)',
-      outerColor:'rgba(255,220,145,0)',
-      stops:[[0,.26],[.35,.17],[.68,.07],[1,0]]
-    });
-    ensureLanternLightTexture(this.scene,'old-road-lantern-lamp-aura',{
-      width:128,height:128,
-      innerColor:'rgba(255,244,205,0.90)',
-      midColor:'rgba(255,227,160,0.26)',
-      outerColor:'rgba(255,227,160,0)',
-      stops:[[0,.90],[.22,.44],[.55,.12],[1,0]]
-    });
-    ensureLanternLightTexture(this.scene,'old-road-lantern-core',{
-      width:72,height:72,
-      innerColor:'rgba(255,252,236,1)',
-      midColor:'rgba(255,246,214,0.42)',
-      outerColor:'rgba(255,246,214,0)',
-      stops:[[0,1],[.28,.48],[.64,.12],[1,0]]
+    const handle=lighting.registerLight({
+      id:'old-road-start-sign-lantern',
+      source:sprite,
+      offsetX:localX,
+      offsetY:localY,
+      groundOffsetX,
+      groundOffsetY,
+      groundRadiusX:96,
+      groundRadiusY:56,
+      coreRadius:28,
+      strength:.82,
+      warmColor:0xffc56f,
+      warmAlpha:.075,
+      schedule:'dusk-to-dawn',
+      onIntensityChange:(intensity)=>{
+        const useNightTexture=intensity>.02;
+        if(useNightTexture===isNightTexture)return;
+        sprite.setTexture(useNightTexture?'old_road_sign_lantern_night_01':'old_road_sign_lantern_day_01');
+        isNightTexture=useNightTexture;
+      }
     });
 
-    const lightDepth=660;
-    const ambientOuter=addSoftLight(this.scene,'old-road-lantern-ground-soft',groundX-18,groundY+10,330,180,{
-      alpha:.30,blend:Phaser.BlendModes.SCREEN,depth:lightDepth,rotation:-.14
+    if(handle)this.lightHandles.push(handle);
+    sprite.setData('worldLightSource',{
+      system:'WorldLightingSystem',
+      id:'old-road-start-sign-lantern',
+      round:'79.10',
+      schedule:'19:15-06:00',
+      fullIntensityFrom:'20:00',
+      legacyOverlaySpritesRemoved:true
     });
-    const ambientMid=addSoftLight(this.scene,'old-road-lantern-ground-soft',groundX-4,groundY+4,244,126,{
-      alpha:.22,blend:Phaser.BlendModes.SCREEN,depth:lightDepth+.01,rotation:-.14,tint:0xfff6de
-    });
-    const ambientInner=addSoftLight(this.scene,'old-road-lantern-ground-warm',groundX+14,groundY-1,146,78,{
-      alpha:.24,blend:Phaser.BlendModes.SCREEN,depth:lightDepth+.02,rotation:-.14,tint:0xffe3a8
-    });
-    const warmGround=addSoftLight(this.scene,'old-road-lantern-ground-warm',groundX+18,groundY-3,112,58,{
-      alpha:.30,blend:Phaser.BlendModes.ADD,depth:lightDepth+.03,rotation:-.14,tint:0xffcb77
-    });
-    const signWash=addSoftLight(this.scene,'old-road-lantern-sign-bounce',groundX+22,groundY-32,90,104,{
-      alpha:.16,blend:Phaser.BlendModes.SCREEN,depth:lightDepth+.04,rotation:-.06,tint:0xffe1a6
-    });
-    const lampAura=addSoftLight(this.scene,'old-road-lantern-lamp-aura',glowX,glowY+1,26,24,{
-      alpha:.18,blend:Phaser.BlendModes.SCREEN,depth:lightDepth+.05,tint:0xffebba
-    });
-    const emberCore=addSoftLight(this.scene,'old-road-lantern-core',glowX,glowY,11,11,{
-      alpha:.24,blend:Phaser.BlendModes.ADD,depth:lightDepth+.06,tint:0xfff8ea
-    });
-
-    for(const light of [ambientOuter,ambientMid,ambientInner,warmGround,signWash,lampAura,emberCore])
-      this.territory.track(light,prop.x,prop.y,{alwaysActive:true});
-    this.lanterns.push({
-      sprite,ambientOuter,ambientMid,ambientInner,warmGround,signWash,lampAura,emberCore,
-      dayKey:'old_road_sign_lantern_day_01',nightKey:'old_road_sign_lantern_night_01',isNightTexture:false,
-      base:{ambientOuter:.32,ambientMid:.22,ambientInner:.22,warmGround:.28,signWash:.16,lampAura:.18,emberCore:.25}
-    });
-    this.updateLanterns();
   }
 
-  updateLanterns(){
-    const intensity=this.lanternIntensity();
-    // O efeito agora privilegia a "abertura" da escuridão em volta da lanterna:
-    // a faixa ampla usa SCREEN quase neutro, a área próxima recebe calor âmbar,
-    // e só a chama/lâmpada usam um núcleo mais luminoso.
-    const ambientLift=intensity<=0?0:Math.min(1,.10+.90*intensity);
-    const warmLift=intensity<=0?0:Math.min(1,.08+.92*intensity);
-    const coreLift=intensity<=0?0:Math.min(1,.06+.94*intensity);
-    for(const lantern of this.lanterns){
-      const useNightTexture=intensity>.02;
-      if(useNightTexture!==lantern.isNightTexture){
-        lantern.sprite.setTexture(useNightTexture?lantern.nightKey:lantern.dayKey);
-        lantern.isNightTexture=useNightTexture;
-      }
-      const visible=intensity>.001;
-      for(const key of ['ambientOuter','ambientMid','ambientInner','signWash']){
-        const light=lantern[key];
-        if(!light)continue;
-        light.setVisible(visible).setAlpha(lantern.base[key]*ambientLift);
-      }
-      for(const key of ['warmGround']){
-        const light=lantern[key];
-        if(!light)continue;
-        light.setVisible(visible).setAlpha(lantern.base[key]*warmLift);
-      }
-      for(const key of ['lampAura','emberCore']){
-        const light=lantern[key];
-        if(!light)continue;
-        light.setVisible(visible).setAlpha(lantern.base[key]*coreLift);
-      }
-    }
+  destroy(){
+    for(const handle of this.lightHandles)handle?.destroy?.();
+    this.lightHandles.length=0;
   }
+
 }
 
