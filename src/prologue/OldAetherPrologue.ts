@@ -12,6 +12,17 @@ const ENEMY_DIRECTIONS=Object.freeze(['n','ne','e','se','s','sw','w','nw']);
 const ENEMY_DIRECTION_COLUMNS=Object.freeze({n:4,ne:3,e:2,se:1,s:0,sw:7,w:6,nw:5});
 const ENEMY_SCREEN_OCTANTS=Object.freeze(['e','se','s','sw','w','nw','n','ne']);
 
+// Round 79.12 — calibração visual do Lobo Jovem contra a Maga feminina.
+// A Maga mede ~88 px úteis no mundo (94 px úteis x escala 0.94). O lobo
+// direcional ocupa ~165–173 px úteis dentro do frame 256, então 102/256
+// deixa o animal com ~66–69 px visuais: claramente jovem, mas com presença.
+const YOUNG_WOLF_FRAME_TARGET_HEIGHT=102;
+const YOUNG_WOLF_DIRECTIONAL_USEFUL_BOTTOM=244;
+const YOUNG_WOLF_DIRECTIONAL_PROFILE_WIDTH=192;
+const PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT=724;
+const YOUNG_WOLF_DEATH_USEFUL_WIDTH=352;
+const YOUNG_WOLF_DEATH_USEFUL_BOTTOM=529;
+
 function enemyDirectionFromScreenDelta(dx,dy,fallback='s'){
   if(!dx&&!dy)return fallback;
   const octant=((Math.round(Math.atan2(dy,dx)/(Math.PI/4))%8)+8)%8;
@@ -273,8 +284,10 @@ export class OldAetherPrologue{
     };
     directional('prologue-wolf','prologue_young_wolf_8dir',7);
     directional('prologue-goblin','prologue_goblin_scout_8dir',8);
-    create('prologue-wolf-hit','prologue_young_wolf', [4,0],10,0);
-    create('prologue-wolf-death','prologue_young_wolf', [4,5],5,0);
+    // O hit do lobo usa o próprio atlas 8-dir (flash branco do Enemy.takeDamage),
+    // evitando a troca visual para a folha antiga. A morte usa apenas o quadro
+    // limpo do cadáver; os quadros 0–4 da folha v2 têm sangramento nas bordas.
+    create('prologue-wolf-death','prologue_young_wolf', [5],1,0);
     create('prologue-goblin-hit','prologue_goblin_scout', [4,0],10,0);
     create('prologue-goblin-death','prologue_goblin_scout', [4,5],5,0);
     create('prologue-patrol-idle','aether_patrolman',[0],2,-1);
@@ -555,7 +568,7 @@ export class OldAetherPrologue{
     const path=this.wolfEntrancePath();
     if(!path)return;
     const a=this.scene.aetherTerritory.screenToLogical(path[0].x,path[0].y);
-    this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:82,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250});
+    this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:YOUNG_WOLF_FRAME_TARGET_HEIGHT,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250,uiLift:56});
     if(!this.wolf)return;
     this.wolfEntrance={path,segment:0};
     this.wolf.setUiVisible(false);
@@ -603,7 +616,7 @@ export class OldAetherPrologue{
 
   spawnWolf(){
     const a=this.anchors.youngWolf;
-    this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:82,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250});
+    this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:YOUNG_WOLF_FRAME_TARGET_HEIGHT,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250,uiLift:56});
     // Entradas já concluídas (incluindo saves) voltam diretamente ao combate.
     this.hud?.hint('Enfrente o Lobo Jovem. Use o ataque básico para se defender.');
   }
@@ -624,10 +637,23 @@ export class OldAetherPrologue{
     const frame=this.scene.textures.get(config.texture).get(0);
     enemy.setTexture(config.texture,0).setOrigin(.5,1).clearTint();
     enemy.setScale(config.height/(frame?.height||1)).setDepth(this.scene.depthAt(config.u,config.v,.16));
-    // Walk/attack usam a folha 256 px do 9D-A. Os quadros de hit/morte v2
-    // possuem 724 px e mantêm a mesma altura física ao alternar de textura.
     enemy.directionalScale=config.height/(frame?.height||1);
-    enemy.legacyReactionScale=config.height/724;
+    enemy.directionalOriginY=1;
+    enemy.hitScale=config.height/PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT;
+    enemy.deathScale=config.height/PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT;
+    enemy.hitOriginY=1;
+    enemy.deathOriginY=1;
+
+    if(config.kind==='wolf'){
+      // A arte 8-dir e a folha antiga de reação têm envelopes transparentes
+      // muito diferentes. Igualar pelo tamanho total do frame fazia o cadáver
+      // encolher. Aqui a referência é a largura CORPORAL útil do perfil vivo.
+      const liveProfileWidth=YOUNG_WOLF_DIRECTIONAL_PROFILE_WIDTH*enemy.directionalScale;
+      enemy.deathScale=liveProfileWidth/YOUNG_WOLF_DEATH_USEFUL_WIDTH;
+      enemy.directionalOriginY=YOUNG_WOLF_DIRECTIONAL_USEFUL_BOTTOM/(frame?.height||256);
+      enemy.deathOriginY=YOUNG_WOLF_DEATH_USEFUL_BOTTOM/PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT;
+      enemy.setOrigin(.5,enemy.directionalOriginY);
+    }
     enemy.originalTint=0xffffff;enemy.suppressLoot=true;enemy.prologue=config;
     enemy.iso={u:config.u,v:config.v,originU:config.u,originV:config.v};
     enemy.animState='idle';enemy.activeAnimationKey='';enemy.facingDirection='s';enemy.attackPendingAt=0;enemy.attackEndsAt=0;enemy.deathAnimationEndsAt=0;
@@ -661,15 +687,24 @@ export class OldAetherPrologue{
   playEnemyAnimation(enemy,state){
     if(!enemy?.active)return;
     const prefix=enemy.prologue.kind==='wolf'?'prologue-wolf':'prologue-goblin';
-    const directional=state==='idle'||state==='walk'||state==='attack';
-    const key=directional
-      ?`${prefix}-${state}-${enemy.facingDirection||'s'}`
-      :`${prefix}-${state}`;
+    const wolfHit=enemy.prologue.kind==='wolf'&&state==='hit';
+    const directional=state==='idle'||state==='walk'||state==='attack'||wolfHit;
+    const key=wolfHit
+      ?`${prefix}-idle-${enemy.facingDirection||'s'}`
+      :directional
+        ?`${prefix}-${state}-${enemy.facingDirection||'s'}`
+        :`${prefix}-${state}`;
     if(!this.scene.anims.exists(key))return;
     if(enemy.animState===state&&enemy.activeAnimationKey===key)return;
     enemy.animState=state;
     enemy.activeAnimationKey=key;
-    enemy.setScale(directional?enemy.directionalScale:enemy.legacyReactionScale);
+    if(directional){
+      enemy.setScale(enemy.directionalScale).setOrigin(.5,enemy.directionalOriginY??1);
+    }else if(state==='death'){
+      enemy.setScale(enemy.deathScale).setOrigin(.5,enemy.deathOriginY??1);
+    }else{
+      enemy.setScale(enemy.hitScale).setOrigin(.5,enemy.hitOriginY??1);
+    }
     enemy.setFlipX(false);
     enemy.play(key,true);
   }
@@ -729,9 +764,10 @@ export class OldAetherPrologue{
   syncEnemyVisual(enemy){
     const p=this.scene.project(enemy.iso.u,enemy.iso.v),depth=this.scene.depthAt(enemy.iso.u,enemy.iso.v,.16);
     enemy.setPosition(p.x,p.y).setDepth(depth);
-    enemy.hpBg?.setPosition(p.x,p.y-46).setDepth(depth+.42);
-    enemy.hpFill?.setPosition(p.x-27,p.y-46).setDepth(depth+.43);
-    enemy.nameText?.setPosition(p.x,p.y-60).setDepth(depth+.44);
+    const uiLift=enemy.prologue?.uiLift??46;
+    enemy.hpBg?.setPosition(p.x,p.y-uiLift).setDepth(depth+.42);
+    enemy.hpFill?.setPosition(p.x-27,p.y-uiLift).setDepth(depth+.43);
+    enemy.nameText?.setPosition(p.x,p.y-uiLift-14).setDepth(depth+.44);
   }
 
   resolveEnemyDeaths(time){
