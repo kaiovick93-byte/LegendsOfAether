@@ -72,7 +72,21 @@ export class Minimap{
    const cropW=source.width/this.localZoom,cropH=source.height/this.localZoom;
    const cropX=Phaser.Math.Clamp(center.x*source.width-cropW/2,0,source.width-cropW);
    const cropY=Phaser.Math.Clamp(center.y*source.height-cropH/2,0,source.height-cropH);
-   this.art.setCrop(cropX,cropY,cropW,cropH).setPosition(this.artLeft+this.artWidth/2,this.artTop+this.artHeight/2).setDisplaySize(this.artWidth,this.artHeight);
+
+   // Round 79.18 — o recorte do minimapa precisa preencher a moldura.
+   // Antes, setDisplaySize(artWidth, artHeight) escalava a IMAGEM INTEIRA e
+   // depois o Phaser mostrava somente ~1/localZoom dela. Resultado: o trecho
+   // verde aparecia minúsculo no canto, enquanto o marcador do jogador usava
+   // corretamente as coordenadas do recorte e parecia ficar fora do mapa.
+   //
+   // Centralizamos a origem visual no centro do crop e escalamos o próprio
+   // recorte para 216x162. Assim mapa, estrada, jogador e marcadores usam a
+   // mesma janela local e a mesma transformação world -> minimap.
+   this.art
+    .setCrop(cropX,cropY,cropW,cropH)
+    .setDisplayOrigin(cropX+cropW/2,cropY+cropH/2)
+    .setScale(this.artWidth/cropW,this.artHeight/cropH)
+    .setPosition(this.artLeft+this.artWidth/2,this.artTop+this.artHeight/2);
    mapCenter={x:(cropX+cropW/2)/source.width,y:(cropY+cropH/2)/source.height};
   }
   const p=this.pointOnMap(playerPoint,mapCenter);
