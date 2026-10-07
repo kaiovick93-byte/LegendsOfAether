@@ -190,7 +190,12 @@ test('CONTINUAR restores the selected save; ordinary load() reads never rewind t
   sm.load(); sm.load();
   assert.deepEqual(worldClock.serialize(), beforeRead);
   let target;
-  MenuScene.prototype.startExisting.call({fade: {out: cb => cb()}, scene: {start: key => { target = key; }}}, saved);
+  MenuScene.prototype.continueGame.call({
+    sm: {load: () => saved},
+    menuBusy: false,
+    fade: {out: cb => cb()},
+    scene: {start: key => { target = key; }}
+  });
   assert.equal(target, 'CaveScene');
   assert.deepEqual(worldClock.serialize(), saved.worldClock);
   run.frame(2000);
