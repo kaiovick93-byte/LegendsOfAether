@@ -170,7 +170,10 @@ export class OldRoadProps{
       warmAlpha:.092,
       schedule:'dusk-to-dawn',
       onIntensityChange:(intensity)=>{
-        const useNightTexture=intensity>.02;
+        // Round 79.15 — a chama não troca para o sprite noturno assim que
+        // começa a curva das 19:15. O limiar de 18% coloca a mudança visual
+        // por volta de 19:23, mantendo a progressão mais natural.
+        const useNightTexture=intensity>.18;
         if(useNightTexture===isNightTexture)return;
         sprite.setTexture(useNightTexture?'old_road_sign_lantern_night_01':'old_road_sign_lantern_day_01');
         isNightTexture=useNightTexture;
@@ -181,7 +184,7 @@ export class OldRoadProps{
     sprite.setData('worldLightSource',{
       system:'WorldLightingSystem',
       id:'old-road-start-sign-lantern',
-      round:'79.13',
+      round:'79.15',
       schedule:'19:15-06:00',
       fullIntensityFrom:'20:00',
       legacyOverlaySpritesRemoved:true
