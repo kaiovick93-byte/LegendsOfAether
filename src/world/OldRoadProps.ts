@@ -147,8 +147,12 @@ export class OldRoadProps{
     const originY=prop.originY??1;
     const localX=(.765-originX)*sprite.width*prop.scale;
     const localY=(.64-originY)*sprite.height*prop.scale;
-    const groundOffsetX=-6;
-    const groundOffsetY=(sprite.y-4)-(sprite.y+localY);
+    // Round 79.13 — polimento fino da lanterna.
+    // A luz precisa tocar melhor o chão e a placa, sem voltar ao efeito de
+    // holofote. Abrir um pouco mais a escuridão e deslocar a influência para
+    // baixo/direita cria uma pequena zona segura mais natural.
+    const groundOffsetX=18;
+    const groundOffsetY=((sprite.y-4)-(sprite.y+localY))+16;
     let isNightTexture=false;
 
     const handle=lighting.registerLight({
@@ -158,12 +162,12 @@ export class OldRoadProps{
       offsetY:localY,
       groundOffsetX,
       groundOffsetY,
-      groundRadiusX:96,
-      groundRadiusY:56,
-      coreRadius:28,
-      strength:.82,
+      groundRadiusX:112,
+      groundRadiusY:66,
+      coreRadius:30,
+      strength:.86,
       warmColor:0xffc56f,
-      warmAlpha:.075,
+      warmAlpha:.092,
       schedule:'dusk-to-dawn',
       onIntensityChange:(intensity)=>{
         const useNightTexture=intensity>.02;
@@ -177,7 +181,7 @@ export class OldRoadProps{
     sprite.setData('worldLightSource',{
       system:'WorldLightingSystem',
       id:'old-road-start-sign-lantern',
-      round:'79.10',
+      round:'79.13',
       schedule:'19:15-06:00',
       fullIntensityFrom:'20:00',
       legacyOverlaySpritesRemoved:true
