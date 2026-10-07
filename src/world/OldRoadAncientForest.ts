@@ -1,8 +1,8 @@
-import {worldClock} from './WorldClock';
 // @ts-nocheck
+import {worldClock} from './WorldClock';
 
 /**
- * Round 79.14 — Floresta Ancestral da Estrada Velha (névoa baixa reforçada).
+ * Round 79.16 — Floresta Ancestral da Estrada Velha (névoa global dedicada).
  *
  * IMPORTANTE:
  * - A borda laranja abaixo foi reconstruída a partir da marcação vermelha
@@ -206,48 +206,17 @@ const FOREST_SHADOW_PATCHES=Object.freeze([
   ['soft',1.763,77.248,248,140,-.05,.16]
 ]);
 
-// Round 79.14 — névoa baixa reforçada. As faixas continuam começando
-// somente após a entrada da floresta, mas agora com opacidade suficiente
-// para serem percebidas de verdade entre raízes e bolsões internos da mata.
+// Round 79.16 — zonas de névoa registradas no WorldFogSystem. A entrada
+// próxima à placa/lanterna continua limpa; a densidade cresce no interior.
 const FOREST_FOG_BANDS=Object.freeze([
-  ['ribbon',1.145,54.657,266,88,-.12,.18,16,3,.42,.30],
-  ['broad',2.382,58.494,382,112,-.10,.24,22,4,.34,1.10],
-  ['ribbon',1.629,62.062,350,94,-.08,.28,19,3,.38,2.05],
-  ['pocket',1.468,65.604,254,100,-.06,.32,13,5,.30,2.80],
-  ['broad',2.005,69.655,410,120,-.05,.36,24,4,.28,3.55],
-  ['ribbon',1.602,72.714,332,92,-.04,.30,17,3,.32,4.25],
-  ['soft',1.361,74.109,226,76,-.03,.22,11,2,.36,5.10]
+  ['ribbon',1.145,54.657,280,94,-.12,.30,16,3,.42,.30],
+  ['broad',2.382,58.494,402,120,-.10,.36,22,4,.34,1.10],
+  ['ribbon',1.629,62.062,370,102,-.08,.40,19,3,.38,2.05],
+  ['pocket',1.468,65.604,270,108,-.06,.44,13,5,.30,2.80],
+  ['broad',2.005,69.655,432,130,-.05,.46,24,4,.28,3.55],
+  ['ribbon',1.602,72.714,350,100,-.04,.40,17,3,.32,4.25],
+  ['soft',1.361,74.109,238,82,-.03,.28,11,2,.36,5.10]
 ]);
-
-function ensureForestFogTexture(scene,key,{width=420,height=140,tone='rgba(198,210,204,1)',strength=.30,shape='broad'}={}){
-  if(scene.textures.exists(key))return key;
-  const texture=scene.textures.createCanvas(key,width,height);
-  const ctx=texture?.getContext?.();
-  if(!ctx)return key;
-  ctx.clearRect(0,0,width,height);
-
-  const ellipses=shape==='ribbon'
-    ? [[.28,.56,.31,.23,.82],[.51,.46,.36,.27,1],[.74,.57,.30,.22,.76]]
-    :shape==='pocket'
-      ? [[.34,.54,.34,.31,.78],[.58,.43,.39,.34,1],[.72,.59,.26,.23,.68]]
-      :shape==='soft'
-        ? [[.42,.52,.38,.31,.72],[.62,.48,.34,.28,.82]]
-        : [[.25,.57,.31,.25,.72],[.48,.45,.39,.31,1],[.72,.55,.34,.27,.82]];
-
-  for(const [cxN,cyN,rxN,ryN,weight] of ellipses){
-    const cx=width*cxN,cy=height*cyN,rx=width*rxN,ry=height*ryN;
-    for(let step=7;step>=0;step--){
-      const t=step/7;
-      const alpha=strength*weight*(1-t)*.34;
-      ctx.fillStyle=tone.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^\)]+\)/,`rgba($1,$2,$3,${alpha})`);
-      ctx.beginPath();
-      ctx.ellipse(cx,cy,Math.max(1,rx*(.42+.58*t)),Math.max(1,ry*(.42+.58*t)),0,0,Math.PI*2);
-      ctx.fill();
-    }
-  }
-  texture.refresh();
-  return key;
-}
 
 function ensureForestShadowTexture(scene,key,{width=512,height=320,stops=[[0,.52],[.28,.34],[.58,.16],[1,0]]}={}){
   if(scene.textures.exists(key))return key;
@@ -301,13 +270,9 @@ export class OldRoadAncientForest{
     this.scene=territory.scene;
     this.sprites=[];
     this.shadowSprites=[];
-    this.fogSprites=[];
-    this.fogElapsedMs=0;
-    this.fogMaskGraphics=null;
-    this.fogMask=null;
+    this.fogZoneHandle=null;
     this.build();
     this.scene.events.on('update',this.updateShadowLayer,this);
-    this.scene.events.on('update',this.updateFogLayer,this);
     this.scene.events.once('shutdown',()=>this.destroy());
   }
 
@@ -412,79 +377,31 @@ export class OldRoadAncientForest{
   forestFogIntensity(timeOfDayMs=worldClock.timeOfDayMs){
     const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
     if(minutes>=1200||minutes<300)return 1; // 20:00–05:00
-    if(minutes>=1140)return .82+((minutes-1140)/60)*.18; // 19:00–20:00
-    if(minutes>=1080)return .62+((minutes-1080)/60)*.20; // 18:00–19:00
-    if(minutes>=1020)return .40+((minutes-1020)/60)*.22; // 17:00–18:00
-    if(minutes>=300&&minutes<390)return 1-((minutes-300)/90)*.45; // 05:00–06:30
-    return .40;
+    if(minutes>=1140)return .78+((minutes-1140)/60)*.22; // 19:00–20:00
+    if(minutes>=1080)return .62+((minutes-1080)/60)*.16; // 18:00–19:00
+    if(minutes>=1020)return .48+((minutes-1020)/60)*.14; // 17:00–18:00
+    if(minutes>=300&&minutes<390)return 1-((minutes-300)/90)*.52; // 05:00–06:30
+    return .48;
   }
 
-  buildFogMask(){
-    const graphics=this.scene.make.graphics({x:0,y:0,add:false});
-    graphics.fillStyle(0xffffff,1);
-    graphics.beginPath();
-    OLD_ROAD_ANCIENT_FOREST_POLYGON.forEach((point,index)=>{
-      const p=this.territory.project(point.u,point.v);
-      if(index===0)graphics.moveTo(p.x,p.y);
-      else graphics.lineTo(p.x,p.y);
-    });
-    graphics.closePath();
-    graphics.fillPath();
-    this.fogMaskGraphics=graphics;
-    this.fogMask=graphics.createGeometryMask();
-  }
+  registerGlobalFogZone(){
+    const fog=this.scene.worldFog;
+    if(!fog?.registerZone)return;
 
-  buildFogLayer(){
-    ensureForestFogTexture(this.scene,'old-road-forest-fog-soft',{width:320,height:112,strength:.62,shape:'soft'});
-    ensureForestFogTexture(this.scene,'old-road-forest-fog-ribbon',{width:440,height:120,strength:.72,shape:'ribbon'});
-    ensureForestFogTexture(this.scene,'old-road-forest-fog-broad',{width:500,height:150,strength:.78,shape:'broad'});
-    ensureForestFogTexture(this.scene,'old-road-forest-fog-pocket',{width:300,height:128,strength:.74,shape:'pocket'});
-    this.buildFogMask();
-
-    const textureByType={
-      soft:'old-road-forest-fog-soft',
-      ribbon:'old-road-forest-fog-ribbon',
-      broad:'old-road-forest-fog-broad',
-      pocket:'old-road-forest-fog-pocket'
-    };
-    const depthBase=this.territory.groundDepth(-70.27);
-    const intensity=this.forestFogIntensity();
-
-    FOREST_FOG_BANDS.forEach(([type,u,v,width,height,rotation,baseAlpha,driftX,driftY,speed,phase],index)=>{
-      this.assertBaseInside(u,v,`forest-fog-${index+1}`);
+    const polygon=OLD_ROAD_ANCIENT_FOREST_POLYGON.map(point=>this.territory.project(point.u,point.v));
+    const bands=FOREST_FOG_BANDS.map(([type,u,v,width,height,rotation,opacity,driftX,driftY,speed,phase])=>{
+      this.assertBaseInside(u,v,`forest-fog-${type}`);
       const p=this.territory.project(u,v);
-      const depth=(type==='pocket'||type==='ribbon')
-        ? this.territory.depthAt(u,v,-.02)+.0005*index
-        : depthBase+.001*index;
-      const sprite=this.scene.add.image(p.x,p.y,textureByType[type])
-        .setOrigin(.5,.5)
-        .setDisplaySize(width,height)
-        .setRotation(rotation)
-        .setAlpha(baseAlpha*intensity)
-        .setBlendMode(Phaser.BlendModes.NORMAL)
-        .setDepth(depth);
-      if(this.fogMask)sprite.setMask(this.fogMask);
-      sprite.setData('oldRoadAncientForestFog',{
-        type,u,v,width,height,rotation,baseAlpha,driftX,driftY,speed,phase,
-        baseX:p.x,baseY:p.y,stage:'Round79.14',collision:false
-      });
-      this.territory.track(sprite,u,v,{visibleRadius:42,activeRadius:48});
-      this.fogSprites.push(sprite);
+      return {type,x:p.x,y:p.y,width,height,rotation,opacity,driftX,driftY,speed,phase};
     });
-  }
 
-  updateFogLayer(_time=0,delta=16.67){
-    this.fogElapsedMs+=Math.min(64,Math.max(0,Number.isFinite(delta)?delta:16.67));
-    const seconds=this.fogElapsedMs/1000;
-    const intensity=this.forestFogIntensity();
-    for(const sprite of this.fogSprites){
-      const data=sprite?.getData?.('oldRoadAncientForestFog');
-      if(!data)continue;
-      const wave=seconds*data.speed+data.phase;
-      sprite.x=data.baseX+Math.sin(wave)*data.driftX;
-      sprite.y=data.baseY+Math.cos(wave*.73)*data.driftY;
-      sprite.setAlpha(data.baseAlpha*intensity);
-    }
+    this.fogZoneHandle=fog.registerZone({
+      id:'old-road-ancient-forest',
+      polygon,
+      bands,
+      color:0xcbd5d2,
+      schedule:(timeOfDayMs)=>this.forestFogIntensity(timeOfDayMs)
+    });
   }
 
   build(){
@@ -516,7 +433,7 @@ export class OldRoadAncientForest{
     });
 
     this.buildShadowLayer();
-    this.buildFogLayer();
+    this.registerGlobalFogZone();
 
     // Round 79.4 — a posição/escala/arte da lanterna aprovada não muda.
     // Apenas sua ordem de desenho é corrigida quando algum sprite da floresta
@@ -526,7 +443,7 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.14',
+      version:'Round79.16',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
@@ -534,7 +451,9 @@ export class OldRoadAncientForest{
       atmosphereAccents:{trees:ATMOSPHERE_TREE_ACCENTS.length,structures:ATMOSPHERE_STRUCTURE_ACCENTS.length,ground:ATMOSPHERE_GROUND_ACCENTS.length},
       localShadowPatches:FOREST_SHADOW_PATCHES.length,
       lowFogBands:FOREST_FOG_BANDS.length,
-      fogRuntimeTextures:true,
+      fogSystem:'WorldFogSystem',
+      fogLayerDepth:655,
+      fogAboveWorldLighting:true,
       fogCollision:false,
       clearZoneRemovedThorn06:{...REMOVED_THORN06_CLEAR_ZONE},
       polygon:OLD_ROAD_ANCIENT_FOREST_POLYGON.map(p=>({...p}))
@@ -562,7 +481,7 @@ export class OldRoadAncientForest{
       lantern.setDepth(highestOverlappingForestDepth+.01);
 
     lantern.setData('oldRoadLanternForestDepthFix',{
-      version:'Round79.14',
+      version:'Round79.16',
       overlapCount,
       lanternDepth:lantern.depth,
       highestOverlappingForestDepth:highestOverlappingForestDepth===-Infinity?null:highestOverlappingForestDepth,
@@ -575,16 +494,11 @@ export class OldRoadAncientForest{
 
   destroy(){
     this.scene?.events?.off?.('update',this.updateShadowLayer,this);
-    this.scene?.events?.off?.('update',this.updateFogLayer,this);
-    for(const sprite of this.fogSprites)sprite?.destroy?.();
+    this.fogZoneHandle?.destroy?.();
+    this.fogZoneHandle=null;
     for(const sprite of this.shadowSprites)sprite?.destroy?.();
     for(const sprite of this.sprites)sprite?.destroy?.();
-    this.fogMask?.destroy?.();
-    this.fogMaskGraphics?.destroy?.();
-    this.fogSprites.length=0;
     this.shadowSprites.length=0;
     this.sprites.length=0;
-    this.fogMask=null;
-    this.fogMaskGraphics=null;
   }
 }

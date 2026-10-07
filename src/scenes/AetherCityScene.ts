@@ -28,6 +28,7 @@ import {SouthRiverBridge} from '../world/SouthRiverBridge';
 import {createGroundedBrokenWall,southWallJoinTexture,foundationColumns,isFoundationContact} from '../world/CityWallGrounding';
 import {OldAetherPrologue} from '../prologue/OldAetherPrologue';
 import {WorldLightingSystem} from '../render/WorldLightingSystem';
+import {WorldFogSystem} from '../render/WorldFogSystem';
 
 /**
  * Round 67 — acabamento urbano, contato corporal e portões isométricos.
@@ -119,9 +120,11 @@ export class AetherCityScene extends Phaser.Scene {
     // zona central de leitura em vez de ficar preso ao topo da tela.
     this.configureCityCameraBounds();
     this.worldLighting=new WorldLightingSystem(this,{depth:650,renderScale:.5,maxFps:30});
+    this.worldFog=new WorldFogSystem(this,{depth:655,renderScale:.5,maxFps:24});
     this.cityResizeHandler=()=>{
       this.configureCityCameraBounds();
       this.worldLighting?.resize?.();
+      this.worldFog?.resize?.();
     };
     this.scale.on(Phaser.Scale.Events.RESIZE,this.cityResizeHandler);
     this.cameras.main.setDeadzone(180, 80);
@@ -2012,6 +2015,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.updateNpcPrompts();
     this.updateActorDepths();
     this.worldLighting?.update?.(_time,delta);
+    this.worldFog?.update?.(_time,delta);
 
     if (this.dialogueOpen) {
       this.stopPlayer();
@@ -2501,6 +2505,7 @@ export class AetherCityScene extends Phaser.Scene {
       this.saveGame();
       this.prologue?.destroy?.();
       this.aetherTerritory?.destroy?.();
+      this.worldFog?.destroy?.();
       this.worldLighting?.destroy?.();
       this.cityPavement?.destroy?.();
       this.fountainWater?.destroy?.();
