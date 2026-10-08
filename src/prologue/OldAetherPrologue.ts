@@ -139,18 +139,23 @@ class PrologueHud{
   destroy(){this.scene.scale.off(Phaser.Scale.Events.RESIZE,this.resizeHandler);this.root.destroy(true);this.hintText.destroy();}
 }
 
-/** Prompt de interação fantasy/ARPG, ligado ao prop real. */
+/** Prompt de interação com asset próprio, ligado ao prop real. */
 class PrologueCue{
   constructor(scene){
     this.scene=scene;
-    // É um objeto do mundo: usa as coordenadas dos props e acompanha a câmera.
     this.root=scene.add.container(0,0).setDepth(1800).setScrollFactor(1).setVisible(false);
-    this.shadow=scene.add.graphics();
-    this.back=scene.add.graphics();
-    this.keycap=scene.add.graphics();
-    this.key=scene.add.text(0,0,'F',{fontFamily:'Georgia, serif',fontSize:10,color:'#f7eed0',fontStyle:'bold'}).setOrigin(.5);
-    this.text=scene.add.text(0,0,'Investigar',{fontFamily:'Georgia, serif',fontSize:11,color:'#e8d8a7',fontStyle:'bold'}).setOrigin(0,.5);
-    this.root.add([this.shadow,this.back,this.keycap,this.key,this.text]);
+    this.panel=scene.add.image(0,0,'prologue_interact_panel').setOrigin(.5).setScale(1);
+    this.keycap=scene.add.image(-58,0,'prologue_interact_keycap').setOrigin(.5).setScale(1);
+    this.key=scene.add.text(-58,0,'F',{
+      fontFamily:'Georgia, serif',fontSize:11,color:'#f7eed0',fontStyle:'bold',
+      stroke:'#1a1410',strokeThickness:2
+    }).setOrigin(.5);
+    this.text=scene.add.text(-36,0,'Investigar',{
+      fontFamily:'Georgia, serif',fontSize:11,color:'#ead9ac',fontStyle:'bold',
+      stroke:'#0f0c08',strokeThickness:2,shadow:{offsetX:0,offsetY:1,color:'#000000',blur:0,fill:true}
+    }).setOrigin(0,.5);
+    this.root.add([this.panel,this.keycap,this.key,this.text]);
+    this.root.setAlpha(1);
     this.redraw('F','Investigar');
   }
   redraw(key,label){
@@ -158,43 +163,17 @@ class PrologueCue{
     const labelText=(label||'Investigar').trim()||'Investigar';
     this.key.setText(keyText);
     this.text.setText(labelText);
-
-    const padX=12,padY=8,gap=9;
-    const keyW=24,keyH=22;
-    const textW=Math.ceil(this.text.width);
-    const textH=Math.max(16,Math.ceil(this.text.height));
-    const panelW=padX+keyW+gap+textW+padX;
-    const panelH=Math.max(32,textH+padY*2);
-    const left=-Math.round(panelW/2),top=-Math.round(panelH/2);
-
-    this.shadow.clear()
-      .fillStyle(0x000000,.24)
-      .fillRoundedRect(left+1,top+3,panelW,panelH,10);
-
-    this.back.clear();
-    this.back.fillStyle(0x0f1722,.88).fillRoundedRect(left,top,panelW,panelH,10);
-    this.back.lineStyle(1,0x8e6c2f,.95).strokeRoundedRect(left,top,panelW,panelH,10);
-    this.back.lineStyle(1,0xd2b06a,.32).strokeRoundedRect(left+2,top+2,panelW-4,panelH-4,8);
-    this.back.fillStyle(0xd2b06a,.75).fillRoundedRect(left+8,top+panelH/2-1,4,2,1);
-    this.back.fillStyle(0xd2b06a,.75).fillRoundedRect(left+panelW-12,top+panelH/2-1,4,2,1);
-
-    const keyX=left+padX;
-    const keyY=-Math.round(keyH/2);
-    this.keycap.clear();
-    this.keycap.fillStyle(0x1e2633,.98).fillRoundedRect(keyX,keyY,keyW,keyH,6);
-    this.keycap.lineStyle(1,0xae8b4a,.95).strokeRoundedRect(keyX,keyY,keyW,keyH,6);
-    this.keycap.lineStyle(1,0xf0d9a2,.18).strokeRoundedRect(keyX+1,keyY+1,keyW-2,keyH-2,5);
-    this.keycap.fillStyle(0xf0d9a2,.09).fillRoundedRect(keyX+2,keyY+2,keyW-4,Math.max(4,Math.floor(keyH*.42)),4);
-
-    this.key.setPosition(keyX+keyW/2,0);
-    this.text.setPosition(keyX+keyW+gap,0);
+    this.text.setFontSize(labelText.length>14?10:11);
+    this.key.setPosition(-58,0);
+    this.keycap.setPosition(-58,0);
+    this.text.setPosition(-36,0);
   }
   show(x,y,_depth,label){
     const match=/^([A-Z])\s*[-—•]\s*(.*)$/.exec(label||'');
     const key=match?.[1]||'F';
     const text=match?.[2]||label||'Investigar';
     this.redraw(key,text);
-    this.root.setPosition(x,y).setAlpha(1).setVisible(true).setDepth(1800);
+    this.root.setPosition(x,y).setVisible(true).setAlpha(1).setDepth(1800);
   }
   hide(){this.root.setVisible(false);}
   destroy(){this.root.destroy(true);}

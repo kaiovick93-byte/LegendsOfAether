@@ -146,6 +146,8 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('hud_action_controls','assets/images/ui/hud/actions/controls.png');
     this.load.image('hud_action_menu','assets/images/ui/hud/actions/menu.png');
     this.load.image('city_map_exact_2_5d','assets/images/ui/map/city_map_exact_2_5d.png');
+    this.load.image('prologue_interact_panel','assets/images/ui/interaction/prologue_interact_panel.png');
+    this.load.image('prologue_interact_keycap','assets/images/ui/interaction/prologue_interact_keycap.png');
 
     this.load.image('portrait_aldren','assets/images/ui/dialogue/portraits/portrait_aldren.png');
     this.load.image('portrait_borin','assets/images/ui/dialogue/portraits/portrait_borin.png');
