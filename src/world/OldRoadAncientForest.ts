@@ -692,18 +692,19 @@ export class OldRoadAncientForest{
     });
 
     const sx=startSign.x, sy=startSign.y;
-    const rightLimit=sx-36;
-    const topLimit=sy-210;
-    const bottomLimit=sy+120;
-    const allow=(x,y)=>x<=rightLimit&&y>=topLimit&&y<=bottomLimit;
+    const leftLimit=sx-470;
+    const rightLimit=sx-120;
+    const topLimit=sy-220;
+    const bottomLimit=sy+92;
+    const allow=(x,y)=>x>=leftLimit&&x<=rightLimit&&y>=topLimit&&y<=bottomLimit;
 
-    // Round 4 — reconstrução literal da área marcada: preencher apenas a
-    // região preta à esquerda da placa, manter a entrada limpa e fazer a
-    // Estrada Velha seguir pelo corredor diagonal para dentro da floresta.
+    // Round 5 — correção da área marcada: a Estrada Velha continua
+    // visualmente para dentro da floresta, com o corredor livre e a placa
+    // preservada. Tudo aqui permanece apenas como cenografia não jogável.
     const backfills=[
-      ['old-road-forest-vista-backfill-deep',sx-300,sy-74,860,500,-.18,.98],
-      ['old-road-forest-vista-backfill-mid',sx-214,sy-48,640,360,-.16,.86],
-      ['old-road-forest-vista-backfill-soft',sx-124,sy-88,360,220,-.18,.40]
+      ['old-road-forest-vista-backfill-deep',sx-304,sy-92,760,430,-.10,.96],
+      ['old-road-forest-vista-backfill-mid',sx-236,sy-62,560,324,-.08,.80],
+      ['old-road-forest-vista-backfill-soft',sx-168,sy-34,316,194,-.05,.40]
     ];
     backfills.forEach((spec,index)=>{
       const [,x,y]=spec;
@@ -711,12 +712,12 @@ export class OldRoadAncientForest{
     });
 
     const roadNodes=[
-      {x:sx-42,y:sy+40},
-      {x:sx-92,y:sy+38},
+      {x:sx-88,y:sy+36},
       {x:sx-150,y:sy+28},
-      {x:sx-212,y:sy+4},
-      {x:sx-272,y:sy-32},
-      {x:sx-324,y:sy-76}
+      {x:sx-216,y:sy+4},
+      {x:sx-284,y:sy-28},
+      {x:sx-346,y:sy-68},
+      {x:sx-398,y:sy-110}
     ];
     const roadTextures=[
       'old_road_b4d_straight_short_03',
@@ -725,9 +726,9 @@ export class OldRoadAncientForest{
       'old_road_b4d_straight_short_04',
       'old_road_b4d_straight_short_01'
     ];
-    const roadScales=[.176,.166,.154,.142,.128];
-    const roadAlphas=[.92,.84,.72,.58,.42];
-    const roadTints=[0x9a9b8b,0x8e9082,0x81857a,0x767b72,0x6c726a];
+    const roadScales=[.182,.170,.156,.142,.128];
+    const roadAlphas=[.90,.82,.72,.58,.44];
+    const roadTints=[0x9c9e8f,0x919385,0x85897d,0x797e75,0x6d746d];
     for(let i=0;i<roadNodes.length-1;i++){
       const a=roadNodes[i],b=roadNodes[i+1];
       const x=(a.x+b.x)/2,y=(a.y+b.y)/2;
@@ -737,47 +738,46 @@ export class OldRoadAncientForest{
     }
 
     const ground=[
-      ['floor07',sx-230,sy+34,.56,false,-.04,0x717a70,.82],
-      ['hauntedDecayGround01',sx-176,sy+24,.28,true,.03,0x756e66,.76],
-      ['thorn08',sx-138,sy+18,.62,true,.03,0x677066,.84],
-      ['under03',sx-102,sy+14,.60,false,.02,0x617062,.80],
-      ['floor08',sx-264,sy-6,.54,true,-.02,0x6d7970,.72],
-      ['thorn07',sx-206,sy-2,.60,false,.04,0x647064,.82],
-      ['hauntedDecayGround01',sx-286,sy-42,.22,false,-.03,0x6d7065,.58],
-      ['under02',sx-154,sy-6,.56,true,-.03,0x637062,.76],
-      ['floor06',sx-314,sy-76,.46,false,-.06,0x677066,.46]
+      ['floor07',sx-236,sy+18,.52,false,-.04,0x727970,.84],
+      ['hauntedDecayGround01',sx-192,sy+12,.30,true,.02,0x786d60,.74],
+      ['under03',sx-146,sy+18,.54,false,.03,0x687261,.78],
+      ['floor08',sx-282,sy-12,.48,true,-.02,0x6c756d,.72],
+      ['thorn07',sx-246,sy-8,.54,false,.03,0x606a61,.78],
+      ['hauntedDecayGround01',sx-334,sy-58,.24,false,-.04,0x6a665f,.58],
+      ['under02',sx-316,sy-36,.50,true,-.03,0x617060,.66],
+      ['floor06',sx-388,sy-102,.42,false,-.05,0x676f68,.42]
     ];
     ground.forEach(([name,x,y,scale,flipX,rotation,tint,alpha])=>{
       if(allow(x,y))this.addScenicGroundScreen(name,x,y,scale,flipX,rotation,{tint,alpha,layer:-70.45});
     });
 
     const structures=[
-      ['hauntedRootsSprawl01',sx-258,sy-2,.30,false,0x687166,.78,.04],
-      ['root05',sx-182,sy+6,.54,true,0x5f6a61,.76,.04],
-      ['log04',sx-118,sy+18,.52,false,0x736a5d,.72,.04],
-      ['hauntedWebCanopy01',sx-318,sy-126,.20,false,0xc1c7c6,.42,.05],
-      ['hauntedWebCanopy02',sx-220,sy-112,.18,true,0xc7cccb,.36,.05],
-      ['hauntedWebCanopy01',sx-134,sy-104,.14,true,0xbac2c1,.24,.04]
+      ['hauntedRootsSprawl01',sx-366,sy+12,.24,false,0x667062,.74,.04],
+      ['root05',sx-306,sy+10,.44,true,0x5f6a61,.72,.04],
+      ['log04',sx-270,sy+28,.38,false,0x73695d,.66,.04],
+      ['hauntedWebCanopy01',sx-400,sy-132,.16,false,0xc1c7c6,.36,.05],
+      ['hauntedWebCanopy02',sx-306,sy-120,.15,true,0xc7cccb,.34,.05],
+      ['hauntedWebCanopy01',sx-224,sy-112,.12,true,0xbcc4c2,.22,.04]
     ];
     structures.forEach(([name,x,y,scale,flipX,tint,alpha,depthOffset])=>{
       if(allow(x,y))this.addScenicVerticalScreen(name,x,y,scale,flipX,{tint,alpha,depthOffset});
     });
 
     const trees=[
-      ['hauntedTreeCursed01',sx-338,sy-128,.42,false,0x7a8584,.92,.07],
-      ['hauntedTreeTwisted01',sx-274,sy-98,.36,true,0x86908f,.88,.07],
-      ['dead03',sx-216,sy-80,.54,false,0x808c8a,.88,.07],
-      ['hauntedTreeAncient01',sx-174,sy-82,.32,false,0x77807e,.84,.07],
-      ['dead02',sx-126,sy-58,.46,true,0x7d8787,.80,.07]
+      ['hauntedTreeCursed01',sx-426,sy-92,.34,false,0x7a8584,.94,.07],
+      ['hauntedTreeTwisted01',sx-336,sy-140,.28,true,0x848e8d,.90,.07],
+      ['hauntedTreeAncient01',sx-266,sy-126,.26,false,0x79817f,.86,.07],
+      ['dead03',sx-208,sy-104,.38,false,0x808a89,.82,.07],
+      ['dead02',sx-352,sy-82,.30,true,0x788181,.80,.07]
     ];
     trees.forEach(([name,x,y,scale,flipX,tint,alpha,depthOffset])=>{
       if(allow(x,y))this.addScenicVerticalScreen(name,x,y,scale,flipX,{tint,alpha,depthOffset});
     });
 
     const shadows=[
-      ['dense',sx-254,sy-48,380,214,-.18,.28],
-      ['broad',sx-166,sy-28,360,198,-.10,.18],
-      ['soft',sx-280,sy+12,260,150,-.08,.12]
+      ['dense',sx-322,sy-52,360,206,-.16,.24],
+      ['broad',sx-238,sy-24,326,186,-.10,.14],
+      ['soft',sx-376,sy+8,250,140,-.06,.10]
     ];
     shadows.forEach((spec,index)=>{
       const [,x,y]=spec;
