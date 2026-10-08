@@ -24,6 +24,21 @@ const PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT=724;
 const YOUNG_WOLF_DEATH_USEFUL_WIDTH=352;
 const YOUNG_WOLF_DEATH_USEFUL_BOTTOM=529;
 
+// Round 79.25 — calibração visual dos dois Goblins Batedores.
+// O atlas 8-dir tem frames 256x256, porém a arte útil ocupa ~193–202 px
+// de altura no idle e termina sempre em y=244. Usar 96/256 como escala
+// deixa o goblin com ~72–76 px visíveis no idle (e ~68–84 px ao andar/
+// atacar), menor que a Maga sem parecer miniaturizado. O cadáver da folha
+// antiga é alinhado pela base útil e dimensionado pela largura corporal,
+// evitando o encolhimento que ocorria ao usar os 724 px transparentes.
+const GOBLIN_FRAME_TARGET_HEIGHT=96;
+const GOBLIN_DIRECTIONAL_USEFUL_BOTTOM=244;
+const GOBLIN_DIRECTIONAL_PROFILE_WIDTH=170;
+const GOBLIN_DEATH_USEFUL_WIDTH=349;
+const GOBLIN_DEATH_USEFUL_BOTTOM=660;
+const GOBLIN_CORPSE_LENGTH_FACTOR=1.16;
+const GOBLIN_UI_LIFT=92;
+
 // Round 79.21 — UI dedicada do Lobo Jovem. O topo útil da arte viva fica
 // próximo de 66–69 px acima dos pés. A barra sobe para deixar um respiro
 // real sobre a cabeça e recebe uma moldura curta em bronze escurecido,
@@ -339,8 +354,11 @@ export class OldAetherPrologue{
     // evitando a troca visual para a folha antiga. A morte usa apenas o quadro
     // limpo do cadáver; os quadros 0–4 da folha v2 têm sangramento nas bordas.
     create('prologue-wolf-death','prologue_young_wolf', [5],1,0);
-    create('prologue-goblin-hit','prologue_goblin_scout', [4,0],10,0);
-    create('prologue-goblin-death','prologue_goblin_scout', [4,5],5,0);
+    // O hit dos goblins permanece no atlas 8-dir e usa o flash branco do
+    // Enemy.takeDamage, evitando troca de escala/arte durante o impacto.
+    // A morte usa apenas o quadro final de cadáver: o frame 4 ainda está
+    // ereto e, por ter envelope útil muito maior, causaria um salto de escala.
+    create('prologue-goblin-death','prologue_goblin_scout', [5],1,0);
     create('prologue-patrol-idle','aether_patrolman',[0],2,-1);
     create('prologue-patrol-walk','aether_patrolman',[1,2],7,-1);
     create('prologue-patrol-gesture','aether_patrolman',[3,0],6,0);
@@ -789,7 +807,7 @@ export class OldAetherPrologue{
   spawnGoblinScouts(){
     this.anchors.goblinScouts.forEach((a,index)=>{
       if(this.state.encounters.goblinScouts[index]!=='pending'||this.goblinScouts?.[index])return;
-      const enemy=this.spawnEnemy({id:`goblinScout${index}`,kind:'goblin',name:'Goblin Batedor',texture:'prologue_goblin_scout_8dir',u:a.u,v:a.v,height:76,hp:34,speed:.58,attack:5,xp:15,aggro:4.2,footprint:19,patrol:.44,phase:index*Math.PI,attackDelay:280});
+      const enemy=this.spawnEnemy({id:`goblinScout${index}`,kind:'goblin',name:'Goblin Batedor',texture:'prologue_goblin_scout_8dir',u:a.u,v:a.v,height:GOBLIN_FRAME_TARGET_HEIGHT,hp:34,speed:.58,attack:5,xp:15,aggro:4.2,footprint:19,patrol:.44,phase:index*Math.PI,attackDelay:280,uiLift:GOBLIN_UI_LIFT,uiNameOffset:14});
       this.goblinScouts??=[];this.goblinScouts[index]=enemy;
     });
     if(this.goblinScouts?.some(Boolean)&&!this.state.goblinCueShown){this.state.goblinCueShown=true;this.hud?.hint('Dois goblins batedores revistam a estrada.');}
@@ -817,6 +835,17 @@ export class OldAetherPrologue{
       enemy.deathScale=liveProfileWidth/YOUNG_WOLF_DEATH_USEFUL_WIDTH;
       enemy.directionalOriginY=YOUNG_WOLF_DIRECTIONAL_USEFUL_BOTTOM/(frame?.height||256);
       enemy.deathOriginY=YOUNG_WOLF_DEATH_USEFUL_BOTTOM/PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT;
+      enemy.setOrigin(.5,enemy.directionalOriginY);
+    }
+    if(config.kind==='goblin'){
+      // Ancoragem pelos pés reais do atlas 8-dir. O corpse usa a largura útil
+      // do corpo vivo como referência para não encolher ao trocar de sheet.
+      enemy.directionalOriginY=GOBLIN_DIRECTIONAL_USEFUL_BOTTOM/(frame?.height||256);
+      const liveProfileWidth=GOBLIN_DIRECTIONAL_PROFILE_WIDTH*enemy.directionalScale;
+      enemy.deathScale=(liveProfileWidth*GOBLIN_CORPSE_LENGTH_FACTOR)/GOBLIN_DEATH_USEFUL_WIDTH;
+      enemy.deathOriginY=GOBLIN_DEATH_USEFUL_BOTTOM/PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT;
+      enemy.hitScale=enemy.directionalScale;
+      enemy.hitOriginY=enemy.directionalOriginY;
       enemy.setOrigin(.5,enemy.directionalOriginY);
     }
     enemy.originalTint=0xffffff;enemy.suppressLoot=true;enemy.prologue=config;
@@ -890,9 +919,9 @@ export class OldAetherPrologue{
   playEnemyAnimation(enemy,state){
     if(!enemy?.active)return;
     const prefix=enemy.prologue.kind==='wolf'?'prologue-wolf':'prologue-goblin';
-    const wolfHit=enemy.prologue.kind==='wolf'&&state==='hit';
-    const directional=state==='idle'||state==='walk'||state==='attack'||wolfHit;
-    const key=wolfHit
+    const directionalHit=state==='hit'&&(enemy.prologue.kind==='wolf'||enemy.prologue.kind==='goblin');
+    const directional=state==='idle'||state==='walk'||state==='attack'||directionalHit;
+    const key=directionalHit
       ?`${prefix}-idle-${enemy.facingDirection||'s'}`
       :directional
         ?`${prefix}-${state}-${enemy.facingDirection||'s'}`
