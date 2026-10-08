@@ -85,10 +85,27 @@ export class OldRoadProps{
     // O alpha útil do marco termina ~22 px acima da origem do PNG; na escala
     // 1.36 isso coloca o contato visual com o solo cerca de 30 px acima do
     // anchor. A colisão cobre a massa de pedras da base, nunca a coluna alta.
+    // Round 79.29 — o Marco destruído não usa mais uma elipse única. A arte
+    // tem pilar, laje tombada e entulho em planos de chão diferentes; cada
+    // massa recebe um footprint próprio. A oclusão continua independente e
+    // usa o sprite completo, enquanto a colisão existe somente onde a pedra
+    // realmente ocupa o chão virtual.
     this.configureNarrativePropPhysicalProfile(ruinedWaystone,{
       groundX:ruinedWaystone.x+2,groundY:ruinedWaystone.y-30,
-      collisionWidth:132,collisionHeight:40,collisionCenterYOffset:-15,
-      interactionRadiusX:94,interactionRadiusY:46
+      collisionParts:[
+        {id:'pillar-base',offsetX:24,offsetY:-13,width:58,height:28},
+        {id:'fallen-slab-upper',offsetX:-31,offsetY:-38,width:58,height:20},
+        {id:'fallen-slab-lower',offsetX:-42,offsetY:-18,width:74,height:26},
+        {id:'front-rubble',offsetX:2,offsetY:2,width:112,height:24},
+        {id:'right-rubble',offsetX:48,offsetY:-9,width:42,height:22}
+      ],
+      interactionParts:[
+        {id:'pillar',offsetX:24,offsetY:-13,radiusX:54,radiusY:34},
+        {id:'slab-upper',offsetX:-31,offsetY:-38,radiusX:48,radiusY:28},
+        {id:'slab-lower',offsetX:-42,offsetY:-18,radiusX:55,radiusY:34},
+        {id:'front',offsetX:2,offsetY:2,radiusX:76,radiusY:32},
+        {id:'right',offsetX:48,offsetY:-9,radiusX:40,radiusY:28}
+      ]
     });
     this.setupRuinedWaystoneActivation(ruinedWaystone);
     for(const [key,fraction,offset,scale,flipX=false,angle=0] of DRESSING)
@@ -108,9 +125,9 @@ export class OldRoadProps{
     });
     this.scene.registry.set('oldRoadProps',{
       version:'B4.2C',scope:'old-road-immediate-left-edge-and-inner-junction',routeLength:this.length,
-      props:this.props.map(({sprite,solidMask,...p})=>p),
-      functionalWaystones:0,addedCollisions:2,generatedAssets:1,ruinedWaystoneActivation:'Round79.20',
-      narrativePropInteractionPhysics:'Round79.22'
+      props:this.props.map(({sprite,solidMask,solidMasks,...p})=>p),
+      functionalWaystones:0,addedCollisions:6,generatedAssets:1,ruinedWaystoneActivation:'Round79.20',
+      narrativePropInteractionPhysics:'Round79.29-composite-footprints'
     });
   }
 
@@ -163,15 +180,33 @@ export class OldRoadProps{
 
   configureNarrativePropPhysicalProfile(prop,profile){
     if(!prop?.sprite||!profile)return null;
-    const physical={
-      round:'79.22',
-      groundX:profile.groundX,groundY:profile.groundY,
-      collision:{
-        width:profile.collisionWidth,height:profile.collisionHeight,
-        centerYOffset:profile.collisionCenterYOffset??0
-      },
-      interaction:{
+    const collisionParts=Array.isArray(profile.collisionParts)&&profile.collisionParts.length
+      ?profile.collisionParts.map(part=>({
+        id:part.id??'part',offsetX:part.offsetX??0,offsetY:part.offsetY??0,
+        width:part.width,height:part.height
+      }))
+      :[{
+        id:'base',offsetX:0,offsetY:profile.collisionCenterYOffset??0,
+        width:profile.collisionWidth,height:profile.collisionHeight
+      }];
+    const interactionParts=Array.isArray(profile.interactionParts)&&profile.interactionParts.length
+      ?profile.interactionParts.map(part=>({
+        id:part.id??'part',offsetX:part.offsetX??0,offsetY:part.offsetY??0,
+        radiusX:part.radiusX,radiusY:part.radiusY
+      }))
+      :[{
+        id:'base',offsetX:0,offsetY:0,
         radiusX:profile.interactionRadiusX,radiusY:profile.interactionRadiusY
+      }];
+    const physical={
+      round:prop.role==='ruined-waystone'?'79.29':'79.22',
+      groundX:profile.groundX,groundY:profile.groundY,
+      collision:{parts:collisionParts},
+      interaction:{
+        parts:interactionParts,
+        // Mantém os campos legados para consumidores externos antigos.
+        radiusX:profile.interactionRadiusX??Math.max(...interactionParts.map(part=>part.radiusX??0)),
+        radiusY:profile.interactionRadiusY??Math.max(...interactionParts.map(part=>part.radiusY??0))
       }
     };
     prop.physical=physical;
@@ -179,15 +214,15 @@ export class OldRoadProps{
 
     const registerSolidMask=this.territory.config.registerSolidMask;
     if(registerSolidMask){
-      prop.solidMask=registerSolidMask(prop.sprite,prop.asset,{
-        label:prop.role==='start-sign'?'placa inicial da Estrada Velha':'Marco de Senda destruído',
-        mode:'footprint',
-        worldX:physical.groundX,worldY:physical.groundY,
-        footprintWidth:physical.collision.width,
-        footprintHeight:physical.collision.height,
-        footprintYOffset:physical.collision.centerYOffset,
+      const baseLabel=prop.role==='start-sign'?'placa inicial da Estrada Velha':'Marco de Senda destruído';
+      prop.solidMasks=collisionParts.map(part=>registerSolidMask(prop.sprite,prop.asset,{
+        label:`${baseLabel} — ${part.id}`,mode:'footprint',
+        worldX:physical.groundX+part.offsetX,worldY:physical.groundY+part.offsetY,
+        footprintWidth:part.width,footprintHeight:part.height,footprintYOffset:0,
         owner:prop.sprite
-      });
+      })).filter(Boolean);
+      // Compatibilidade com o campo singular usado em rounds anteriores.
+      prop.solidMask=prop.solidMasks[0]??null;
     }
     return physical;
   }

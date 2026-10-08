@@ -769,9 +769,16 @@ export class OldAetherPrologue{
     if(!sprite?.active||!physical?.interaction)return false;
     const player=this.scene.player;
     const foot=player.getLogicalFootprintAt?.(player.x,player.y)??{x:player.x,y:player.y-8};
-    const rx=Math.max(1,physical.interaction.radiusX),ry=Math.max(1,physical.interaction.radiusY);
-    const dx=(foot.x-physical.groundX)/rx,dy=(foot.y-physical.groundY)/ry;
-    return dx*dx+dy*dy<=1;
+    const parts=Array.isArray(physical.interaction.parts)&&physical.interaction.parts.length
+      ?physical.interaction.parts
+      :[{offsetX:0,offsetY:0,radiusX:physical.interaction.radiusX,radiusY:physical.interaction.radiusY}];
+    return parts.some(part=>{
+      const rx=Math.max(1,part.radiusX??physical.interaction.radiusX??1);
+      const ry=Math.max(1,part.radiusY??physical.interaction.radiusY??1);
+      const cx=physical.groundX+(part.offsetX??0),cy=physical.groundY+(part.offsetY??0);
+      const dx=(foot.x-cx)/rx,dy=(foot.y-cy)/ry;
+      return dx*dx+dy*dy<=1;
+    });
   }
   nearRoadSign(){return this.isNearNarrativeProp('start-sign');}
   distanceTo(anchor){return Math.hypot(this.scene.player.isoX-anchor.u,this.scene.player.isoY-anchor.v);}
