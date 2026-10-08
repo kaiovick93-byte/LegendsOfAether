@@ -69,14 +69,10 @@ export const OLD_ROAD_ANCIENT_FOREST_ASSETS=Object.freeze({
   wall01:asset('ancient_forest_thorn_wall_01','ancient_thorn_wall_01.png','structure'),
   wall02:asset('ancient_forest_thorn_wall_02','ancient_thorn_wall_02.png','structure'),
   wall03:asset('ancient_forest_thorn_wall_03','ancient_thorn_wall_03.png','structure'),
-  hauntedTreeCursed01:asset('ancient_forest_haunted_tree_cursed_01','haunted_tree_cursed_01.png','tree'),
-  hauntedTreeDeadTwisted01:asset('ancient_forest_haunted_tree_dead_twisted_01','haunted_tree_dead_twisted_01.png','tree'),
-  hauntedTreeAncient01:asset('ancient_forest_haunted_tree_ancient_01','haunted_tree_ancient_01.png','tree'),
-  hauntedTreeTwisted01:asset('ancient_forest_haunted_tree_twisted_01','haunted_tree_twisted_01.png','tree'),
-  hauntedRootsSprawl01:asset('ancient_forest_haunted_roots_sprawl_01','haunted_roots_sprawl_01.png','structure'),
-  hauntedDecayGround01:asset('ancient_forest_haunted_decay_ground_01','haunted_decay_ground_01.png','ground'),
-  hauntedWebCanopy01:asset('ancient_forest_haunted_web_canopy_01','haunted_web_canopy_01.png','structure'),
-  hauntedWebCanopy02:asset('ancient_forest_haunted_web_canopy_02','haunted_web_canopy_02.png','structure')
+  vistaHauntedTree01:asset('ancient_forest_vista_haunted_tree_01','haunted_tree_moss_fungi_01.png','tree'),
+  vistaRoots01:asset('ancient_forest_vista_roots_01','twisted_roots_forest_01.png','structure'),
+  vistaDetritus01:asset('ancient_forest_vista_detritus_01','forest_detritus_roots_leaves_01.png','ground'),
+  vistaWeb01:asset('ancient_forest_vista_web_01','ancient_web_dead_branches_01.png','structure')
 });
 
 // Linha direita/inferior EXATA recuperada da marcação do usuário.
@@ -227,86 +223,6 @@ const FOREST_FOG_BANDS=Object.freeze([
   ['soft',1.361,74.109,252,52,-.03,.70,9,2,.28,5.10]
 ]);
 
-
-// Round 79.30 — preencher visualmente a área preta sem expandir o mapa.
-// Tudo abaixo é cenografia não jogável: a Estrada Velha parece continuar para
-// dentro da floresta e a mata já assume a linguagem mais sinistra aprovada.
-const SCENIC_VISTA_BACKFILLS=Object.freeze([
-  [-2.85,72.30,760,420,.12,.94,'deep'],
-  [-1.10,69.85,620,360,-.08,.88,'mid'],
-  [0.55,66.95,520,300,-.18,.78,'soft']
-]);
-
-const SCENIC_VISTA_TRAIL_SEGMENTS=Object.freeze([
-  ['old_road_b4d_straight_short_03',1.42,76.08,.235,-.76,.92,0x9ea08f],
-  ['old_road_b4d_straight_short_05',0.28,74.28,.218,-.74,.86,0x979989],
-  ['old_road_b4d_straight_short_02',-0.96,72.26,.198,-.72,.78,0x8f9287],
-  ['old_road_b4d_straight_short_04',-2.06,70.46,.178,-.69,.68,0x888b82],
-  ['old_road_b4d_straight_short_01',-3.18,68.78,.166,-.66,.58,0x7d8077],
-  ['old_road_b4d_straight_short_03',-4.18,67.18,.148,-.64,.44,0x73776d]
-]);
-
-const SCENIC_VISTA_TREES=Object.freeze([
-  ['dead03',-2.42,70.18,1.10,false,0x839091,.90],
-  ['large06',-1.68,68.94,.98,true,0x6f7b74,.84],
-  ['dead02',-.84,72.02,1.08,true,0x879291,.92],
-  ['large05',-.18,70.92,1.00,false,0x728076,.86],
-  ['dead01',0.86,73.16,.98,false,0x8a9392,.92],
-  ['dead03',1.54,71.42,.96,true,0x8a9592,.90],
-  ['large03',1.92,68.84,.92,false,0x69756d,.82],
-  ['dead02',2.38,69.82,.92,false,0x838d8d,.88]
-]);
-
-const SCENIC_VISTA_STRUCTURES=Object.freeze([
-  ['wall02',-1.58,72.72,.90,false,0x5d685f,.84],
-  ['root05',-.48,73.82,.94,true,0x617066,.86],
-  ['log04',0.94,74.58,.86,false,0x766c5f,.82],
-  ['wall03',1.44,70.84,.86,true,0x5e685f,.84],
-  ['root02',2.14,71.66,.88,false,0x657168,.84],
-  ['log05',2.66,73.18,.82,true,0x72685d,.80]
-]);
-
-const SCENIC_VISTA_GROUND=Object.freeze([
-  ['floor07',-1.46,73.84,.92,false,-.04,0x748176,.86],
-  ['thorn08',-.72,74.54,.90,true,.03,0x6d776d,.88],
-  ['under03',0.14,75.34,.88,false,.02,0x667266,.84],
-  ['floor08',0.88,72.86,.92,true,-.02,0x718074,.82],
-  ['thorn07',1.72,73.68,.90,false,.04,0x677166,.86],
-  ['under02',2.48,72.44,.88,true,-.03,0x647066,.82],
-  ['floor06',-2.04,71.28,.94,false,-.04,0x69756d,.78]
-]);
-
-const SCENIC_VISTA_SHADOWS=Object.freeze([
-  ['dense',-1.12,72.42,420,240,-.20,.34],
-  ['broad',0.42,70.84,500,260,-.16,.28],
-  ['soft',1.58,68.96,340,190,-.10,.18]
-]);
-
-// v0.3.1 Round 1 — assets visuais dedicados para aproximar a vista da
-// floresta da referência aprovada: árvores retorcidas, teias antigas e chão
-// decadente preenchendo o vazio preto sem expandir a área jogável.
-const SCENIC_VISTA_HAUNTED_GROUND=Object.freeze([
-  ['hauntedDecayGround01',-1.84,72.56,.56,false,-.06,0x6d7065,.78],
-  ['hauntedDecayGround01',-0.26,74.24,.60,true,.04,0x726d64,.84],
-  ['hauntedDecayGround01',1.56,72.34,.50,false,-.02,0x66695f,.74]
-]);
-
-const SCENIC_VISTA_HAUNTED_STRUCTURES=Object.freeze([
-  ['hauntedRootsSprawl01',-1.18,72.22,.66,false,0x6b7369,.84,.04],
-  ['hauntedRootsSprawl01',1.74,72.82,.54,true,0x657066,.78,.03],
-  ['hauntedWebCanopy01',-1.54,70.74,.72,false,0xc2c7c7,.48,.05],
-  ['hauntedWebCanopy02',0.82,71.18,.68,true,0xc6cbcb,.44,.05],
-  ['hauntedWebCanopy01',2.38,70.92,.54,true,0xb9c1c1,.34,.04]
-]);
-
-const SCENIC_VISTA_HAUNTED_TREES=Object.freeze([
-  ['hauntedTreeCursed01',-2.46,69.24,.84,false,0x7d8987,.92,.07],
-  ['hauntedTreeTwisted01',-1.18,70.58,.82,true,0x879190,.90,.07],
-  ['hauntedTreeAncient01',0.12,71.92,.80,false,0x78827f,.88,.07],
-  ['hauntedTreeDeadTwisted01',1.74,71.06,.78,true,0x8b9492,.88,.07],
-  ['hauntedTreeTwisted01',2.74,69.94,.70,false,0x6d7773,.80,.07]
-]);
-
 function ensureForestShadowTexture(scene,key,{width=512,height=320,stops=[[0,.52],[.28,.34],[.58,.16],[1,0]]}={}){
   if(scene.textures.exists(key))return key;
   const texture=scene.textures.createCanvas(key,width,height);
@@ -326,64 +242,6 @@ function ensureForestShadowTexture(scene,key,{width=512,height=320,stops=[[0,.52
     ctx.ellipse(cx-width*.06,cy+height*.03,Math.max(1,rx*r*.86),Math.max(1,ry*r*.74),-.22,0,Math.PI*2);
     ctx.fill();
   }
-  texture.refresh();
-  return key;
-}
-
-
-function ensureForestBackfillTexture(scene,key,{width=768,height=448,palette='deep'}={}){
-  if(scene.textures.exists(key))return key;
-  const texture=scene.textures.createCanvas(key,width,height);
-  const ctx=texture?.getContext?.();
-  if(!ctx)return key;
-  ctx.clearRect(0,0,width,height);
-
-  const palettes={
-    deep:['rgba(14,24,24,.92)','rgba(22,37,34,.82)','rgba(33,48,43,.54)','rgba(58,72,62,.18)'],
-    mid:['rgba(18,28,28,.84)','rgba(26,40,36,.72)','rgba(40,56,49,.46)','rgba(66,79,67,.16)'],
-    soft:['rgba(21,31,31,.70)','rgba(30,44,39,.54)','rgba(45,60,52,.30)','rgba(73,88,76,.10)']
-  };
-  const colors=palettes[palette]??palettes.deep;
-  const gradient=ctx.createRadialGradient(width*.48,height*.52,width*.12,width*.48,height*.52,width*.58);
-  gradient.addColorStop(0,colors[1]);
-  gradient.addColorStop(.45,colors[2]);
-  gradient.addColorStop(.86,colors[3]);
-  gradient.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=gradient;
-  ctx.beginPath();
-  ctx.ellipse(width*.48,height*.54,width*.52,height*.40,-.18,0,Math.PI*2);
-  ctx.fill();
-
-  const blobs=[
-    [width*.30,height*.56,width*.34,height*.22,-.32,colors[0]],
-    [width*.50,height*.44,width*.36,height*.24,.12,colors[1]],
-    [width*.66,height*.58,width*.28,height*.18,.22,colors[2]],
-    [width*.18,height*.48,width*.18,height*.12,-.10,colors[1]],
-    [width*.78,height*.42,width*.18,height*.12,.06,colors[2]]
-  ];
-  blobs.forEach(([x,y,rx,ry,rotation,color])=>{
-    ctx.fillStyle=color;
-    ctx.beginPath();
-    ctx.ellipse(x,y,rx,ry,rotation,0,Math.PI*2);
-    ctx.fill();
-  });
-
-  ctx.globalAlpha=.16;
-  ctx.strokeStyle='rgba(98,118,105,.45)';
-  ctx.lineWidth=8;
-  const vineCurves=[
-    [width*.16,height*.66,width*.34,height*.46,width*.50,height*.60],
-    [width*.38,height*.62,width*.58,height*.34,width*.72,height*.54],
-    [width*.06,height*.58,width*.20,height*.34,width*.32,height*.44]
-  ];
-  vineCurves.forEach(([x1,y1,cx,cy,x2,y2])=>{
-    ctx.beginPath();
-    ctx.moveTo(x1,y1);
-    ctx.quadraticCurveTo(cx,cy,x2,y2);
-    ctx.stroke();
-  });
-  ctx.globalAlpha=1;
-
   texture.refresh();
   return key;
 }
@@ -460,119 +318,6 @@ export class OldRoadAncientForest{
     return sprite;
   }
 
-
-  addScenicVertical(assetName,u,v,scale,flipX=false,options={}){
-    const art=OLD_ROAD_ANCIENT_FOREST_ASSETS[assetName];
-    if(!art||!this.scene.textures.exists(art.key))return null;
-    const p=this.territory.project(u,v);
-    const source=this.scene.textures.get(art.key).getSourceImage();
-    const originY=Math.max(.86,Math.min(1,(source.height-12)/source.height));
-    const sprite=this.scene.add.image(p.x,p.y,art.key)
-      .setOrigin(.5,originY).setScale(scale).setFlipX(flipX)
-      .setDepth(this.territory.depthAt(u,v,options.depthOffset??.06))
-      .setAlpha(options.alpha??1);
-    if(options.rotation)sprite.setRotation(options.rotation);
-    if(options.tint!=null)sprite.setTint(options.tint);
-    sprite.setData('oldRoadAncientForest',{
-      asset:art.file,u,v,scale,markedArea:false,scenicVista:true,unmaskedAtWorldEdge:true
-    });
-    this.territory.track(sprite,u,v,{visibleRadius:36,activeRadius:42});
-    this.sprites.push(sprite);
-    return sprite;
-  }
-
-  addScenicGround(assetName,u,v,scale=.86,flipX=false,rotation=0,options={}){
-    const art=OLD_ROAD_ANCIENT_FOREST_ASSETS[assetName];
-    if(!art||!this.scene.textures.exists(art.key))return null;
-    const p=this.territory.project(u,v);
-    const sprite=this.scene.add.image(p.x,p.y,art.key)
-      .setOrigin(.5,.72).setScale(scale).setFlipX(flipX).setRotation(rotation)
-      .setDepth(this.territory.groundDepth(options.layer??-70.42))
-      .setAlpha(options.alpha??1);
-    if(options.tint!=null)sprite.setTint(options.tint);
-    sprite.setData('aetherRenderClass','ground');
-    sprite.setData('oldRoadAncientForest',{
-      asset:art.file,u,v,scale,markedArea:false,scenicVista:true,unmaskedAtWorldEdge:true
-    });
-    this.territory.track(sprite,u,v,{visibleRadius:36,activeRadius:42});
-    this.sprites.push(sprite);
-    return sprite;
-  }
-
-  addScenicRoad(texture,u,v,scale,rotation=0,alpha=1,tint=null){
-    if(!this.scene.textures.exists(texture))return null;
-    const p=this.territory.project(u,v);
-    const sprite=this.scene.add.image(p.x,p.y,texture)
-      .setOrigin(.5).setScale(scale).setRotation(rotation)
-      .setDepth(this.territory.groundDepth(-70.28))
-      .setAlpha(alpha);
-    if(tint!=null)sprite.setTint(tint);
-    sprite.setData('aetherRenderClass','ground');
-    sprite.setData('oldRoadAncientForest',{
-      asset:texture,u,v,scale,markedArea:false,scenicVista:true,roadVista:true,unmaskedAtWorldEdge:true
-    });
-    this.territory.track(sprite,u,v,{visibleRadius:38,activeRadius:44});
-    this.sprites.push(sprite);
-    return sprite;
-  }
-
-
-  addScenicVerticalScreen(assetName,x,y,scale,flipX=false,options={}){
-    const logical=this.territory.screenToLogical(x,y);
-    return this.addScenicVertical(assetName,logical.u,logical.v,scale,flipX,options);
-  }
-
-  addScenicGroundScreen(assetName,x,y,scale=.86,flipX=false,rotation=0,options={}){
-    const logical=this.territory.screenToLogical(x,y);
-    return this.addScenicGround(assetName,logical.u,logical.v,scale,flipX,rotation,options);
-  }
-
-  addScenicRoadScreen(texture,x,y,scale,rotation=0,alpha=1,tint=null){
-    const logical=this.territory.screenToLogical(x,y);
-    return this.addScenicRoad(texture,logical.u,logical.v,scale,rotation,alpha,tint);
-  }
-
-  addScenicBackfillScreen(texture,x,y,width,height,rotation,alpha,index=0){
-    const logical=this.territory.screenToLogical(x,y);
-    const p=this.territory.project(logical.u,logical.v);
-    const sprite=this.scene.add.image(p.x,p.y,texture)
-      .setOrigin(.5,.58)
-      .setDisplaySize(width,height)
-      .setRotation(rotation)
-      .setAlpha(alpha)
-      .setDepth(this.territory.groundDepth(-79.70)+index*.001);
-    sprite.setData('aetherRenderClass','ground');
-    sprite.setData('oldRoadAncientForest',{
-      asset:texture,u:logical.u,v:logical.v,markedArea:true,scenicVista:true,screenAnchored:true,unmaskedAtWorldEdge:true
-    });
-    this.territory.track(sprite,logical.u,logical.v,{visibleRadius:48,activeRadius:54});
-    this.sprites.push(sprite);
-    return sprite;
-  }
-
-  addScenicShadowScreen(type,x,y,width,height,rotation,alpha,index=0){
-    const textureByType={
-      soft:'old-road-forest-shadow-soft',
-      broad:'old-road-forest-shadow-broad',
-      dense:'old-road-forest-shadow-dense'
-    };
-    const logical=this.territory.screenToLogical(x,y);
-    const p=this.territory.project(logical.u,logical.v);
-    const sprite=this.scene.add.image(p.x,p.y,textureByType[type]??textureByType.soft)
-      .setOrigin(.5,.5)
-      .setDisplaySize(width,height)
-      .setRotation(rotation)
-      .setAlpha(alpha*this.forestShadowIntensity())
-      .setBlendMode(Phaser.BlendModes.MULTIPLY)
-      .setDepth(this.territory.groundDepth(-70.33)-.02+index*.001);
-    sprite.setData('oldRoadAncientForestShadow',{
-      type,u:logical.u,v:logical.v,width,height,rotation,baseAlpha:alpha,stage:'v0.3.1-round4-marked-area-corrected'
-    });
-    this.territory.track(sprite,logical.u,logical.v,{visibleRadius:48,activeRadius:54});
-    this.shadowSprites.push(sprite);
-    return sprite;
-  }
-
   tryAddVertical(assetName,u,v,scale,flipX=false){
     if(!pointInPolygon(u,v))return null;
     return this.addVertical(assetName,u,v,scale,flipX);
@@ -583,206 +328,113 @@ export class OldRoadAncientForest{
     return this.addGround(assetName,u,v,scale,flipX,rotation);
   }
 
+
+  addVistaSprite(textureKey,x,y,{originX=.5,originY=.98,scale=1,flipX=false,rotation=0,alpha=1,depth=null,blendMode=null,visibleRadius=36,activeRadius=42,meta={}}={}){
+    if(!this.scene.textures.exists(textureKey))return null;
+    const sprite=this.scene.add.image(x,y,textureKey)
+      .setOrigin(originX,originY)
+      .setScale(scale)
+      .setFlipX(flipX)
+      .setRotation(rotation)
+      .setAlpha(alpha)
+      .setDepth(depth??this.territory.groundDepth(-70.38));
+    if(blendMode!=null)sprite.setBlendMode(blendMode);
+    sprite.setData('oldRoadAncientForest',{
+      stage:'v0.3.1-round6-start-vista',
+      visualOnly:true,
+      nonPlayable:true,
+      ...meta
+    });
+    // Visual somente: registrar no mesmo setor do início da estrada para o
+    // culling básico, sem criar colisão nem alterar bounds do mapa.
+    this.territory.track(sprite,.8,77.4,{visibleRadius,activeRadius});
+    this.sprites.push(sprite);
+    return sprite;
+  }
+
+  buildStartVista(){
+    const signEntry=this.territory.oldRoadProps?.props?.find?.(prop=>prop.role==='start-sign');
+    if(!signEntry?.sprite)return;
+
+    const sign=signEntry.sprite;
+    const baseDepth=Math.max(this.territory.groundDepth(-70.38),sign.depth-20);
+    const midDepth=baseDepth+.8;
+    const topDepth=baseDepth+1.6;
+
+    const roadSegments=[
+      ['old_road_b4d_straight_short_01',-132,34,.28,.70],
+      ['old_road_b4d_straight_short_02',-218,7,.28,.88],
+      ['old_road_b4d_straight_short_03',-308,-33,.28,1.02],
+      ['old_road_b4d_straight_short_04',-395,-86,.28,1.12]
+    ];
+    roadSegments.forEach(([texture,dx,dy,scale,rotation],index)=>{
+      this.addVistaSprite(texture,sign.x+dx,sign.y+dy,{
+        originX:.5,originY:.5,scale,rotation,depth:baseDepth+.01*index,
+        meta:{role:'start-vista-road',texture,offsetX:dx,offsetY:dy}
+      });
+    });
+
+    const groundProps=[
+      ['ancient_forest_vista_detritus_01',-395,112,.22,.76,0,false],
+      ['ancient_forest_vista_roots_01',-470,118,.23,.92,0,false],
+      ['ancient_forest_floor_06',-300,92,.88,.72,-.08,true],
+      ['ancient_forest_floor_03',-228,54,.84,.72,.06,false],
+      ['ancient_forest_floor_08',-350,4,.80,.72,-.05,false],
+      ['ancient_forest_thorn_08',-276,22,.86,.72,.05,true],
+      ['ancient_forest_underbrush_03',-182,26,.82,.72,-.04,false]
+    ];
+    groundProps.forEach(([texture,dx,dy,scale,originY,rotation,flipX],index)=>{
+      this.addVistaSprite(texture,sign.x+dx,sign.y+dy,{
+        originX:.5,originY,scale,rotation,flipX,depth:baseDepth-.08+.005*index,
+        meta:{role:'start-vista-ground',texture,offsetX:dx,offsetY:dy}
+      });
+    });
+
+    const structureProps=[
+      ['ancient_forest_root_06',-162,2,.82,.96,.20,false],
+      ['ancient_forest_root_04',-238,-22,.80,.96,-.18,true],
+      ['ancient_forest_log_04',-315,48,.72,.95,-.34,false]
+    ];
+    structureProps.forEach(([texture,dx,dy,scale,originY,rotation,flipX],index)=>{
+      this.addVistaSprite(texture,sign.x+dx,sign.y+dy,{
+        originX:.5,originY,scale,rotation,flipX,depth:midDepth+.01*index,
+        meta:{role:'start-vista-structure',texture,offsetX:dx,offsetY:dy}
+      });
+    });
+
+    const treeProps=[
+      ['ancient_forest_vista_haunted_tree_01',-470,30,.26,.58,.98,.02,false],
+      ['ancient_forest_tree_dead_03',-334,-76,.72,.58,.98,-.10,false],
+      ['ancient_forest_tree_large_06',-244,-36,.66,.54,.98,.04,true]
+    ];
+    treeProps.forEach(([texture,dx,dy,scale,originX,originY,rotation,flipX],index)=>{
+      this.addVistaSprite(texture,sign.x+dx,sign.y+dy,{
+        originX,originY,scale,rotation,flipX,depth:topDepth+.02*index,
+        meta:{role:'start-vista-tree',texture,offsetX:dx,offsetY:dy}
+      });
+    });
+
+    this.addVistaSprite('ancient_forest_vista_web_01',sign.x-344,sign.y-92,{
+      originX:.5,originY:.42,scale:.17,alpha:.88,depth:topDepth+.12,
+      meta:{role:'start-vista-web',offsetX:-344,offsetY:-92}
+    });
+
+    const shadowTexture=ensureForestShadowTexture(this.scene,'old-road-start-vista-shadow',{
+      width:460,height:240,stops:[[0,.36],[.28,.18],[.56,.08],[1,0]]
+    });
+    this.addVistaSprite(shadowTexture,sign.x-292,sign.y+60,{
+      originX:.5,originY:.5,scale:1,alpha:.22,depth:baseDepth-.2,
+      blendMode:Phaser.BlendModes.MULTIPLY,
+      meta:{role:'start-vista-shadow'}
+    })?.setDisplaySize?.(470,220);
+  }
+
   forestShadowIntensity(timeOfDayMs=worldClock.timeOfDayMs){
     const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
     if(minutes>=1170||minutes<300)return 1; // 19:30–05:00
     if(minutes>=990)return .74+((minutes-990)/180)*.26; // 16:30–19:30
     if(minutes>=300&&minutes<360)return .90-((minutes-300)/60)*.16; // 05:00–06:00
     return .74;
-  }
-
-  buildScenicVista(){
-    ensureForestBackfillTexture(this.scene,'old-road-forest-vista-backfill-deep',{palette:'deep'});
-    ensureForestBackfillTexture(this.scene,'old-road-forest-vista-backfill-mid',{palette:'mid'});
-    ensureForestBackfillTexture(this.scene,'old-road-forest-vista-backfill-soft',{palette:'soft'});
-    ensureForestShadowTexture(this.scene,'old-road-forest-shadow-soft',{
-      width:360,height:220,stops:[[0,.42],[.28,.24],[.56,.11],[1,0]]
-    });
-    ensureForestShadowTexture(this.scene,'old-road-forest-shadow-broad',{
-      width:520,height:320,stops:[[0,.54],[.26,.33],[.56,.17],[1,0]]
-    });
-    ensureForestShadowTexture(this.scene,'old-road-forest-shadow-dense',{
-      width:420,height:260,stops:[[0,.62],[.22,.40],[.50,.22],[1,0]]
-    });
-
-    const vistaTextureByType={
-      deep:'old-road-forest-vista-backfill-deep',
-      mid:'old-road-forest-vista-backfill-mid',
-      soft:'old-road-forest-vista-backfill-soft'
-    };
-    SCENIC_VISTA_BACKFILLS.forEach(([u,v,width,height,rotation,alpha,type],index)=>{
-      const p=this.territory.project(u,v);
-      const sprite=this.scene.add.image(p.x,p.y,vistaTextureByType[type]??vistaTextureByType.deep)
-        .setOrigin(.5,.58)
-        .setDisplaySize(width,height)
-        .setRotation(rotation)
-        .setAlpha(alpha)
-        .setDepth(this.territory.groundDepth(-79.55)+index*.001);
-      sprite.setData('aetherRenderClass','ground');
-      sprite.setData('oldRoadAncientForest',{asset:`vista-backfill-${type}`,u,v,markedArea:false,scenicVista:true,unmaskedAtWorldEdge:true});
-      this.territory.track(sprite,u,v,{visibleRadius:42,activeRadius:48});
-      this.sprites.push(sprite);
-    });
-
-    SCENIC_VISTA_TRAIL_SEGMENTS.forEach(([texture,u,v,scale,rotation,alpha,tint])=>{
-      this.addScenicRoad(texture,u,v,scale,rotation,alpha,tint);
-    });
-
-    SCENIC_VISTA_GROUND.forEach(([name,u,v,scale,flipX,rotation,tint,alpha])=>{
-      this.addScenicGround(name,u,v,scale,flipX,rotation,{tint,alpha,layer:-70.44});
-    });
-
-    SCENIC_VISTA_HAUNTED_GROUND.forEach(([name,u,v,scale,flipX,rotation,tint,alpha])=>{
-      this.addScenicGround(name,u,v,scale,flipX,rotation,{tint,alpha,layer:-70.46});
-    });
-
-    SCENIC_VISTA_HAUNTED_STRUCTURES.forEach(([name,u,v,scale,flipX,tint,alpha,depthOffset])=>{
-      this.addScenicVertical(name,u,v,scale,flipX,{tint,alpha,depthOffset});
-    });
-
-    SCENIC_VISTA_HAUNTED_TREES.forEach(([name,u,v,scale,flipX,tint,alpha,depthOffset])=>{
-      this.addScenicVertical(name,u,v,scale,flipX,{tint,alpha,depthOffset});
-    });
-
-    const shadowTextureByType={
-      soft:'old-road-forest-shadow-soft',
-      broad:'old-road-forest-shadow-broad',
-      dense:'old-road-forest-shadow-dense'
-    };
-    SCENIC_VISTA_SHADOWS.forEach(([type,u,v,width,height,rotation,alpha],index)=>{
-      const p=this.territory.project(u,v);
-      const sprite=this.scene.add.image(p.x,p.y,shadowTextureByType[type])
-        .setOrigin(.5,.5)
-        .setDisplaySize(width,height)
-        .setRotation(rotation)
-        .setAlpha(alpha*this.forestShadowIntensity())
-        .setBlendMode(Phaser.BlendModes.MULTIPLY)
-        .setDepth(this.territory.groundDepth(-70.33)-.01+index*.001);
-      sprite.setData('oldRoadAncientForestShadow',{type,u,v,width,height,rotation,baseAlpha:alpha,stage:'Round79.30-vista'});
-      this.territory.track(sprite,u,v,{visibleRadius:44,activeRadius:48});
-      this.shadowSprites.push(sprite);
-    });
-
-    SCENIC_VISTA_STRUCTURES.forEach(([name,u,v,scale,flipX,tint,alpha])=>{
-      this.addScenicVertical(name,u,v,scale,flipX,{tint,alpha,depthOffset:.04});
-    });
-
-    SCENIC_VISTA_TREES.forEach(([name,u,v,scale,flipX,tint,alpha])=>{
-      this.addScenicVertical(name,u,v,scale,flipX,{tint,alpha,depthOffset:.07});
-    });
-
-    this.buildMarkedAreaScenicVista();
-  }
-
-  buildMarkedAreaScenicVista(){
-    const startSign=this.territory.oldRoadProps?.props?.find?.(prop=>prop.role==='start-sign');
-    if(!startSign?.x||!startSign?.y)return;
-
-    ensureForestBackfillTexture(this.scene,'old-road-forest-vista-backfill-deep',{palette:'deep'});
-    ensureForestBackfillTexture(this.scene,'old-road-forest-vista-backfill-mid',{palette:'mid'});
-    ensureForestBackfillTexture(this.scene,'old-road-forest-vista-backfill-soft',{palette:'soft'});
-    ensureForestShadowTexture(this.scene,'old-road-forest-shadow-soft',{
-      width:360,height:220,stops:[[0,.42],[.28,.24],[.56,.11],[1,0]]
-    });
-    ensureForestShadowTexture(this.scene,'old-road-forest-shadow-broad',{
-      width:520,height:320,stops:[[0,.54],[.26,.33],[.56,.17],[1,0]]
-    });
-    ensureForestShadowTexture(this.scene,'old-road-forest-shadow-dense',{
-      width:420,height:260,stops:[[0,.62],[.22,.40],[.50,.22],[1,0]]
-    });
-
-    const sx=startSign.x, sy=startSign.y;
-    const leftLimit=sx-470;
-    const rightLimit=sx-120;
-    const topLimit=sy-220;
-    const bottomLimit=sy+92;
-    const allow=(x,y)=>x>=leftLimit&&x<=rightLimit&&y>=topLimit&&y<=bottomLimit;
-
-    // Round 5 — correção da área marcada: a Estrada Velha continua
-    // visualmente para dentro da floresta, com o corredor livre e a placa
-    // preservada. Tudo aqui permanece apenas como cenografia não jogável.
-    const backfills=[
-      ['old-road-forest-vista-backfill-deep',sx-304,sy-92,760,430,-.10,.96],
-      ['old-road-forest-vista-backfill-mid',sx-236,sy-62,560,324,-.08,.80],
-      ['old-road-forest-vista-backfill-soft',sx-168,sy-34,316,194,-.05,.40]
-    ];
-    backfills.forEach((spec,index)=>{
-      const [,x,y]=spec;
-      if(allow(x,y))this.addScenicBackfillScreen(...spec,index);
-    });
-
-    const roadNodes=[
-      {x:sx-88,y:sy+36},
-      {x:sx-150,y:sy+28},
-      {x:sx-216,y:sy+4},
-      {x:sx-284,y:sy-28},
-      {x:sx-346,y:sy-68},
-      {x:sx-398,y:sy-110}
-    ];
-    const roadTextures=[
-      'old_road_b4d_straight_short_03',
-      'old_road_b4d_straight_short_05',
-      'old_road_b4d_straight_short_02',
-      'old_road_b4d_straight_short_04',
-      'old_road_b4d_straight_short_01'
-    ];
-    const roadScales=[.182,.170,.156,.142,.128];
-    const roadAlphas=[.90,.82,.72,.58,.44];
-    const roadTints=[0x9c9e8f,0x919385,0x85897d,0x797e75,0x6d746d];
-    for(let i=0;i<roadNodes.length-1;i++){
-      const a=roadNodes[i],b=roadNodes[i+1];
-      const x=(a.x+b.x)/2,y=(a.y+b.y)/2;
-      if(!allow(x,y))continue;
-      const rotation=Math.atan2(b.y-a.y,b.x-a.x)+Math.PI/2;
-      this.addScenicRoadScreen(roadTextures[i]??roadTextures.at(-1),x,y,roadScales[i]??.14,rotation,roadAlphas[i]??.5,roadTints[i]??0x74796f);
-    }
-
-    const ground=[
-      ['floor07',sx-236,sy+18,.52,false,-.04,0x727970,.84],
-      ['hauntedDecayGround01',sx-192,sy+12,.30,true,.02,0x786d60,.74],
-      ['under03',sx-146,sy+18,.54,false,.03,0x687261,.78],
-      ['floor08',sx-282,sy-12,.48,true,-.02,0x6c756d,.72],
-      ['thorn07',sx-246,sy-8,.54,false,.03,0x606a61,.78],
-      ['hauntedDecayGround01',sx-334,sy-58,.24,false,-.04,0x6a665f,.58],
-      ['under02',sx-316,sy-36,.50,true,-.03,0x617060,.66],
-      ['floor06',sx-388,sy-102,.42,false,-.05,0x676f68,.42]
-    ];
-    ground.forEach(([name,x,y,scale,flipX,rotation,tint,alpha])=>{
-      if(allow(x,y))this.addScenicGroundScreen(name,x,y,scale,flipX,rotation,{tint,alpha,layer:-70.45});
-    });
-
-    const structures=[
-      ['hauntedRootsSprawl01',sx-366,sy+12,.24,false,0x667062,.74,.04],
-      ['root05',sx-306,sy+10,.44,true,0x5f6a61,.72,.04],
-      ['log04',sx-270,sy+28,.38,false,0x73695d,.66,.04],
-      ['hauntedWebCanopy01',sx-400,sy-132,.16,false,0xc1c7c6,.36,.05],
-      ['hauntedWebCanopy02',sx-306,sy-120,.15,true,0xc7cccb,.34,.05],
-      ['hauntedWebCanopy01',sx-224,sy-112,.12,true,0xbcc4c2,.22,.04]
-    ];
-    structures.forEach(([name,x,y,scale,flipX,tint,alpha,depthOffset])=>{
-      if(allow(x,y))this.addScenicVerticalScreen(name,x,y,scale,flipX,{tint,alpha,depthOffset});
-    });
-
-    const trees=[
-      ['hauntedTreeCursed01',sx-426,sy-92,.34,false,0x7a8584,.94,.07],
-      ['hauntedTreeTwisted01',sx-336,sy-140,.28,true,0x848e8d,.90,.07],
-      ['hauntedTreeAncient01',sx-266,sy-126,.26,false,0x79817f,.86,.07],
-      ['dead03',sx-208,sy-104,.38,false,0x808a89,.82,.07],
-      ['dead02',sx-352,sy-82,.30,true,0x788181,.80,.07]
-    ];
-    trees.forEach(([name,x,y,scale,flipX,tint,alpha,depthOffset])=>{
-      if(allow(x,y))this.addScenicVerticalScreen(name,x,y,scale,flipX,{tint,alpha,depthOffset});
-    });
-
-    const shadows=[
-      ['dense',sx-322,sy-52,360,206,-.16,.24],
-      ['broad',sx-238,sy-24,326,186,-.10,.14],
-      ['soft',sx-376,sy+8,250,140,-.06,.10]
-    ];
-    shadows.forEach((spec,index)=>{
-      const [,x,y]=spec;
-      if(allow(x,y))this.addScenicShadowScreen(...spec,index);
-    });
   }
 
   buildShadowLayer(){
@@ -865,8 +517,6 @@ export class OldRoadAncientForest{
   }
 
   build(){
-    this.buildScenicVista();
-
     GROUND_BASES.forEach(([u,v],i)=>{
       const name=GROUND_VARIANTS[i%GROUND_VARIANTS.length];
       this.addGround(name,u,v,.78+(i%4)*.035,!!(i%2),((i%5)-2)*.035);
@@ -896,6 +546,7 @@ export class OldRoadAncientForest{
 
     this.buildShadowLayer();
     this.registerGlobalFogZone();
+    this.buildStartVista();
 
     // Round 79.4 — a posição/escala/arte da lanterna aprovada não muda.
     // Apenas sua ordem de desenho é corrigida quando algum sprite da floresta
@@ -905,15 +556,12 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'v0.3.1-round4',
-      sourceReference:'PRIMEIRA PARTE.png + marcação vermelha do usuário',
+      version:'v0.3.1-round6',
+      sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
       assetBases:{trees:TREE_BASES.length,structures:STRUCTURE_BASES.length,ground:GROUND_BASES.length},
       atmosphereAccents:{trees:ATMOSPHERE_TREE_ACCENTS.length,structures:ATMOSPHERE_STRUCTURE_ACCENTS.length,ground:ATMOSPHERE_GROUND_ACCENTS.length},
-      scenicVista:{backfills:SCENIC_VISTA_BACKFILLS.length,trailSegments:SCENIC_VISTA_TRAIL_SEGMENTS.length,trees:SCENIC_VISTA_TREES.length+SCENIC_VISTA_HAUNTED_TREES.length,structures:SCENIC_VISTA_STRUCTURES.length+SCENIC_VISTA_HAUNTED_STRUCTURES.length,ground:SCENIC_VISTA_GROUND.length+SCENIC_VISTA_HAUNTED_GROUND.length,shadowPatches:SCENIC_VISTA_SHADOWS.length,nonPlayable:true,worldBoundsExpanded:false},
-      hauntedVistaAssets:{trees:SCENIC_VISTA_HAUNTED_TREES.length,structures:SCENIC_VISTA_HAUNTED_STRUCTURES.length,ground:SCENIC_VISTA_HAUNTED_GROUND.length},
-      markedAreaVista:'v0.3.1-round4-screen-anchored-corrected',
       localShadowPatches:FOREST_SHADOW_PATCHES.length,
       lowFogBands:FOREST_FOG_BANDS.length,
       fogSystem:'WorldFogSystem',
@@ -923,6 +571,18 @@ export class OldRoadAncientForest{
       fogReactsToLights:true,
       fogCollision:false,
       clearZoneRemovedThorn06:{...REMOVED_THORN06_CLEAR_ZONE},
+      startVista:{
+        version:'v0.3.1-round6',
+        visualOnly:true,
+        anchoredTo:'start-sign',
+        roadSegments:4,
+        groundProps:7,
+        structures:3,
+        trees:3,
+        webs:1,
+        worldBoundsExpanded:false,
+        collisionAdded:false
+      },
       polygon:OLD_ROAD_ANCIENT_FOREST_POLYGON.map(p=>({...p}))
     });
   }
