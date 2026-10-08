@@ -2,6 +2,7 @@
 import {Enemy} from '../entities/Enemy';
 import {Npc} from '../npc/Npc';
 import {AETHER_PROLOGUE_ANCHORS} from '../world/AetherTerritoryLayout';
+import {worldClock,GAME_DAY_MS} from '../world/WorldClock';
 
 const ISO_CONFIG={tileWidth:96,tileHeight:48,screenOriginX:1600,screenOriginY:250,depthBase:-20000};
 
@@ -22,6 +23,28 @@ const YOUNG_WOLF_DIRECTIONAL_PROFILE_WIDTH=192;
 const PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT=724;
 const YOUNG_WOLF_DEATH_USEFUL_WIDTH=352;
 const YOUNG_WOLF_DEATH_USEFUL_BOTTOM=529;
+
+
+// Round 79.19 — pós-morte persistente do Lobo Jovem.
+// O relógio do mundo corre 20x mais rápido que o tempo real: 20 minutos do
+// jogo = ~60 s reais. O cadáver não some por temporizador curto; ele envelhece
+// no chão e só é limpo depois de muito mais tempo e quando o jogador se afasta.
+const YOUNG_WOLF_AFTER_MATH=Object.freeze({
+  freshGameMs:20*60*1000,       // ~60 s reais
+  agedGameMs:45*60*1000,        // ~2m15s reais
+  corpseCleanupGameMs:70*60*1000, // ~3m30s reais
+  bloodCleanupGameMs:90*60*1000,  // ~4m30s reais
+  cleanupDistance:5.2
+});
+
+const clamp01=(value)=>Math.max(0,Math.min(1,value));
+function mixHexColor(from,to,t){
+  const k=clamp01(t);
+  const fr=(from>>16)&255,fg=(from>>8)&255,fb=from&255;
+  const tr=(to>>16)&255,tg=(to>>8)&255,tb=to&255;
+  const r=Math.round(fr+(tr-fr)*k),g=Math.round(fg+(tg-fg)*k),b=Math.round(fb+(tb-fb)*k);
+  return (r<<16)|(g<<8)|b;
+}
 
 function enemyDirectionFromScreenDelta(dx,dy,fallback='s'){
   if(!dx&&!dy)return fallback;
@@ -157,6 +180,8 @@ export class OldAetherPrologue{
     this.createBloodTrailDressing();
     this.createCollectible();
     this.refreshOldRoadAftermath();
+    this.wolfAftermathVisual=null;
+    this.restoreYoungWolfAftermath();
     this.syncObjective();
     // A mensagem exibida após derrotar o lobo só sai no próximo deslocamento real.
     this.wolfDefeatHintPendingMovement=false;
@@ -176,7 +201,8 @@ export class OldAetherPrologue{
 
   createState(){
     return {
-      version:3,started:true,stage:OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,
+      version:4,started:true,stage:OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,
+      aftermath:{youngWolf:{active:false,u:null,v:null,deathGameMs:null,corpseGone:false,bloodGone:false}},
       tutorials:{movementShown:true,movementComplete:false,interactionComplete:false,collectionComplete:false,
         suppliesApproachReached:false,potionHintDismissed:false,
         bloodSceneTriggered:false,bloodSceneMessageDismissed:false,goblinRoadEncounterStarted:false},
@@ -238,6 +264,8 @@ export class OldAetherPrologue{
     next.gates={...next.gates,...persisted.gates};
     next.tavern={...next.tavern,...persisted.tavern};
     next.waystone={...next.waystone,...persisted.waystone};
+    next.aftermath={...next.aftermath,...persisted.aftermath,
+      youngWolf:{...next.aftermath.youngWolf,...persisted.aftermath?.youngWolf}};
     // Saves do Round 21 já no objetivo dos suprimentos permanecem nessa etapa.
     if(persisted.stage==='COLLECT_TRAVEL_SUPPLIES'&&next.waystone.ruinedExamined)
       next.tutorials.suppliesApproachReached=true;
@@ -252,7 +280,7 @@ export class OldAetherPrologue{
     // saves v2 que tenham sido gravados no meio de uma execução interrompida.
     if(!next.encounters.goblinScoutsCompleted)next.discoveries.cart=false;
     next.stage=this.stageFromMilestones(next);
-    next.version=3;
+    next.version=4;
     return next;
   }
 
@@ -397,6 +425,116 @@ export class OldAetherPrologue{
     for(const item of this.skeletalRemainsDecor||[])item?.setVisible(showBones);
   }
 
+  worldGameMs(){
+    return Math.max(0,(worldClock.day-1)*GAME_DAY_MS+worldClock.timeOfDayMs);
+  }
+
+  youngWolfCorpseScale(){
+    const directionalScale=YOUNG_WOLF_FRAME_TARGET_HEIGHT/256;
+    const liveProfileWidth=YOUNG_WOLF_DIRECTIONAL_PROFILE_WIDTH*directionalScale;
+    return liveProfileWidth/YOUNG_WOLF_DEATH_USEFUL_WIDTH;
+  }
+
+  createYoungWolfBlood(u,v){
+    const blood=[];
+    const groundDepth=this.scene.aetherTerritory?.groundDepth?.(-69.63)??this.scene.depthAt(u,v,-69.63);
+    const place=(key,du,dv,width,alpha)=>{
+      if(!this.scene.textures.exists(key))return null;
+      const p=this.scene.project(u+du,v+dv);
+      const source=this.scene.textures.get(key).getSourceImage();
+      const sprite=this.scene.add.image(p.x,p.y,key)
+        .setOrigin(.5,.5).setScale(width/source.width).setAlpha(alpha).setDepth(groundDepth);
+      sprite.setData?.('aetherRenderClass','ground-decal');
+      sprite.setData?.('youngWolfAftermathBlood',true);
+      blood.push(sprite);
+      return sprite;
+    };
+    // Pequena quantidade: a poça principal fica sob o tronco e uma segunda
+    // mancha rompe a simetria sem transformar o primeiro combate em gore.
+    place('road_blood_pool_01',0,0,54,.72);
+    place('road_blood_pool_02',.08,-.04,29,.56);
+    return blood;
+  }
+
+  beginYoungWolfAftermath(enemy){
+    const record=this.state.aftermath.youngWolf;
+    record.active=true;
+    record.u=enemy.iso.u;
+    record.v=enemy.iso.v;
+    record.deathGameMs=this.worldGameMs();
+    record.corpseGone=false;
+    record.bloodGone=false;
+    enemy.body?.setVelocity?.(0,0);
+    if(enemy.body)enemy.body.enable=false;
+    enemy.setUiVisible(false);
+    enemy.setAlpha(1).setTint(0xffffff);
+    enemy.setData?.('youngWolfAftermathCorpse',true);
+    this.wolfAftermathVisual={corpse:enemy,blood:this.createYoungWolfBlood(record.u,record.v),corpseFading:false,bloodFading:false};
+  }
+
+  restoreYoungWolfAftermath(){
+    const record=this.state?.aftermath?.youngWolf;
+    if(!record?.active||!Number.isFinite(record.u)||!Number.isFinite(record.v))return;
+    const visual={corpse:null,blood:[],corpseFading:false,bloodFading:false};
+    if(!record.corpseGone&&this.scene.textures.exists('prologue_young_wolf')){
+      const p=this.scene.project(record.u,record.v);
+      visual.corpse=this.scene.add.sprite(p.x,p.y,'prologue_young_wolf',5)
+        .setOrigin(.5,YOUNG_WOLF_DEATH_USEFUL_BOTTOM/PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT)
+        .setScale(this.youngWolfCorpseScale())
+        .setDepth(this.scene.depthAt(record.u,record.v,.16));
+      visual.corpse.setData?.('youngWolfAftermathCorpse',true);
+    }
+    if(!record.bloodGone)visual.blood=this.createYoungWolfBlood(record.u,record.v);
+    this.wolfAftermathVisual=visual;
+    this.updateYoungWolfAftermath();
+  }
+
+  updateYoungWolfAftermath(){
+    const record=this.state?.aftermath?.youngWolf;
+    const visual=this.wolfAftermathVisual;
+    if(!record?.active||!visual||!Number.isFinite(record.deathGameMs))return;
+    const elapsed=Math.max(0,this.worldGameMs()-record.deathGameMs);
+    const corpse=visual.corpse;
+    const blood=visual.blood||[];
+
+    // Envelhecimento contínuo, sem saltos visuais de uma etapa para outra.
+    // Não usamos os esqueletos humanos já existentes no prólogo para representar
+    // um lobo: a decomposição é sugerida por perda gradual de cor/contraste.
+    let corpseTint=0xffffff,corpseAlpha=1,bloodTint=0xffffff;
+    let bloodAlphaMain=.72,bloodAlphaSecondary=.56;
+    if(elapsed>=YOUNG_WOLF_AFTER_MATH.freshGameMs&&elapsed<YOUNG_WOLF_AFTER_MATH.agedGameMs){
+      const t=(elapsed-YOUNG_WOLF_AFTER_MATH.freshGameMs)/(YOUNG_WOLF_AFTER_MATH.agedGameMs-YOUNG_WOLF_AFTER_MATH.freshGameMs);
+      corpseTint=mixHexColor(0xffffff,0xb49b84,t);corpseAlpha=1-(.08*t);
+      bloodTint=mixHexColor(0xffffff,0x8a4540,t);bloodAlphaMain=.72-(.18*t);bloodAlphaSecondary=.56-(.16*t);
+    }else if(elapsed>=YOUNG_WOLF_AFTER_MATH.agedGameMs){
+      const t=clamp01((elapsed-YOUNG_WOLF_AFTER_MATH.agedGameMs)/(YOUNG_WOLF_AFTER_MATH.corpseCleanupGameMs-YOUNG_WOLF_AFTER_MATH.agedGameMs));
+      corpseTint=mixHexColor(0xb49b84,0x75695d,t);corpseAlpha=.92-(.20*t);
+      bloodTint=mixHexColor(0x8a4540,0x633632,t);bloodAlphaMain=.54-(.20*t);bloodAlphaSecondary=.40-(.16*t);
+    }
+    corpse?.setTint?.(corpseTint).setAlpha?.(corpseAlpha);
+    blood.forEach((sprite,index)=>sprite?.setTint?.(bloodTint).setAlpha?.(index===0?bloodAlphaMain:bloodAlphaSecondary));
+
+    const playerDistance=Math.hypot(this.scene.player.isoX-record.u,this.scene.player.isoY-record.v);
+    if(!record.corpseGone&&corpse&&!visual.corpseFading
+      &&elapsed>=YOUNG_WOLF_AFTER_MATH.corpseCleanupGameMs
+      &&playerDistance>=YOUNG_WOLF_AFTER_MATH.cleanupDistance){
+      visual.corpseFading=true;
+      this.scene.tweens.add({targets:corpse,alpha:0,duration:7000,ease:'Sine.InOut',onComplete:()=>{
+        corpse?.destroy?.();visual.corpse=null;record.corpseGone=true;visual.corpseFading=false;this.save();
+      }});
+    }
+
+    if(!record.bloodGone&&blood.length&&!visual.bloodFading
+      &&elapsed>=YOUNG_WOLF_AFTER_MATH.bloodCleanupGameMs
+      &&playerDistance>=YOUNG_WOLF_AFTER_MATH.cleanupDistance){
+      visual.bloodFading=true;
+      this.scene.tweens.add({targets:blood,alpha:0,duration:9000,ease:'Sine.InOut',onComplete:()=>{
+        blood.forEach(sprite=>sprite?.destroy?.());visual.blood=[];record.bloodGone=true;visual.bloodFading=false;
+        if(record.corpseGone)record.active=false;this.save();
+      }});
+    }
+  }
+
   createCollectible(){
     if(this.state.tutorials.collectionComplete||!this.scene.textures.exists('street_crates'))return;
     const a=this.anchors.travelSupplies,p=this.scene.project(a.u,a.v),source=this.scene.textures.get('street_crates').getSourceImage();
@@ -451,6 +589,7 @@ export class OldAetherPrologue{
     this.updateWolfEntrance(delta);
     this.updateEnemies(time,delta);
     this.resolveEnemyDeaths(time);
+    this.updateYoungWolfAftermath();
     this.updateProgressTriggers();
     this.updateCue();
   }
@@ -778,6 +917,7 @@ export class OldAetherPrologue{
         enemy.prologueResolved=true;
         const id=enemy.prologue.id;
         if(id==='youngWolf'){
+          this.beginYoungWolfAftermath(enemy);
           this.advance(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_YOUNG_WOLF,
             this.state.tutorials.collectionComplete?OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS:OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE,
             ()=>{this.state.encounters.youngWolf='defeated';});
@@ -796,9 +936,10 @@ export class OldAetherPrologue{
             this.hud?.hint('A estrada silenciou. A carroça abandonada merece atenção.');
           }else this.save();
         }
-        enemy.corpseExpiresAt=time+3400;
+        if(id!=='youngWolf')enemy.corpseExpiresAt=time+3400;
       }
-      if(time>=enemy.corpseExpiresAt){enemy.destroy();}
+      // O Lobo Jovem é administrado pelo sistema de aftermath persistente.
+      if(enemy.prologue.id!=='youngWolf'&&time>=enemy.corpseExpiresAt){enemy.destroy();}
     }
   }
 
@@ -1092,6 +1233,9 @@ export class OldAetherPrologue{
     this.wagon?.destroy();for(const item of this.cartDecor||[])item?.destroy();
     for(const item of this.bloodTrailDecor||[])item?.destroy();
     for(const item of this.skeletalRemainsDecor||[])item?.destroy();
+    for(const sprite of this.wolfAftermathVisual?.blood||[])sprite?.destroy?.();
+    const aftermathCorpse=this.wolfAftermathVisual?.corpse;
+    if(aftermathCorpse&&!this.enemies.includes(aftermathCorpse))aftermathCorpse?.destroy?.();
     for(const enemy of this.enemies)if(enemy?.active)enemy.destroy();
   }
 }
