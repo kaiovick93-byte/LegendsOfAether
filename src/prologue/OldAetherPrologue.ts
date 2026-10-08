@@ -73,6 +73,19 @@ const YOUNG_WOLF_AFTER_MATH=Object.freeze({
   cleanupDistance:5.2
 });
 
+// Round 79.27 — pós-morte persistente dos dois Goblins Batedores.
+// Como são humanoides ligados à emboscada da estrada, o aftermath permanece
+// um pouco mais que o do Lobo Jovem. Não reutilizamos os esqueletos humanos
+// da caravana: o corpo recém-derrotado envelhece no próprio sprite e some
+// somente depois, quando o jogador já se afastou.
+const GOBLIN_AFTER_MATH=Object.freeze({
+  freshGameMs:30*60*1000,          // ~1m30s reais
+  agedGameMs:60*60*1000,           // ~3 min reais
+  corpseCleanupGameMs:100*60*1000, // ~5 min reais
+  bloodCleanupGameMs:120*60*1000,  // ~6 min reais
+  cleanupDistance:5.5
+});
+
 const clamp01=(value)=>Math.max(0,Math.min(1,value));
 function mixHexColor(from,to,t){
   const k=clamp01(t);
@@ -229,7 +242,9 @@ export class OldAetherPrologue{
     this.createCollectible();
     this.refreshOldRoadAftermath();
     this.wolfAftermathVisual=null;
+    this.goblinAftermathVisuals=[null,null];
     this.restoreYoungWolfAftermath();
+    this.restoreGoblinScoutAftermaths();
     this.syncObjective();
     // A mensagem exibida após derrotar o lobo só sai no próximo deslocamento real.
     this.wolfDefeatHintPendingMovement=false;
@@ -249,8 +264,14 @@ export class OldAetherPrologue{
 
   createState(){
     return {
-      version:4,started:true,stage:OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,
-      aftermath:{youngWolf:{active:false,u:null,v:null,deathGameMs:null,corpseGone:false,bloodGone:false}},
+      version:5,started:true,stage:OLD_AETHER_PROLOGUE_STAGES.ARRIVAL_ON_OLD_ROAD,
+      aftermath:{
+        youngWolf:{active:false,u:null,v:null,deathGameMs:null,corpseGone:false,bloodGone:false},
+        goblinScouts:[
+          {active:false,u:null,v:null,deathGameMs:null,corpseGone:false,bloodGone:false},
+          {active:false,u:null,v:null,deathGameMs:null,corpseGone:false,bloodGone:false}
+        ]
+      },
       tutorials:{movementShown:true,movementComplete:false,interactionComplete:false,collectionComplete:false,
         suppliesApproachReached:false,potionHintDismissed:false,
         bloodSceneTriggered:false,bloodSceneMessageDismissed:false,goblinRoadEncounterStarted:false},
@@ -313,7 +334,12 @@ export class OldAetherPrologue{
     next.tavern={...next.tavern,...persisted.tavern};
     next.waystone={...next.waystone,...persisted.waystone};
     next.aftermath={...next.aftermath,...persisted.aftermath,
-      youngWolf:{...next.aftermath.youngWolf,...persisted.aftermath?.youngWolf}};
+      youngWolf:{...next.aftermath.youngWolf,...persisted.aftermath?.youngWolf},
+      goblinScouts:[0,1].map(index=>({
+        ...next.aftermath.goblinScouts[index],
+        ...(Array.isArray(persisted.aftermath?.goblinScouts)?persisted.aftermath.goblinScouts[index]:null)
+      }))
+    };
     // Saves do Round 21 já no objetivo dos suprimentos permanecem nessa etapa.
     if(persisted.stage==='COLLECT_TRAVEL_SUPPLIES'&&next.waystone.ruinedExamined)
       next.tutorials.suppliesApproachReached=true;
@@ -328,7 +354,7 @@ export class OldAetherPrologue{
     // saves v2 que tenham sido gravados no meio de uma execução interrompida.
     if(!next.encounters.goblinScoutsCompleted)next.discoveries.cart=false;
     next.stage=this.stageFromMilestones(next);
-    next.version=4;
+    next.version=5;
     return next;
   }
 
@@ -586,6 +612,123 @@ export class OldAetherPrologue{
     }
   }
 
+
+  goblinCorpseScale(){
+    const directionalScale=GOBLIN_FRAME_TARGET_HEIGHT/256;
+    const liveProfileWidth=GOBLIN_DIRECTIONAL_PROFILE_WIDTH*directionalScale;
+    return (liveProfileWidth*GOBLIN_CORPSE_LENGTH_FACTOR)/GOBLIN_DEATH_USEFUL_WIDTH;
+  }
+
+  createGoblinScoutBlood(u,v,index=0){
+    const blood=[];
+    const groundDepth=this.scene.aetherTerritory?.groundDepth?.(-69.62)??this.scene.depthAt(u,v,-69.62);
+    const place=(key,du,dv,width,alpha,angle=0)=>{
+      if(!this.scene.textures.exists(key))return null;
+      const p=this.scene.project(u+du,v+dv);
+      const source=this.scene.textures.get(key).getSourceImage();
+      const sprite=this.scene.add.image(p.x,p.y,key)
+        .setOrigin(.5,.5).setScale(width/source.width).setAngle(angle).setAlpha(alpha).setDepth(groundDepth);
+      sprite.setData?.('aetherRenderClass','ground-decal');
+      sprite.setData?.('goblinScoutAftermathBlood',index);
+      blood.push(sprite);
+      return sprite;
+    };
+    // Um pouco mais evidente que o sangue do Lobo Jovem, mas ainda contido.
+    // Pequenas assimetrias por índice impedem que os dois aftermaths pareçam clones.
+    const side=index===0?1:-1;
+    place('road_blood_pool_03',0,0,66,.76,index===0?-7:6);
+    place('road_blood_pool_01',.10*side,-.05,34,.52,index===0?11:-10);
+    return blood;
+  }
+
+  beginGoblinScoutAftermath(enemy,index){
+    const record=this.state.aftermath.goblinScouts[index];
+    if(!record)return;
+    record.active=true;
+    record.u=enemy.iso.u;
+    record.v=enemy.iso.v;
+    record.deathGameMs=this.worldGameMs();
+    record.corpseGone=false;
+    record.bloodGone=false;
+    enemy.body?.setVelocity?.(0,0);
+    if(enemy.body)enemy.body.enable=false;
+    enemy.setUiVisible(false);
+    enemy.setAlpha(1).setTint(0xffffff);
+    enemy.setData?.('goblinScoutAftermathCorpse',index);
+    this.goblinAftermathVisuals[index]={
+      corpse:enemy,
+      blood:this.createGoblinScoutBlood(record.u,record.v,index),
+      corpseFading:false,
+      bloodFading:false
+    };
+  }
+
+  restoreGoblinScoutAftermaths(){
+    const records=this.state?.aftermath?.goblinScouts;
+    if(!Array.isArray(records))return;
+    for(let index=0;index<2;index++){
+      const record=records[index];
+      if(!record?.active||!Number.isFinite(record.u)||!Number.isFinite(record.v))continue;
+      const visual={corpse:null,blood:[],corpseFading:false,bloodFading:false};
+      if(!record.corpseGone&&this.scene.textures.exists('prologue_goblin_scout')){
+        const p=this.scene.project(record.u,record.v);
+        visual.corpse=this.scene.add.sprite(p.x,p.y,'prologue_goblin_scout',5)
+          .setOrigin(.5,GOBLIN_DEATH_USEFUL_BOTTOM/PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT)
+          .setScale(this.goblinCorpseScale())
+          .setDepth(this.scene.depthAt(record.u,record.v,.16));
+        visual.corpse.setData?.('goblinScoutAftermathCorpse',index);
+      }
+      if(!record.bloodGone)visual.blood=this.createGoblinScoutBlood(record.u,record.v,index);
+      this.goblinAftermathVisuals[index]=visual;
+    }
+    this.updateGoblinScoutAftermaths();
+  }
+
+  updateGoblinScoutAftermaths(){
+    const records=this.state?.aftermath?.goblinScouts;
+    if(!Array.isArray(records))return;
+    for(let index=0;index<2;index++){
+      const record=records[index],visual=this.goblinAftermathVisuals?.[index];
+      if(!record?.active||!visual||!Number.isFinite(record.deathGameMs))continue;
+      const elapsed=Math.max(0,this.worldGameMs()-record.deathGameMs);
+      const corpse=visual.corpse,blood=visual.blood||[];
+
+      let corpseTint=0xffffff,corpseAlpha=1,bloodTint=0xffffff;
+      let bloodAlphaMain=.76,bloodAlphaSecondary=.52;
+      if(elapsed>=GOBLIN_AFTER_MATH.freshGameMs&&elapsed<GOBLIN_AFTER_MATH.agedGameMs){
+        const t=(elapsed-GOBLIN_AFTER_MATH.freshGameMs)/(GOBLIN_AFTER_MATH.agedGameMs-GOBLIN_AFTER_MATH.freshGameMs);
+        corpseTint=mixHexColor(0xffffff,0xa8927b,t);corpseAlpha=1-(.08*t);
+        bloodTint=mixHexColor(0xffffff,0x82403a,t);bloodAlphaMain=.76-(.20*t);bloodAlphaSecondary=.52-(.14*t);
+      }else if(elapsed>=GOBLIN_AFTER_MATH.agedGameMs){
+        const t=clamp01((elapsed-GOBLIN_AFTER_MATH.agedGameMs)/(GOBLIN_AFTER_MATH.corpseCleanupGameMs-GOBLIN_AFTER_MATH.agedGameMs));
+        corpseTint=mixHexColor(0xa8927b,0x6f6559,t);corpseAlpha=.92-(.20*t);
+        bloodTint=mixHexColor(0x82403a,0x58322f,t);bloodAlphaMain=.56-(.22*t);bloodAlphaSecondary=.38-(.16*t);
+      }
+      corpse?.setTint?.(corpseTint).setAlpha?.(corpseAlpha);
+      blood.forEach((sprite,bloodIndex)=>sprite?.setTint?.(bloodTint).setAlpha?.(bloodIndex===0?bloodAlphaMain:bloodAlphaSecondary));
+
+      const playerDistance=Math.hypot(this.scene.player.isoX-record.u,this.scene.player.isoY-record.v);
+      if(!record.corpseGone&&corpse&&!visual.corpseFading
+        &&elapsed>=GOBLIN_AFTER_MATH.corpseCleanupGameMs
+        &&playerDistance>=GOBLIN_AFTER_MATH.cleanupDistance){
+        visual.corpseFading=true;
+        this.scene.tweens.add({targets:corpse,alpha:0,duration:7000,ease:'Sine.InOut',onComplete:()=>{
+          corpse?.destroy?.();visual.corpse=null;record.corpseGone=true;visual.corpseFading=false;this.save();
+        }});
+      }
+
+      if(!record.bloodGone&&blood.length&&!visual.bloodFading
+        &&elapsed>=GOBLIN_AFTER_MATH.bloodCleanupGameMs
+        &&playerDistance>=GOBLIN_AFTER_MATH.cleanupDistance){
+        visual.bloodFading=true;
+        this.scene.tweens.add({targets:blood,alpha:0,duration:9000,ease:'Sine.InOut',onComplete:()=>{
+          blood.forEach(sprite=>sprite?.destroy?.());visual.blood=[];record.bloodGone=true;visual.bloodFading=false;
+          if(record.corpseGone)record.active=false;this.save();
+        }});
+      }
+    }
+  }
+
   createCollectible(){
     if(this.state.tutorials.collectionComplete||!this.scene.textures.exists('street_crates'))return;
     const a=this.anchors.travelSupplies,p=this.scene.project(a.u,a.v),source=this.scene.textures.get('street_crates').getSourceImage();
@@ -646,6 +789,7 @@ export class OldAetherPrologue{
     this.updateEnemies(time,delta);
     this.resolveEnemyDeaths(time);
     this.updateYoungWolfAftermath();
+    this.updateGoblinScoutAftermaths();
     this.updateProgressTriggers();
     this.updateCue();
   }
@@ -1069,6 +1213,7 @@ export class OldAetherPrologue{
           this.hud?.hint(this.state.tutorials.collectionComplete?'Siga pela estrada.':'O lobo veio de trás do monumento. Investigue a pedra destruída.',{persistent:true});
         }else if(id.startsWith('goblinScout')){
           const index=Number(id.replace('goblinScout',''));
+          this.beginGoblinScoutAftermath(enemy,index);
           this.state.encounters.goblinScouts[index]='defeated';
           if(this.state.encounters.goblinScouts.every(value=>value==='defeated')){
             this.advance(OLD_AETHER_PROLOGUE_STAGES.DEFEAT_GOBLIN_SCOUTS,OLD_AETHER_PROLOGUE_STAGES.EXAMINE_ATTACKED_WAGON,()=>{
@@ -1080,10 +1225,9 @@ export class OldAetherPrologue{
             this.hud?.hint('A estrada silenciou. A carroça abandonada merece atenção.');
           }else this.save();
         }
-        if(id!=='youngWolf')enemy.corpseExpiresAt=time+3400;
       }
-      // O Lobo Jovem é administrado pelo sistema de aftermath persistente.
-      if(enemy.prologue.id!=='youngWolf'&&time>=enemy.corpseExpiresAt){enemy.destroy();}
+      // Lobo Jovem e Goblins Batedores são administrados pelos sistemas de
+      // aftermath persistente; nenhum deles evapora após poucos segundos.
     }
   }
 
@@ -1378,6 +1522,10 @@ export class OldAetherPrologue{
     for(const sprite of this.wolfAftermathVisual?.blood||[])sprite?.destroy?.();
     const aftermathCorpse=this.wolfAftermathVisual?.corpse;
     if(aftermathCorpse&&!this.enemies.includes(aftermathCorpse))aftermathCorpse?.destroy?.();
+    for(const visual of this.goblinAftermathVisuals||[]){
+      for(const sprite of visual?.blood||[])sprite?.destroy?.();
+      if(visual?.corpse&&!this.enemies.includes(visual.corpse))visual.corpse?.destroy?.();
+    }
     for(const enemy of this.enemies)if(enemy?.active)enemy.destroy();
   }
 }
