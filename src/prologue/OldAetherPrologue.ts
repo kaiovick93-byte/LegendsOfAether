@@ -37,7 +37,17 @@ const GOBLIN_DIRECTIONAL_PROFILE_WIDTH=170;
 const GOBLIN_DEATH_USEFUL_WIDTH=349;
 const GOBLIN_DEATH_USEFUL_BOTTOM=660;
 const GOBLIN_CORPSE_LENGTH_FACTOR=1.16;
-const GOBLIN_UI_LIFT=92;
+
+// Round 79.26 — UI dedicada dos dois Goblins Batedores. Mesma linguagem
+// visual refinada do Lobo Jovem, porém um pouco mais compacta por serem
+// inimigos comuns. O lift acompanha a nova escala 79.25 e mantém respiro
+// claro entre a cabeça e a barra.
+const GOBLIN_UI=Object.freeze({
+  lift:92,
+  nameOffset:18,
+  frameWidth:62,
+  frameHeight:10
+});
 
 // Round 79.21 — UI dedicada do Lobo Jovem. O topo útil da arte viva fica
 // próximo de 66–69 px acima dos pés. A barra sobe para deixar um respiro
@@ -807,7 +817,7 @@ export class OldAetherPrologue{
   spawnGoblinScouts(){
     this.anchors.goblinScouts.forEach((a,index)=>{
       if(this.state.encounters.goblinScouts[index]!=='pending'||this.goblinScouts?.[index])return;
-      const enemy=this.spawnEnemy({id:`goblinScout${index}`,kind:'goblin',name:'Goblin Batedor',texture:'prologue_goblin_scout_8dir',u:a.u,v:a.v,height:GOBLIN_FRAME_TARGET_HEIGHT,hp:34,speed:.58,attack:5,xp:15,aggro:4.2,footprint:19,patrol:.44,phase:index*Math.PI,attackDelay:280,uiLift:GOBLIN_UI_LIFT,uiNameOffset:14});
+      const enemy=this.spawnEnemy({id:`goblinScout${index}`,kind:'goblin',name:'Goblin Batedor',texture:'prologue_goblin_scout_8dir',u:a.u,v:a.v,height:GOBLIN_FRAME_TARGET_HEIGHT,hp:34,speed:.58,attack:5,xp:15,aggro:4.2,footprint:19,patrol:.44,phase:index*Math.PI,attackDelay:280,uiLift:GOBLIN_UI.lift,uiNameOffset:GOBLIN_UI.nameOffset});
       this.goblinScouts??=[];this.goblinScouts[index]=enemy;
     });
     if(this.goblinScouts?.some(Boolean)&&!this.state.goblinCueShown){this.state.goblinCueShown=true;this.hud?.hint('Dois goblins batedores revistam a estrada.');}
@@ -854,6 +864,7 @@ export class OldAetherPrologue{
     enemy.body?.setAllowGravity(false).setVelocity(0,0);
     enemy.hpBg?.setVisible(true);enemy.hpFill?.setVisible(true);enemy.nameText?.setVisible(true);
     if(config.kind==='wolf')this.applyYoungWolfUiStyle(enemy);
+    if(config.kind==='goblin')this.applyGoblinScoutUiStyle(enemy);
     const baseTakeDamage=enemy.takeDamage.bind(enemy);
     enemy.takeDamage=(amount)=>{
       if(enemy===this.wolf&&this.isWolfEntranceActive())return;
@@ -873,8 +884,7 @@ export class OldAetherPrologue{
   }
 
   applyYoungWolfUiStyle(enemy){
-    // Escopo deliberadamente local ao primeiro lobo: os Goblins continuam
-    // usando a UI genérica até receberem uma direção artística própria.
+    // UI dedicada ao primeiro lobo, refinada no Round 79.21.
     const frame=this.scene.add.rectangle(
       enemy.x,enemy.y-YOUNG_WOLF_UI.lift,
       YOUNG_WOLF_UI.frameWidth,YOUNG_WOLF_UI.frameHeight,
@@ -888,6 +898,45 @@ export class OldAetherPrologue{
       fontFamily:'Georgia, Times New Roman, serif',
       fontSize:'12px',
       color:'#ead7a7',
+      backgroundColor:'rgba(0,0,0,0)',
+      stroke:'#17110d',
+      strokeThickness:3,
+      padding:{left:2,right:2,top:1,bottom:1},
+      shadow:{offsetX:0,offsetY:2,color:'#000000',blur:1,stroke:true,fill:true}
+    });
+
+    const baseSetUiVisible=enemy.setUiVisible.bind(enemy);
+    enemy.setUiVisible=(visible)=>{
+      baseSetUiVisible(visible);
+      frame.setVisible(visible);
+    };
+
+    const baseDestroy=enemy.destroy.bind(enemy);
+    enemy.destroy=(fromScene)=>{
+      if(frame.active)frame.destroy();
+      enemy.prologueUiFrame=null;
+      baseDestroy(fromScene);
+    };
+  }
+
+
+  applyGoblinScoutUiStyle(enemy){
+    // Mesma família visual da UI do Lobo Jovem: bronze escurecido, vermelho
+    // sóbrio e tipografia serifada. Mantém escala ligeiramente mais compacta
+    // para diferenciar inimigo comum de encontro principal do prólogo.
+    const frame=this.scene.add.rectangle(
+      enemy.x,enemy.y-GOBLIN_UI.lift,
+      GOBLIN_UI.frameWidth,GOBLIN_UI.frameHeight,
+      0x0b0908,.94
+    ).setOrigin(.5).setStrokeStyle(1,0xa98249,.96).setDepth(enemy.depth+.415);
+
+    enemy.prologueUiFrame=frame;
+    enemy.hpBg?.setFillStyle(0x241713,.98);
+    enemy.hpFill?.setFillStyle(0xaa3932,1).setScale(1,.68);
+    enemy.nameText?.setStyle({
+      fontFamily:'Georgia, Times New Roman, serif',
+      fontSize:'11px',
+      color:'#e5d2a1',
       backgroundColor:'rgba(0,0,0,0)',
       stroke:'#17110d',
       strokeThickness:3,
