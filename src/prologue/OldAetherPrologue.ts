@@ -171,6 +171,7 @@ export class OldAetherPrologue{
     this.state=this.normalizeState(persisted?.started?persisted:null);
     scene.worldFlags.prologue=this.state;
     scene.worldFlags.tavernState='LIMITED';
+    scene.aetherTerritory?.oldRoadProps?.setRuinedWaystoneActivated?.(!!this.state.waystone.ruinedExamined,{animate:false});
     this.anchors=AETHER_PROLOGUE_ANCHORS;
     this.enemies=[];
     this.ensureAnimations();
@@ -1085,6 +1086,7 @@ export class OldAetherPrologue{
       },()=>{
         this.advance(OLD_AETHER_PROLOGUE_STAGES.EXAMINE_RUINED_WAYSTONE,OLD_AETHER_PROLOGUE_STAGES.FOLLOW_ROAD_AFTER_WAYSTONE,()=>{
           this.state.waystone.ruinedExamined=true;
+          this.scene.aetherTerritory?.oldRoadProps?.setRuinedWaystoneActivated?.(true,{animate:true});
         });
       });
       return true;

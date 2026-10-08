@@ -1,9 +1,11 @@
 // @ts-nocheck
+import {duskToDawnLightIntensity} from '../render/WorldLightingSystem';
 // B4.2C: two translations from the supplied red marks; art and scale unchanged.
 const asset=(key,originY)=>({key,path:`assets/images/environment/outskirts/old-road-props/${key}.png`,originX:.5,originY});
 export const OLD_ROAD_PROP_ASSETS={
   aetherSign:asset('old_road_sign_aether_01',.9303),
   waystone:asset('old_road_waystone_ruined_01',.933),
+  waystoneActivatedOverlay:asset('old_road_waystone_ruined_activated_overlay_01',.933),
   junctionSign:asset('old_road_sign_south_gate_junction_01',.94),
   bush:asset('old_road_bush_flowers_01',.9237),
   rocks:asset('old_road_rocks_cluster_01',.9296),
@@ -38,7 +40,7 @@ const DRESSING=[
 
 export class OldRoadProps{
   constructor(territory){
-    this.territory=territory;this.scene=territory.scene;this.props=[];this.lightHandles=[];
+    this.territory=territory;this.scene=territory.scene;this.props=[];this.lightHandles=[];this.ruinedWaystoneActivation=null;
     // Read the authoritative guide without moving any road or cliff object.
     const guide=territory.oldRoadEscarpment.route;
     this.segments=[];this.length=0;
@@ -70,7 +72,8 @@ export class OldRoadProps{
     this.place('signLanternDay',lanternX,lanternY,.085,{
       role:'start-sign-lantern',light:'warm-lantern',side:'left-of-aether-sign'
     });
-    this.placeOnShoulder('waystone',1/3,21.5,1.36,{role:'ruined-waystone'});
+    const ruinedWaystone=this.placeOnShoulder('waystone',1/3,21.5,1.36,{role:'ruined-waystone'});
+    this.setupRuinedWaystoneActivation(ruinedWaystone);
     for(const [key,fraction,offset,scale,flipX=false,angle=0] of DRESSING)
       this.placeOnShoulder(key,fraction,offset,scale,{flipX,role:'roadside',
         ...(angle?{rotation:angle*Math.PI/180,pivot:{x:38,y:121}}:{})});
@@ -89,7 +92,7 @@ export class OldRoadProps{
     this.scene.registry.set('oldRoadProps',{
       version:'B4.2C',scope:'old-road-immediate-left-edge-and-inner-junction',routeLength:this.length,
       props:this.props.map(({sprite,...p})=>p),
-      functionalWaystones:0,addedCollisions:0,generatedAssets:0
+      functionalWaystones:0,addedCollisions:0,generatedAssets:1,ruinedWaystoneActivation:'Round79.20'
     });
   }
 
@@ -103,7 +106,7 @@ export class OldRoadProps{
   placeOnShoulder(key,fraction,offset,scale,options={}){
     const p=this.roadPoint(fraction);
     // Screen Y grows downwards, hence (dy,-dx) is the left normal.
-    this.place(key,p.x+p.dy*offset,p.y-p.dx*offset,scale,{
+    return this.place(key,p.x+p.dy*offset,p.y-p.dx*offset,scale,{
       ...options,fraction,offset,side:'left-towards-city'
     });
   }
@@ -130,12 +133,99 @@ export class OldRoadProps{
     sprite.setData('oldRoadProp',data);
     this.territory.track(sprite,logical.u,logical.v,{alwaysActive:true});
     this.territory.config.registerOccluder?.(sprite,art.key,y,{behindMargin:5});
-    // These are scenery, including the ruined waystone: no interaction,
-    // waypoint registration, quest hooks or additional solid masks.
+    // Props de estrada não recebem colisão funcional extra aqui. O Marco de
+    // Senda destruído continua fora da rede de fast travel; sua ativação visual
+    // é sincronizada pelo prólogo apenas quando o checkpoint é investigado.
     const stored={...data,x,y,scale,flipX:!!options.flipX,...(rotation?{rotation}:{}),
       originX:art.originX,originY:art.originY,sprite};
     this.props.push(stored);
     if(options.light==='warm-lantern')this.registerGlobalLanternLight(stored);
+    return stored;
+  }
+
+  setupRuinedWaystoneActivation(prop){
+    const sprite=prop?.sprite;
+    const art=OLD_ROAD_PROP_ASSETS.waystoneActivatedOverlay;
+    if(!sprite||!art)return;
+
+    const logical=this.territory.screenToLogical(sprite.x,sprite.y);
+    const overlay=this.scene.add.image(sprite.x,sprite.y,art.key)
+      .setOrigin(prop.originX??.5,prop.originY??.933)
+      .setScale(prop.scale??1)
+      .setDepth(sprite.depth+.018)
+      .setAlpha(0)
+      .setVisible(false);
+    overlay.setName?.('old-road-ruined-waystone-activation-overlay');
+    overlay.setData('ruinedWaystoneActivation',{round:'79.20',mode:'partial-emissive-overlay'});
+    this.territory.track(overlay,logical.u,logical.v,{alwaysActive:true});
+
+    const lighting=this.scene.worldLighting;
+    let lightHandle=null;
+    if(lighting?.registerLight){
+      const runeOffsetX=(.592-(prop.originX??.5))*sprite.width*(prop.scale??1);
+      const runeOffsetY=(.496-(prop.originY??.933))*sprite.height*(prop.scale??1);
+      lightHandle=lighting.registerLight({
+        id:'old-road-ruined-waystone-magic',
+        source:sprite,
+        offsetX:runeOffsetX,
+        offsetY:runeOffsetY,
+        groundOffsetX:-5,
+        groundOffsetY:118,
+        groundRadiusX:78,
+        groundRadiusY:44,
+        coreRadius:25,
+        strength:.72,
+        warmColor:0x55d7ff,
+        warmAlpha:.052,
+        schedule:(timeOfDayMs)=>.46+.54*duskToDawnLightIntensity(timeOfDayMs),
+        enabled:false
+      });
+      if(lightHandle)this.lightHandles.push(lightHandle);
+    }
+
+    this.ruinedWaystoneActivation={prop,overlay,lightHandle,active:false,pulseTween:null};
+    sprite.setData('ruinedWaystoneCheckpointVisual',{
+      system:'WorldLightingSystem',
+      overlay:art.key,
+      lightId:'old-road-ruined-waystone-magic',
+      round:'79.20',
+      fastTravel:false
+    });
+  }
+
+  setRuinedWaystoneActivated(active,{animate=false}={}){
+    const state=this.ruinedWaystoneActivation;
+    if(!state?.overlay)return;
+    active=!!active;
+    if(state.active===active&&state.overlay.visible===active)return;
+    state.active=active;
+
+    this.scene.tweens?.killTweensOf?.(state.overlay);
+    state.pulseTween=null;
+    state.lightHandle?.setEnabled?.(active);
+
+    if(!active){
+      state.overlay.setVisible(false).setAlpha(0);
+      return;
+    }
+
+    const startPulse=()=>{
+      if(!state.active||!state.overlay?.active)return;
+      state.overlay.setAlpha(.66);
+      state.pulseTween=this.scene.tweens.add({
+        targets:state.overlay,alpha:{from:.60,to:.74},duration:1850,
+        ease:'Sine.InOut',yoyo:true,repeat:-1
+      });
+    };
+
+    state.overlay.setVisible(true);
+    if(animate){
+      state.overlay.setAlpha(.04);
+      this.scene.tweens.add({
+        targets:state.overlay,alpha:.94,duration:520,ease:'Quad.Out',
+        yoyo:true,hold:120,repeat:0,onComplete:startPulse
+      });
+    }else startPulse();
   }
 
   registerGlobalLanternLight(prop){
@@ -192,6 +282,12 @@ export class OldRoadProps{
   }
 
   destroy(){
+    const activation=this.ruinedWaystoneActivation;
+    if(activation?.overlay){
+      this.scene.tweens?.killTweensOf?.(activation.overlay);
+      activation.overlay.destroy?.();
+    }
+    this.ruinedWaystoneActivation=null;
     for(const handle of this.lightHandles)handle?.destroy?.();
     this.lightHandles.length=0;
   }
