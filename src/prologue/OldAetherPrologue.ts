@@ -24,6 +24,17 @@ const PROLOGUE_LEGACY_REACTION_FRAME_HEIGHT=724;
 const YOUNG_WOLF_DEATH_USEFUL_WIDTH=352;
 const YOUNG_WOLF_DEATH_USEFUL_BOTTOM=529;
 
+// Round 79.21 — UI dedicada do Lobo Jovem. O topo útil da arte viva fica
+// próximo de 66–69 px acima dos pés. A barra sobe para deixar um respiro
+// real sobre a cabeça e recebe uma moldura curta em bronze escurecido,
+// mantendo a leitura do HUD sem parecer um placeholder genérico.
+const YOUNG_WOLF_UI=Object.freeze({
+  lift:74,
+  nameOffset:18,
+  frameWidth:64,
+  frameHeight:10
+});
+
 
 // Round 79.19 — pós-morte persistente do Lobo Jovem.
 // O relógio do mundo corre 20x mais rápido que o tempo real: 20 minutos do
@@ -708,7 +719,7 @@ export class OldAetherPrologue{
     const path=this.wolfEntrancePath();
     if(!path)return;
     const a=this.scene.aetherTerritory.screenToLogical(path[0].x,path[0].y);
-    this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:YOUNG_WOLF_FRAME_TARGET_HEIGHT,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250,uiLift:56});
+    this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:YOUNG_WOLF_FRAME_TARGET_HEIGHT,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250,uiLift:YOUNG_WOLF_UI.lift,uiNameOffset:YOUNG_WOLF_UI.nameOffset});
     if(!this.wolf)return;
     this.wolfEntrance={path,segment:0};
     this.wolf.setUiVisible(false);
@@ -756,7 +767,7 @@ export class OldAetherPrologue{
 
   spawnWolf(){
     const a=this.anchors.youngWolf;
-    this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:YOUNG_WOLF_FRAME_TARGET_HEIGHT,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250,uiLift:56});
+    this.wolf=this.spawnEnemy({id:'youngWolf',kind:'wolf',name:'Lobo Jovem',texture:'prologue_young_wolf_8dir',u:a.u,v:a.v,height:YOUNG_WOLF_FRAME_TARGET_HEIGHT,hp:38,speed:.67,attack:6,xp:18,aggro:3.5,footprint:21,patrol:.22,attackDelay:250,uiLift:YOUNG_WOLF_UI.lift,uiNameOffset:YOUNG_WOLF_UI.nameOffset});
     // Entradas já concluídas (incluindo saves) voltam diretamente ao combate.
     this.hud?.hint('Enfrente o Lobo Jovem. Use o ataque básico para se defender.');
   }
@@ -799,6 +810,7 @@ export class OldAetherPrologue{
     enemy.animState='idle';enemy.activeAnimationKey='';enemy.facingDirection='s';enemy.attackPendingAt=0;enemy.attackEndsAt=0;enemy.deathAnimationEndsAt=0;
     enemy.body?.setAllowGravity(false).setVelocity(0,0);
     enemy.hpBg?.setVisible(true);enemy.hpFill?.setVisible(true);enemy.nameText?.setVisible(true);
+    if(config.kind==='wolf')this.applyYoungWolfUiStyle(enemy);
     const baseTakeDamage=enemy.takeDamage.bind(enemy);
     enemy.takeDamage=(amount)=>{
       if(enemy===this.wolf&&this.isWolfEntranceActive())return;
@@ -815,6 +827,43 @@ export class OldAetherPrologue{
     this.playEnemyAnimation(enemy,'idle');
     this.enemies.push(enemy);
     return enemy;
+  }
+
+  applyYoungWolfUiStyle(enemy){
+    // Escopo deliberadamente local ao primeiro lobo: os Goblins continuam
+    // usando a UI genérica até receberem uma direção artística própria.
+    const frame=this.scene.add.rectangle(
+      enemy.x,enemy.y-YOUNG_WOLF_UI.lift,
+      YOUNG_WOLF_UI.frameWidth,YOUNG_WOLF_UI.frameHeight,
+      0x0b0908,.94
+    ).setOrigin(.5).setStrokeStyle(1,0xb08a50,.98).setDepth(enemy.depth+.415);
+
+    enemy.prologueUiFrame=frame;
+    enemy.hpBg?.setFillStyle(0x241713,.98);
+    enemy.hpFill?.setFillStyle(0xb43a32,1).setScale(1,.72);
+    enemy.nameText?.setStyle({
+      fontFamily:'Georgia, Times New Roman, serif',
+      fontSize:'12px',
+      color:'#ead7a7',
+      backgroundColor:'rgba(0,0,0,0)',
+      stroke:'#17110d',
+      strokeThickness:3,
+      padding:{left:2,right:2,top:1,bottom:1},
+      shadow:{offsetX:0,offsetY:2,color:'#000000',blur:1,stroke:true,fill:true}
+    });
+
+    const baseSetUiVisible=enemy.setUiVisible.bind(enemy);
+    enemy.setUiVisible=(visible)=>{
+      baseSetUiVisible(visible);
+      frame.setVisible(visible);
+    };
+
+    const baseDestroy=enemy.destroy.bind(enemy);
+    enemy.destroy=(fromScene)=>{
+      if(frame.active)frame.destroy();
+      enemy.prologueUiFrame=null;
+      baseDestroy(fromScene);
+    };
   }
 
   updateEnemyFacing(enemy,du,dv){
@@ -905,9 +954,11 @@ export class OldAetherPrologue{
     const p=this.scene.project(enemy.iso.u,enemy.iso.v),depth=this.scene.depthAt(enemy.iso.u,enemy.iso.v,.16);
     enemy.setPosition(p.x,p.y).setDepth(depth);
     const uiLift=enemy.prologue?.uiLift??46;
+    const uiNameOffset=enemy.prologue?.uiNameOffset??14;
+    enemy.prologueUiFrame?.setPosition(p.x,p.y-uiLift).setDepth(depth+.415);
     enemy.hpBg?.setPosition(p.x,p.y-uiLift).setDepth(depth+.42);
     enemy.hpFill?.setPosition(p.x-27,p.y-uiLift).setDepth(depth+.43);
-    enemy.nameText?.setPosition(p.x,p.y-uiLift-14).setDepth(depth+.44);
+    enemy.nameText?.setPosition(p.x,p.y-uiLift-uiNameOffset).setDepth(depth+.44);
   }
 
   resolveEnemyDeaths(time){
