@@ -574,19 +574,24 @@ export class OldAetherPrologue{
     else this.hud?.setObjective('Encontre abrigo em Aether.');
   }
 
-  // A placa é um prop renderizado fora da âncora narrativa antiga. Consulte a
-  // posição do sprite real para que o F apareça junto à placa que o jogador vê.
-  roadSignSprite(){
-    return this.scene.aetherTerritory?.oldRoadProps?.props?.find(prop=>prop.role==='start-sign')?.sprite??null;
+  // Round 79.22 — prompts narrativos são medidos no plano do CHÃO. O ponto
+  // autoritativo vem do perfil físico do prop e o jogador usa o centro de sua
+  // pegada lógica, nunca o centro visual do sprite. Isso evita o F aparecer ao
+  // simplesmente passar ao lado de placas/monumentos altos.
+  narrativeProp(role){
+    return this.scene.aetherTerritory?.oldRoadProps?.props?.find(prop=>prop.role===role)??null;
   }
-  nearRoadSign(){
-    const sign=this.roadSignSprite();
-    if(!sign?.active)return false;
+  roadSignSprite(){return this.narrativeProp('start-sign')?.sprite??null;}
+  isNearNarrativeProp(role){
+    const prop=this.narrativeProp(role),sprite=prop?.sprite,physical=prop?.physical;
+    if(!sprite?.active||!physical?.interaction)return false;
     const player=this.scene.player;
-    // Mesmo sistema de distância em pixels usado pelos NPCs, com margem para
-    // o poste e a base visual da placa, sem exigir entrar em sua colisão.
-    return Phaser.Math.Distance.Between(player.x,player.y,sign.x,sign.y)<=50;
+    const foot=player.getLogicalFootprintAt?.(player.x,player.y)??{x:player.x,y:player.y-8};
+    const rx=Math.max(1,physical.interaction.radiusX),ry=Math.max(1,physical.interaction.radiusY);
+    const dx=(foot.x-physical.groundX)/rx,dy=(foot.y-physical.groundY)/ry;
+    return dx*dx+dy*dy<=1;
   }
+  nearRoadSign(){return this.isNearNarrativeProp('start-sign');}
   distanceTo(anchor){return Math.hypot(this.scene.player.isoX-anchor.u,this.scene.player.isoY-anchor.v);}
   isNear(anchor,radius=1.12){return this.distanceTo(anchor)<=radius;}
   nearNpc(npc,range=96){return !!npc&&Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,npc.x,npc.y)<=range;}
@@ -682,9 +687,7 @@ export class OldAetherPrologue{
     if(this.isAt(OLD_AETHER_PROLOGUE_STAGES.SPEAK_TO_PATROL)&&!this.patrol)this.spawnPatrol();
   }
 
-  ruinedRoadWaystone(){
-    return this.scene.aetherTerritory?.oldRoadProps?.props?.find(prop=>prop.role==='ruined-waystone')?.sprite??null;
-  }
+  ruinedRoadWaystone(){return this.narrativeProp('ruined-waystone')?.sprite??null;}
 
   roadPoint(fraction){
     return this.scene.aetherTerritory?.oldRoadProps?.roadPoint(fraction)??null;
@@ -1110,10 +1113,7 @@ export class OldAetherPrologue{
       (this.state.encounters.youngWolf==='defeated'&&this.state.waystone.ruinedExamined);
   }
 
-  nearRuinedRoadWaystone(){
-    const marker=this.ruinedRoadWaystone();
-    return !!marker?.active&&Phaser.Math.Distance.Between(this.scene.player.x,this.scene.player.y,marker.x,marker.y)<=50;
-  }
+  nearRuinedRoadWaystone(){return this.isNearNarrativeProp('ruined-waystone');}
 
   tryInteract(){
     if(!this.enabled)return false;

@@ -53,7 +53,7 @@ export class OldRoadProps{
     const signRoutePoint=this.roadPoint(.07);
     const signX=signRoutePoint.x+signRoutePoint.dy*27.4;
     const signY=signRoutePoint.y-signRoutePoint.dx*27.4;
-    this.place('aetherSign',signX,signY,.60,{role:'start-sign',fraction:.07,offset:27.4,side:'left-towards-city'});
+    const startSign=this.place('aetherSign',signX,signY,.60,{role:'start-sign',fraction:.07,offset:27.4,side:'left-towards-city'});
 
     // Round 76: posicionamento medido diretamente no print de referência.
     // A base visível atual do poste e a marcação amarela foram medidas na mesma
@@ -65,6 +65,15 @@ export class OldRoadProps{
     // - base visível do poste da lanterna ≈ (lanternX - 21.3, lanternY - 1.0)
     const signGroundX=signX+1.8;
     const signGroundY=signY-11.4;
+    // Round 79.22 — interação e colisão usam a base REAL da placa, não o
+    // centro/padding do PNG. A elipse física cobre somente poste/pedras no solo;
+    // a elipse de interação começa logo fora dela, evitando F ao apenas passar
+    // lateralmente pelo prop.
+    this.configureNarrativePropPhysicalProfile(startSign,{
+      groundX:signGroundX,groundY:signGroundY,
+      collisionWidth:42,collisionHeight:18,collisionCenterYOffset:-7,
+      interactionRadiusX:46,interactionRadiusY:27
+    });
     const lanternGroundX=signGroundX-106.3;
     const lanternGroundY=signGroundY-24.3;
     const lanternX=lanternGroundX+21.3;
@@ -73,6 +82,14 @@ export class OldRoadProps{
       role:'start-sign-lantern',light:'warm-lantern',side:'left-of-aether-sign'
     });
     const ruinedWaystone=this.placeOnShoulder('waystone',1/3,21.5,1.36,{role:'ruined-waystone'});
+    // O alpha útil do marco termina ~22 px acima da origem do PNG; na escala
+    // 1.36 isso coloca o contato visual com o solo cerca de 30 px acima do
+    // anchor. A colisão cobre a massa de pedras da base, nunca a coluna alta.
+    this.configureNarrativePropPhysicalProfile(ruinedWaystone,{
+      groundX:ruinedWaystone.x+2,groundY:ruinedWaystone.y-30,
+      collisionWidth:132,collisionHeight:40,collisionCenterYOffset:-15,
+      interactionRadiusX:94,interactionRadiusY:46
+    });
     this.setupRuinedWaystoneActivation(ruinedWaystone);
     for(const [key,fraction,offset,scale,flipX=false,angle=0] of DRESSING)
       this.placeOnShoulder(key,fraction,offset,scale,{flipX,role:'roadside',
@@ -91,8 +108,9 @@ export class OldRoadProps{
     });
     this.scene.registry.set('oldRoadProps',{
       version:'B4.2C',scope:'old-road-immediate-left-edge-and-inner-junction',routeLength:this.length,
-      props:this.props.map(({sprite,...p})=>p),
-      functionalWaystones:0,addedCollisions:0,generatedAssets:1,ruinedWaystoneActivation:'Round79.20'
+      props:this.props.map(({sprite,solidMask,...p})=>p),
+      functionalWaystones:0,addedCollisions:2,generatedAssets:1,ruinedWaystoneActivation:'Round79.20',
+      narrativePropInteractionPhysics:'Round79.22'
     });
   }
 
@@ -141,6 +159,37 @@ export class OldRoadProps{
     this.props.push(stored);
     if(options.light==='warm-lantern')this.registerGlobalLanternLight(stored);
     return stored;
+  }
+
+  configureNarrativePropPhysicalProfile(prop,profile){
+    if(!prop?.sprite||!profile)return null;
+    const physical={
+      round:'79.22',
+      groundX:profile.groundX,groundY:profile.groundY,
+      collision:{
+        width:profile.collisionWidth,height:profile.collisionHeight,
+        centerYOffset:profile.collisionCenterYOffset??0
+      },
+      interaction:{
+        radiusX:profile.interactionRadiusX,radiusY:profile.interactionRadiusY
+      }
+    };
+    prop.physical=physical;
+    prop.sprite.setData?.('oldRoadNarrativePhysicalProfile',physical);
+
+    const registerSolidMask=this.territory.config.registerSolidMask;
+    if(registerSolidMask){
+      prop.solidMask=registerSolidMask(prop.sprite,prop.asset,{
+        label:prop.role==='start-sign'?'placa inicial da Estrada Velha':'Marco de Senda destruído',
+        mode:'footprint',
+        worldX:physical.groundX,worldY:physical.groundY,
+        footprintWidth:physical.collision.width,
+        footprintHeight:physical.collision.height,
+        footprintYOffset:physical.collision.centerYOffset,
+        owner:prop.sprite
+      });
+    }
+    return physical;
   }
 
   setupRuinedWaystoneActivation(prop){
