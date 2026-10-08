@@ -206,9 +206,9 @@ const FOREST_SHADOW_PATCHES=Object.freeze([
   ['soft',1.763,77.248,248,140,-.05,.16]
 ]);
 
-// Round 79.17 — as posições continuam marcando pontos de chão da mata,
-// mas não são mais faixas visíveis. O shader usa esses pontos como campos de
-// densidade baixa, quebrados por ruído volumétrico e queda vertical rápida.
+// Round 79.28 — emissores de névoa rasteira. Cada ponto gera pequenos
+// volumes procedurais independentes em background/mid/foreground; não existe
+// mais um grande quad/shader recortado pelo polígono da floresta.
 const FOREST_FOG_BANDS=Object.freeze([
   ['ribbon',1.145,54.657,300,58,-.12,.72,14,2,.30,.30],
   ['broad',2.382,58.494,420,66,-.10,.82,18,3,.27,1.10],
@@ -393,7 +393,7 @@ export class OldRoadAncientForest{
     const bands=FOREST_FOG_BANDS.map(([type,u,v,width,height,rotation,opacity,driftX,driftY,speed,phase])=>{
       this.assertBaseInside(u,v,`forest-fog-${type}`);
       const p=this.territory.project(u,v);
-      return {type,x:p.x,y:p.y,width,height,rotation,opacity,driftX,driftY,speed,phase};
+      return {type,x:p.x,y:p.y,u,v,width,height,rotation,opacity,driftX,driftY,speed,phase};
     });
 
     this.fogZoneHandle=fog.registerZone({
@@ -401,10 +401,12 @@ export class OldRoadAncientForest{
       polygon,
       bands,
       color:0x809087,
-      density:.34,
-      coverage:.47,
-      groundOffsetY:14,
-      heightScale:.86,
+      density:.46,
+      // Estratégia 2 usada apenas como perspectiva atmosférica muito sutil.
+      // Ground decals ficam intactos; apenas árvores/estruturas distantes
+      // recebem até ~6% de tint no pico da névoa.
+      atmosphereTargets:this.sprites.filter(sprite=>sprite?.getData?.('aetherRenderClass')!=='ground'),
+      atmosphereTintStrength:.06,
       schedule:(timeOfDayMs)=>this.forestFogIntensity(timeOfDayMs)
     });
   }
@@ -448,7 +450,7 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.17',
+      version:'Round79.28',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
@@ -457,9 +459,9 @@ export class OldRoadAncientForest{
       localShadowPatches:FOREST_SHADOW_PATCHES.length,
       lowFogBands:FOREST_FOG_BANDS.length,
       fogSystem:'WorldFogSystem',
-      fogRenderer:'webgl-pseudo-volumetric-height-fog',
-      fogLayerDepth:655,
-      fogAboveWorldLighting:true,
+      fogRenderer:'world-space-multi-depth-procedural-wisps',
+      fogLayerDepth:'depth-sorted-background-mid-foreground',
+      fogAboveWorldLighting:false,
       fogReactsToLights:true,
       fogCollision:false,
       clearZoneRemovedThorn06:{...REMOVED_THORN06_CLEAR_ZONE},

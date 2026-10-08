@@ -2,190 +2,68 @@
 import {worldClock} from '../world/WorldClock';
 
 /**
- * Round 79.17 — névoa pseudo-volumétrica WebGL.
+ * Round 79.28 — WorldFogSystem reformulado.
  *
- * Objetivos:
- * - abandonar as "faixas" 2D visíveis do renderer anterior;
- * - concentrar a névoa rente ao chão, com queda vertical semelhante a um
- *   Exponential Height Fog adaptado à câmera isométrica;
- * - usar ruído procedural em shader para quebrar bordas e criar volume;
- * - reagir às luzes registradas no WorldLightingSystem;
- * - preservar fallback Canvas para máquinas sem WebGL.
+ * O renderer anterior usava um grande shader screen-space mascarado pelo
+ * polígono da floresta. Visualmente isso revelava a própria geometria do
+ * efeito (bordas retas/ovais) e produzia uma superfície leitosa, não névoa.
+ *
+ * Esta versão troca a arquitetura por volumes 2D de mundo em múltiplas
+ * profundidades. Cada volume usa uma textura procedural irregular e:
+ * - nasce/dissipa lentamente;
+ * - deriva e se deforma em velocidades diferentes;
+ * - é depth-sorted com árvores, props e atores;
+ * - usa blend NORMAL (nunca SCREEN/ADD global);
+ * - permanece abaixo do WorldLightingSystem, recebendo naturalmente o
+ *   entardecer/noite e a abertura das luzes locais;
+ * - reage às luzes apenas com um leve desvio de tint, sem esbranquiçar.
+ *
+ * O polígono continua sendo metadado da zona, mas NÃO é mais uma máscara de
+ * renderização. Assim não existe borda geométrica capaz de aparecer na tela.
  */
 
-const DEFAULT_TEXTURE_KEY='aether-world-fog-overlay-v1';
-const MAX_SHADER_BANDS=7;
-const MAX_SHADER_LIGHTS=4;
-const clamp01=(value)=>Math.max(0,Math.min(1,value));
+const TEXTURE_PREFIX='aether-fog-wisp-v2';
+const FOG_TEXTURE_COUNT=6;
+const clamp01=(v)=>Math.max(0,Math.min(1,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
 
-const VOLUMETRIC_FOG_FRAGMENT_SHADER=`
-precision mediump float;
-
-uniform vec2 resolution;
-uniform float uFogTime;
-uniform vec2 uCamera;
-uniform float uZoom;
-uniform float uDensity;
-uniform float uCoverage;
-uniform vec3 uFogColor;
-
-uniform vec4 uBand0;
-uniform vec4 uBand1;
-uniform vec4 uBand2;
-uniform vec4 uBand3;
-uniform vec4 uBand4;
-uniform vec4 uBand5;
-uniform vec4 uBand6;
-uniform vec4 uBandWeightsA;
-uniform vec4 uBandWeightsB;
-uniform vec4 uBandRotA;
-uniform vec4 uBandRotB;
-
-uniform vec4 uLight0;
-uniform vec4 uLight1;
-uniform vec4 uLight2;
-uniform vec4 uLight3;
-uniform vec3 uLightColor0;
-uniform vec3 uLightColor1;
-uniform vec3 uLightColor2;
-uniform vec3 uLightColor3;
-
-varying vec2 fragCoord;
-
-float hash21(vec2 p){
-  p=fract(p*vec2(123.34,345.45));
-  p+=dot(p,p+34.345);
-  return fract(p.x*p.y);
+function smooth01(value){
+  const t=clamp01(value);
+  return t*t*(3-2*t);
 }
-
-float noise2(vec2 p){
-  vec2 i=floor(p);
-  vec2 f=fract(p);
-  f=f*f*(3.0-2.0*f);
-  float a=hash21(i);
-  float b=hash21(i+vec2(1.0,0.0));
-  float c=hash21(i+vec2(0.0,1.0));
-  float d=hash21(i+vec2(1.0,1.0));
-  return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
-}
-
-float fbm(vec2 p){
-  float v=0.0;
-  v+=noise2(p)*0.56;
-  p=p*2.03+vec2(17.1,9.2);
-  v+=noise2(p)*0.29;
-  p=p*2.01+vec2(-8.4,14.7);
-  v+=noise2(p)*0.15;
-  return v;
-}
-
-float groundBand(vec2 screen,vec4 band,float weight,float rotation){
-  if(weight<=0.001||band.z<=0.5||band.w<=0.5)return 0.0;
-
-  vec2 delta=screen-band.xy;
-  float cs=cos(rotation);
-  float sn=sin(rotation);
-  vec2 local=vec2(cs*delta.x+sn*delta.y,-sn*delta.x+cs*delta.y);
-  // Acima do ponto de chão a névoa cai muito mais rápido. Abaixo dele ela
-  // pode "assentar" alguns pixels e permanecer rente ao terreno.
-  float verticalScale=(local.y<0.0)?0.48:1.08;
-  vec2 q=vec2(
-    local.x/max(1.0,band.z),
-    local.y/max(1.0,band.w*verticalScale)
-  );
-  float d=dot(q,q);
-  return (1.0-smoothstep(0.30,1.0,d))*weight;
-}
-
-float lightInfluence(vec2 screen,vec4 light){
-  if(light.w<=0.001||light.z<=1.0)return 0.0;
-  float d=distance(screen,light.xy);
-  return (1.0-smoothstep(light.z*0.20,light.z,d))*light.w;
-}
-
-void main(){
-  // Converter para coordenadas de tela com origem no canto superior esquerdo.
-  vec2 screen=vec2(fragCoord.x,resolution.y-fragCoord.y);
-  float zoom=max(0.001,uZoom);
-
-  // Posição aproximada no mundo mantém o padrão estável enquanto a câmera anda.
-  vec2 worldP=screen/zoom+uCamera;
-  vec2 wind=vec2(uFogTime*4.2,-uFogTime*0.75);
-
-  // Ruído anisotrópico: X alongado e Y comprimido -> véus baixos, não nuvens.
-  vec2 p=vec2((worldP.x+wind.x)*0.0032,(worldP.y+wind.y)*0.0090);
-  float warpA=noise2(p*0.72+vec2(uFogTime*0.012,3.7));
-  float warpB=noise2(p*0.61+vec2(-2.4,uFogTime*0.008));
-  p+=vec2(warpA-0.5,warpB-0.5)*0.42;
-
-  float broad=fbm(p);
-  float detail=noise2(p*2.85+vec2(-uFogTime*0.018,uFogTime*0.006));
-  float filament=fbm(vec2(p.x*0.72,p.y*1.92)+vec2(5.3,-2.1));
-
-  float volume=smoothstep(uCoverage,0.90,broad*0.76+detail*0.24);
-  float wisps=smoothstep(0.48,0.84,filament);
-  volume=clamp(volume*0.82+wisps*0.28,0.0,1.0);
-
-  float field=0.0;
-  field=max(field,groundBand(screen,uBand0,uBandWeightsA.x,uBandRotA.x));
-  field=max(field,groundBand(screen,uBand1,uBandWeightsA.y,uBandRotA.y));
-  field=max(field,groundBand(screen,uBand2,uBandWeightsA.z,uBandRotA.z));
-  field=max(field,groundBand(screen,uBand3,uBandWeightsA.w,uBandRotA.w));
-  field=max(field,groundBand(screen,uBand4,uBandWeightsB.x,uBandRotB.x));
-  field=max(field,groundBand(screen,uBand5,uBandWeightsB.y,uBandRotB.y));
-  field=max(field,groundBand(screen,uBand6,uBandWeightsB.z,uBandRotB.z));
-
-  // Pequenos "buracos" internos evitam massas leitosas contínuas.
-  float breakup=smoothstep(0.18,0.80,broad+detail*0.18);
-  float alpha=uDensity*field*(0.22+0.88*volume)*breakup;
-
-  vec3 color=uFogColor;
-  float light0=lightInfluence(screen,uLight0);
-  float light1=lightInfluence(screen,uLight1);
-  float light2=lightInfluence(screen,uLight2);
-  float light3=lightInfluence(screen,uLight3);
-  float totalLight=clamp(light0+light1+light2+light3,0.0,1.0);
-
-  if(light0>0.0)color=mix(color,uLightColor0,clamp(light0*0.58,0.0,0.58));
-  if(light1>0.0)color=mix(color,uLightColor1,clamp(light1*0.50,0.0,0.50));
-  if(light2>0.0)color=mix(color,uLightColor2,clamp(light2*0.50,0.0,0.50));
-  if(light3>0.0)color=mix(color,uLightColor3,clamp(light3*0.50,0.0,0.50));
-
-  // Luz pontual torna o vapor um pouco mais aparente e quente, como espalhamento.
-  alpha*=1.0+totalLight*0.14;
-  color+=vec3(totalLight*0.035);
-
-  alpha=clamp(alpha,0.0,0.38);
-  gl_FragColor=vec4(clamp(color,0.0,1.0),alpha);
-}
-`;
 
 function colorChannels(color){
   return {r:(color>>16)&255,g:(color>>8)&255,b:color&255};
 }
 
-function normalizedColor(color){
-  const {r,g,b}=colorChannels(color);
-  return {x:r/255,y:g/255,z:b/255};
+function mixColor(a,b,t){
+  const ca=colorChannels(a),cb=colorChannels(b),m=clamp01(t);
+  const r=Math.round(lerp(ca.r,cb.r,m));
+  const g=Math.round(lerp(ca.g,cb.g,m));
+  const bl=Math.round(lerp(ca.b,cb.b,m));
+  return (r<<16)|(g<<8)|bl;
 }
 
-function rgba(color,alpha){
-  const {r,g,b}=colorChannels(color);
-  return `rgba(${r},${g},${b},${clamp01(alpha)})`;
+function seededRandom(seed){
+  let state=(seed>>>0)||1;
+  return ()=>{
+    state=(Math.imul(state,1664525)+1013904223)>>>0;
+    return state/4294967296;
+  };
 }
 
-// Fallback Canvas. Em WebGL este desenho NÃO é usado.
-function drawFogLobe(ctx,cx,cy,rx,ry,rotation,color,alpha){
-  if(rx<=0||ry<=0||alpha<=0)return;
+function drawEllipticalGradient(ctx,cx,cy,rx,ry,rotation,alpha){
+  if(rx<=1||ry<=1||alpha<=0)return;
   ctx.save();
   ctx.translate(cx,cy);
   ctx.rotate(rotation);
   ctx.scale(rx,ry);
   const gradient=ctx.createRadialGradient(0,0,0,0,0,1);
-  gradient.addColorStop(0,rgba(color,alpha));
-  gradient.addColorStop(.32,rgba(color,alpha*.72));
-  gradient.addColorStop(.68,rgba(color,alpha*.24));
-  gradient.addColorStop(1,rgba(color,0));
+  gradient.addColorStop(0,`rgba(255,255,255,${alpha})`);
+  gradient.addColorStop(.23,`rgba(255,255,255,${alpha*.86})`);
+  gradient.addColorStop(.58,`rgba(255,255,255,${alpha*.36})`);
+  gradient.addColorStop(.82,`rgba(255,255,255,${alpha*.10})`);
+  gradient.addColorStop(1,'rgba(255,255,255,0)');
   ctx.fillStyle=gradient;
   ctx.beginPath();
   ctx.arc(0,0,1,0,Math.PI*2);
@@ -193,169 +71,146 @@ function drawFogLobe(ctx,cx,cy,rx,ry,rotation,color,alpha){
   ctx.restore();
 }
 
-function drawFallbackBand(ctx,{cx,cy,rx,ry,rotation,color,alpha,phase,timeSeconds}){
-  if(alpha<=0)return;
-  const drift=Math.sin(timeSeconds*.12+phase);
-  drawFogLobe(ctx,cx,cy+ry*.18,rx,ry*.58,rotation,color,alpha*.55);
-  drawFogLobe(ctx,cx-rx*.22+drift*rx*.025,cy+ry*.15,rx*.46,ry*.42,rotation-.02,color,alpha*.62);
-  drawFogLobe(ctx,cx+rx*.20-drift*rx*.02,cy+ry*.17,rx*.50,ry*.38,rotation+.02,color,alpha*.58);
-}
+/** Cria véus quebrados, não uma nuvem oval única. */
+function ensureFogTexture(scene,key,seed){
+  if(scene.textures.exists(key))return key;
+  const width=512,height=192;
+  const texture=scene.textures.createCanvas(key,width,height);
+  const ctx=texture?.getContext?.();
+  if(!ctx)return key;
+  const rnd=seededRandom(seed);
+  ctx.clearRect(0,0,width,height);
 
-function shaderUniforms(){
-  const uniforms={
-    uFogTime:{type:'1f',value:0},
-    uCamera:{type:'2f',value:{x:0,y:0}},
-    uZoom:{type:'1f',value:1},
-    uDensity:{type:'1f',value:0},
-    uCoverage:{type:'1f',value:.47},
-    uFogColor:{type:'3f',value:{x:.50,y:.57,z:.54}},
-    uBandWeightsA:{type:'4f',value:{x:0,y:0,z:0,w:0}},
-    uBandWeightsB:{type:'4f',value:{x:0,y:0,z:0,w:0}},
-    uBandRotA:{type:'4f',value:{x:0,y:0,z:0,w:0}},
-    uBandRotB:{type:'4f',value:{x:0,y:0,z:0,w:0}}
-  };
-  for(let i=0;i<MAX_SHADER_BANDS;i++)uniforms[`uBand${i}`]={type:'4f',value:{x:0,y:0,z:1,w:1}};
-  for(let i=0;i<MAX_SHADER_LIGHTS;i++){
-    uniforms[`uLight${i}`]={type:'4f',value:{x:0,y:0,z:1,w:0}};
-    uniforms[`uLightColor${i}`]={type:'3f',value:{x:1,y:1,z:1}};
+  // Uma espinha levemente sinuosa alonga a névoa no sentido horizontal.
+  const lobeCount=14+Math.floor(rnd()*7);
+  for(let i=0;i<lobeCount;i++){
+    const t=(i+.15+rnd()*.7)/lobeCount;
+    const wave=Math.sin(t*Math.PI*2*(.62+rnd()*.22)+seed*.37);
+    const cx=width*(.05+t*.90)+(rnd()-.5)*34;
+    const cy=height*(.52+wave*.10)+(rnd()-.5)*24;
+    const edge=Math.sin(Math.PI*clamp01(t));
+    const rx=(34+rnd()*54)*(0.62+edge*.52);
+    const ry=15+rnd()*24;
+    drawEllipticalGradient(ctx,cx,cy,rx,ry,(rnd()-.5)*.20,.20+rnd()*.18);
   }
-  return uniforms;
+
+  // Filamentos finos que rompem a silhueta principal.
+  for(let i=0;i<7;i++){
+    const t=.08+rnd()*.84;
+    const cx=width*t+(rnd()-.5)*28;
+    const cy=height*(.43+(rnd()-.5)*.24);
+    drawEllipticalGradient(ctx,cx,cy,44+rnd()*78,7+rnd()*13,(rnd()-.5)*.16,.10+rnd()*.13);
+  }
+
+  // Buracos transparentes internos: impede a leitura de "placa branca".
+  ctx.globalCompositeOperation='destination-out';
+  for(let i=0;i<7;i++){
+    const cx=width*(.12+rnd()*.76),cy=height*(.35+rnd()*.30);
+    const rx=24+rnd()*62,ry=8+rnd()*20;
+    ctx.save();ctx.translate(cx,cy);ctx.scale(rx,ry);
+    const g=ctx.createRadialGradient(0,0,0,0,0,1);
+    g.addColorStop(0,`rgba(0,0,0,${.18+rnd()*.22})`);
+    g.addColorStop(.55,'rgba(0,0,0,.10)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+  ctx.globalCompositeOperation='source-over';
+  texture.refresh();
+  return key;
 }
 
-function assignVec2(uniform,x,y){
-  if(!uniform?.value)return;
-  uniform.value.x=x;uniform.value.y=y;
+function pointInPolygon(x,y,polygon){
+  let inside=false;
+  for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
+    const a=polygon[i],b=polygon[j];
+    const crosses=((a.y>y)!==(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x);
+    if(crosses)inside=!inside;
+  }
+  return inside;
 }
-function assignVec3(uniform,x,y,z){
-  if(!uniform?.value)return;
-  uniform.value.x=x;uniform.value.y=y;uniform.value.z=z;
-}
-function assignVec4(uniform,x,y,z,w){
-  if(!uniform?.value)return;
-  uniform.value.x=x;uniform.value.y=y;uniform.value.z=z;uniform.value.w=w;
+
+function layerProfile(layer){
+  if(layer==='background')return {alpha:.105,depthOffset:-.16,width:.44,height:.76,drift:1.00,formation:.56};
+  if(layer==='foreground')return {alpha:.052,depthOffset:.24,width:.23,height:.48,drift:1.34,formation:.92};
+  return {alpha:.135,depthOffset:.10,width:.34,height:.62,drift:1.15,formation:.72};
 }
 
 export class WorldFogSystem{
-  constructor(scene,{depth=655,renderScale=.5,maxFps=24,textureKey=DEFAULT_TEXTURE_KEY}={}){
+  constructor(scene,{depth=655,renderScale=.5,maxFps=24,textureKey=TEXTURE_PREFIX}={}){
     this.scene=scene;
-    this.depth=depth;
+    this.depth=depth; // Mantido por compatibilidade; wisps usam depth do mundo.
     this.renderScale=renderScale;
-    this.frameInterval=1000/Math.max(1,maxFps);
+    this.maxFps=maxFps;
     this.textureKey=textureKey;
     this.zones=new Map();
-    this.lastRenderTime=-Infinity;
-    this.lastClockRevision=worldClock.revision;
     this.elapsedMs=0;
-    this.surface=null;
-    this.texture=null;
-    this.ctx=null;
     this.destroyed=false;
-    this.webgl=!!this.scene.sys.game.renderer?.gl;
-    if(!this.webgl)this.createFallbackSurface();
+    this.textureKeys=[];
+    this.ensureTextures();
 
     this.scene.registry?.set?.('worldFogSystem',{
-      version:'Round79.17',
-      renderer:this.webgl?'webgl-pseudo-volumetric-height-fog':'canvas-fallback-low-fog',
-      pseudoVolumetric:this.webgl,
-      exponentialHeightApproximation:this.webgl,
-      reactsToWorldLights:this.webgl,
-      maxShaderBands:MAX_SHADER_BANDS,
-      maxShaderLights:MAX_SHADER_LIGHTS,
-      aboveWorldLighting:true,
+      version:'Round79.28',
+      renderer:'world-space-multi-depth-procedural-wisps',
+      pseudoVolumetric:true,
+      hardPolygonMask:false,
+      screenSpaceFullscreenShader:false,
+      blendMode:'NORMAL',
+      depthLayers:['background','mid','foreground'],
+      reactsToWorldLights:true,
+      renderedBelowWorldLighting:true,
+      proceduralTextures:FOG_TEXTURE_COUNT,
       reusableFogZones:true
     });
   }
 
-  viewportSize(){
-    return {
-      width:this.scene.scale.width||this.scene.scale.gameSize?.width||1280,
-      height:this.scene.scale.height||this.scene.scale.gameSize?.height||720
-    };
+  ensureTextures(){
+    for(let i=0;i<FOG_TEXTURE_COUNT;i++){
+      const key=`${TEXTURE_PREFIX}-${i+1}`;
+      ensureFogTexture(this.scene,key,79128+i*193);
+      this.textureKeys.push(key);
+    }
   }
 
-  createFallbackSurface(){
-    const {width,height}=this.viewportSize();
-    const canvasWidth=Math.max(2,Math.ceil(width*this.renderScale));
-    const canvasHeight=Math.max(2,Math.ceil(height*this.renderScale));
-
-    this.surface?.destroy?.();
-    this.surface=null;
-    if(this.scene.textures.exists(this.textureKey))this.scene.textures.remove(this.textureKey);
-
-    this.texture=this.scene.textures.createCanvas(this.textureKey,canvasWidth,canvasHeight);
-    this.ctx=this.texture?.getContext?.()??null;
-    this.surface=this.scene.add.image(0,0,this.textureKey)
-      .setOrigin(0)
-      .setScrollFactor(0)
-      .setDisplaySize(width,height)
-      .setDepth(this.depth);
-    this.surface.setName?.('worldFogOverlayFallback');
-    this.lastRenderTime=-Infinity;
-    this.renderFallback(0,true);
-  }
-
-  resize(){
-    if(this.destroyed)return;
-    if(this.webgl){
-      for(const zone of this.zones.values()){
-        this.destroyZoneShader(zone);
-        this.createZoneShader(zone);
-      }
-    }else this.createFallbackSurface();
-  }
+  resize(){/* World-space sprites acompanham a câmera naturalmente. */}
 
   registerZone(spec={}){
     if(!spec.id)throw new Error('[WorldFogSystem] zona sem id');
-    const polygon=(spec.polygon??[]).map(point=>({x:point.x,y:point.y}));
+    const polygon=(spec.polygon??[]).map(p=>({x:p.x,y:p.y}));
     if(polygon.length<3)throw new Error(`[WorldFogSystem] zona ${spec.id} sem polígono válido`);
 
     const zone={
       id:spec.id,
       polygon,
-      bands:(spec.bands??[]).slice(0,MAX_SHADER_BANDS).map((band,index)=>({
-        x:band.x??0,
-        y:band.y??0,
-        width:band.width??280,
-        height:band.height??64,
-        rotation:band.rotation??0,
-        opacity:clamp01(band.opacity??.75),
-        driftX:band.driftX??14,
-        driftY:band.driftY??3,
-        speed:band.speed??.22,
-        phase:band.phase??index*.83,
-        color:band.color??spec.color??0x809087
-      })),
       schedule:spec.schedule??'always',
       enabled:spec.enabled!==false,
       opacity:clamp01(spec.opacity??1),
       density:clamp01(spec.density??.34),
-      coverage:clamp01(spec.coverage??.47),
-      groundOffsetY:spec.groundOffsetY??14,
-      heightScale:Math.max(.1,spec.heightScale??1),
-      color:spec.color??0x809087,
-      shader:null,
-      baseShader:null,
-      maskGraphics:null,
-      mask:null
+      color:spec.color??0x83908c,
+      atmosphereTintStrength:Math.max(0,Math.min(.12,spec.atmosphereTintStrength??0)),
+      atmosphereTargets:(spec.atmosphereTargets??[]).map(sprite=>({
+        sprite,originalTint:sprite?.tintTopLeft??0xffffff
+      })),
+      bands:(spec.bands??[]).map((band,index)=>({
+        ...band,
+        opacity:clamp01(band.opacity??.8),
+        driftX:band.driftX??14,
+        driftY:band.driftY??3,
+        speed:band.speed??.22,
+        phase:band.phase??index*.83
+      })),
+      wisps:[],
+      minY:Math.min(...polygon.map(p=>p.y)),
+      maxY:Math.max(...polygon.map(p=>p.y))
     };
     this.zones.set(zone.id,zone);
-    if(this.webgl)this.createZoneShader(zone);
-    this.lastRenderTime=-Infinity;
+    this.buildZoneWisps(zone);
 
     return {
       id:zone.id,
-      destroy:()=>{
-        this.destroyZoneShader(zone);
-        this.zones.delete(zone.id);
-        this.lastRenderTime=-Infinity;
-      },
-      setEnabled:(value)=>{
-        zone.enabled=!!value;
-        zone.shader?.setVisible?.(zone.enabled);
-        this.lastRenderTime=-Infinity;
-      },
-      setOpacity:(value)=>{zone.opacity=clamp01(value);this.lastRenderTime=-Infinity;},
-      setDensity:(value)=>{zone.density=clamp01(value);this.lastRenderTime=-Infinity;}
+      destroy:()=>{this.destroyZone(zone);this.zones.delete(zone.id);},
+      setEnabled:(value)=>{zone.enabled=!!value;for(const w of zone.wisps)w.sprite.setVisible(zone.enabled);},
+      setOpacity:(value)=>{zone.opacity=clamp01(value);},
+      setDensity:(value)=>{zone.density=clamp01(value);}
     };
   }
 
@@ -365,228 +220,186 @@ export class WorldFogSystem{
     return zone.schedule==='always'?1:0;
   }
 
-  worldToScreen(x,y){
-    const camera=this.scene.cameras.main;
-    const zoom=camera.zoom||1;
-    return {
-      x:(x-camera.worldView.x)*zoom+(camera.x||0),
-      y:(y-camera.worldView.y)*zoom+(camera.y||0),
-      zoom
-    };
+  logicalOffsetFromScreen(dx,dy){
+    const tileWidth=this.scene?.aetherTerritory?.config?.tileWidth??96;
+    const tileHeight=this.scene?.aetherTerritory?.config?.tileHeight??48;
+    return {du:dx/tileWidth+dy/tileHeight,dv:dy/tileHeight-dx/tileWidth};
   }
 
-  createZoneShader(zone){
-    if(!this.webgl||this.destroyed)return;
-    const {width,height}=this.viewportSize();
-    const shaderName=`aether-volumetric-fog-${zone.id}`;
-    zone.baseShader=new Phaser.Display.BaseShader(
-      shaderName,
-      VOLUMETRIC_FOG_FRAGMENT_SHADER,
-      null,
-      shaderUniforms()
-    );
-    zone.shader=this.scene.add.shader(zone.baseShader,width*.5,height*.5,width,height)
-      .setScrollFactor(0)
-      .setDepth(this.depth)
-      .setVisible(zone.enabled);
-    zone.shader.setName?.(`worldFogShader:${zone.id}`);
-
-    zone.maskGraphics=this.scene.make.graphics({x:0,y:0,add:false});
-    zone.maskGraphics.setScrollFactor?.(0);
-    zone.mask=zone.maskGraphics.createGeometryMask();
-    zone.shader.setMask(zone.mask);
-    this.updateZoneShader(zone);
+  depthForWisp(wisp,x,y){
+    if(Number.isFinite(wisp.baseU)&&Number.isFinite(wisp.baseV)&&this.scene?.depthAt){
+      const offset=this.logicalOffsetFromScreen(x-wisp.bandX,y-wisp.bandY);
+      return this.scene.depthAt(wisp.baseU+offset.du,wisp.baseV+offset.dv,wisp.depthOffset);
+    }
+    // Fallback raro durante bootstrap da cena. Continua muito abaixo do HUD.
+    return -20000+y*.5+wisp.depthOffset;
   }
 
-  destroyZoneShader(zone){
-    zone.shader?.clearMask?.(false);
-    zone.mask?.destroy?.();
-    zone.maskGraphics?.destroy?.();
-    zone.shader?.destroy?.();
-    zone.shader=null;
-    zone.baseShader=null;
-    zone.mask=null;
-    zone.maskGraphics=null;
-  }
+  buildZoneWisps(zone){
+    zone.bands.forEach((band,bandIndex)=>{
+      const rnd=seededRandom(79000+bandIndex*977+zone.id.length*31);
+      const layers=[
+        ['background',2],
+        ['mid',band.type==='pocket'?2:3],
+        ['foreground',(bandIndex%2===0)?1:0]
+      ];
+      for(const [layer,count] of layers){
+        const profile=layerProfile(layer);
+        for(let i=0;i<count;i++){
+          const localX=(rnd()-.5)*band.width*.58;
+          const localY=(rnd()-.5)*Math.max(12,band.height*.34)+(layer==='foreground'?6:0);
+          const textureKey=this.textureKeys[Math.floor(rnd()*this.textureKeys.length)%this.textureKeys.length];
+          const sprite=this.scene.add.image(band.x+localX,band.y+localY,textureKey)
+            .setOrigin(.5)
+            .setBlendMode(Phaser.BlendModes.NORMAL)
+            .setTint(zone.color)
+            .setAlpha(0)
+            .setVisible(zone.enabled);
 
-  refreshZoneMask(zone){
-    const graphics=zone.maskGraphics;
-    if(!graphics)return;
-    const screenPolygon=zone.polygon.map(point=>this.worldToScreen(point.x,point.y));
-    graphics.clear();
-    graphics.fillStyle(0xffffff,1);
-    graphics.beginPath();
-    screenPolygon.forEach((point,index)=>{
-      if(index===0)graphics.moveTo(point.x,point.y);
-      else graphics.lineTo(point.x,point.y);
+          const displayWidth=Math.max(72,band.width*profile.width*(.78+rnd()*.48));
+          const displayHeight=Math.max(18,band.height*profile.height*(.78+rnd()*.46));
+          sprite.setDisplaySize(displayWidth,displayHeight);
+          const baseScaleX=sprite.scaleX,baseScaleY=sprite.scaleY;
+          const logical=this.logicalOffsetFromScreen(localX,localY);
+          const wisp={
+            sprite,layer,
+            bandX:band.x,bandY:band.y,
+            baseX:band.x+localX,baseY:band.y+localY,
+            baseU:Number.isFinite(band.u)?band.u+logical.du:null,
+            baseV:Number.isFinite(band.v)?band.v+logical.dv:null,
+            baseScaleX,baseScaleY,
+            baseRotation:(band.rotation??0)+(rnd()-.5)*.08,
+            baseAlpha:profile.alpha*band.opacity,
+            depthOffset:profile.depthOffset,
+            driftX:band.driftX*profile.drift*(.62+rnd()*.68),
+            driftY:Math.max(2,band.driftY*profile.drift*(.70+rnd()*.65)),
+            speed:band.speed*(.70+rnd()*.62),
+            phase:band.phase+rnd()*Math.PI*2,
+            deformationPhase:rnd()*Math.PI*2,
+            formationSpeed:(.075+rnd()*.075)*profile.formation,
+            tint:band.color??zone.color
+          };
+          sprite.setRotation(wisp.baseRotation);
+          sprite.setDepth(this.depthForWisp(wisp,sprite.x,sprite.y));
+          sprite.setData?.('worldFogWisp',{zone:zone.id,layer,band:bandIndex,round:'79.28'});
+          zone.wisps.push(wisp);
+        }
+      }
     });
-    graphics.closePath();
-    graphics.fillPath();
   }
 
-  updateLightUniforms(shader){
-    const lighting=this.scene.worldLighting;
-    const lights=[];
-    if(lighting?.lights){
-      for(const light of lighting.lights.values()){
-        const intensity=lighting.lightIntensity?.(light)??0;
-        if(intensity<=.001)continue;
-        const world=lighting.resolveWorldPosition?.(light);
-        if(!world)continue;
-        const screen=this.worldToScreen(world.x,world.y);
-        const radius=Math.max(light.groundRadiusX??96,light.groundRadiusY??56,light.coreRadius??28)*(screen.zoom||1)*1.20;
-        lights.push({
-          x:screen.x,
-          y:screen.y,
-          radius,
-          intensity:clamp01(intensity*(light.strength??1)),
-          color:normalizedColor(light.warmColor??0xffc56f)
-        });
-        if(lights.length>=MAX_SHADER_LIGHTS)break;
-      }
-    }
-
-    for(let i=0;i<MAX_SHADER_LIGHTS;i++){
-      const light=lights[i];
-      if(light){
-        assignVec4(shader.uniforms[`uLight${i}`],light.x,light.y,light.radius,light.intensity);
-        assignVec3(shader.uniforms[`uLightColor${i}`],light.color.x,light.color.y,light.color.z);
-      }else{
-        assignVec4(shader.uniforms[`uLight${i}`],0,0,1,0);
-        assignVec3(shader.uniforms[`uLightColor${i}`],1,1,1);
-      }
-    }
-  }
-
-  updateZoneShader(zone){
-    const shader=zone.shader;
-    if(!shader)return;
-    this.refreshZoneMask(zone);
-
-    const camera=this.scene.cameras.main;
-    const intensity=this.zoneIntensity(zone);
-    const fogColor=normalizedColor(zone.color);
-    shader.setVisible?.(zone.enabled&&intensity>.001);
-    if(intensity<=.001)return;
-
-    shader.uniforms.uFogTime.value=this.elapsedMs/1000;
-    assignVec2(shader.uniforms.uCamera,camera.worldView.x,camera.worldView.y);
-    shader.uniforms.uZoom.value=camera.zoom||1;
-    shader.uniforms.uDensity.value=clamp01(zone.density*zone.opacity*intensity);
-    shader.uniforms.uCoverage.value=zone.coverage;
-    assignVec3(shader.uniforms.uFogColor,fogColor.x,fogColor.y,fogColor.z);
-
-    const weights=[0,0,0,0,0,0,0];
-    const rotations=[0,0,0,0,0,0,0];
-    for(let i=0;i<MAX_SHADER_BANDS;i++){
-      const band=zone.bands[i];
-      if(!band){
-        assignVec4(shader.uniforms[`uBand${i}`],0,0,1,1);
+  updateAtmosphereTint(zone,intensity){
+    if(!zone.atmosphereTintStrength||!zone.atmosphereTargets?.length)return;
+    const span=Math.max(1,zone.maxY-zone.minY);
+    for(const entry of zone.atmosphereTargets){
+      const sprite=entry.sprite;
+      if(!sprite?.active||!sprite.setTint)continue;
+      // Em isometria desta área, menor Y de tela corresponde visualmente às
+      // massas mais distantes. O efeito é propositalmente muito sutil: ele só
+      // reduz um pouco a saturação/contraste do fundo, sem "lavar" a arte.
+      const nearFactor=clamp01((sprite.y-zone.minY)/span);
+      const farFactor=1-nearFactor;
+      const strength=zone.atmosphereTintStrength*intensity*farFactor;
+      if(strength<=.002){
+        if(entry.originalTint===0xffffff)sprite.clearTint?.();
+        else sprite.setTint(entry.originalTint);
         continue;
       }
-      const wave=this.elapsedMs/1000*band.speed+band.phase;
-      const worldX=band.x+Math.sin(wave)*band.driftX;
-      const worldY=band.y+Math.cos(wave*.73)*band.driftY;
-      const screen=this.worldToScreen(worldX,worldY);
-      const zoom=screen.zoom||1;
-      // Centro levemente abaixo do ponto de chão + pouca altura = height fog.
-      assignVec4(
-        shader.uniforms[`uBand${i}`],
-        screen.x,
-        screen.y+zone.groundOffsetY*zoom,
-        Math.max(2,band.width*.5*zoom),
-        Math.max(2,band.height*.5*zoom*zone.heightScale)
-      );
-      weights[i]=band.opacity;
-      rotations[i]=band.rotation;
+      sprite.setTint(mixColor(entry.originalTint,zone.color,strength));
     }
-    assignVec4(shader.uniforms.uBandWeightsA,weights[0],weights[1],weights[2],weights[3]);
-    assignVec4(shader.uniforms.uBandWeightsB,weights[4],weights[5],weights[6],0);
-    assignVec4(shader.uniforms.uBandRotA,rotations[0],rotations[1],rotations[2],rotations[3]);
-    assignVec4(shader.uniforms.uBandRotB,rotations[4],rotations[5],rotations[6],0);
-    this.updateLightUniforms(shader);
   }
 
-  update(time,delta=16.67){
+  strongestLightAt(x,y){
+    const lighting=this.scene.worldLighting;
+    if(!lighting?.lights)return null;
+    let strongest=null;
+    for(const light of lighting.lights.values()){
+      const intensity=lighting.lightIntensity?.(light)??0;
+      if(intensity<=.001)continue;
+      const p=lighting.resolveWorldPosition?.(light);
+      if(!p)continue;
+      const rx=Math.max(20,light.groundRadiusX??96),ry=Math.max(16,light.groundRadiusY??56);
+      const dx=(x-(p.x+(light.groundOffsetX??0)))/rx;
+      const dy=(y-(p.y+(light.groundOffsetY??0)))/ry;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d>=1)continue;
+      const influence=smooth01(1-d)*intensity*(light.strength??1);
+      if(!strongest||influence>strongest.influence)strongest={influence,color:light.warmColor??0xffc56f};
+    }
+    return strongest;
+  }
+
+  update(_time,delta=16.67){
     if(this.destroyed)return;
     this.elapsedMs+=Math.min(64,Math.max(0,Number.isFinite(delta)?delta:16.67));
-
-    if(this.webgl){
-      // Shader e máscara acompanham a câmera a cada frame para não "deslizarem".
-      for(const zone of this.zones.values())this.updateZoneShader(zone);
-      this.lastClockRevision=worldClock.revision;
-      return;
-    }
-
-    if(worldClock.revision!==this.lastClockRevision){
-      this.lastClockRevision=worldClock.revision;
-      this.lastRenderTime=-Infinity;
-    }
-    if(time-this.lastRenderTime<this.frameInterval)return;
-    this.renderFallback(time,false);
-  }
-
-  renderFallback(time=0,force=false){
-    if(this.webgl||this.destroyed||!this.ctx||!this.texture)return;
-    if(!force&&time-this.lastRenderTime<this.frameInterval)return;
-    this.lastRenderTime=time;
-
-    const ctx=this.ctx;
-    const canvas=this.texture.getSourceImage?.()??this.texture.canvas;
-    const width=canvas?.width??Math.ceil(this.viewportSize().width*this.renderScale);
-    const height=canvas?.height??Math.ceil(this.viewportSize().height*this.renderScale);
-    ctx.globalCompositeOperation='source-over';
-    ctx.clearRect(0,0,width,height);
-
-    const scale=this.renderScale;
     const seconds=this.elapsedMs/1000;
+
     for(const zone of this.zones.values()){
       const intensity=this.zoneIntensity(zone);
-      if(intensity<=.001)continue;
+      this.updateAtmosphereTint(zone,intensity);
+      for(const wisp of zone.wisps){
+        const sprite=wisp.sprite;
+        if(!sprite?.active)continue;
+        if(!zone.enabled||intensity<=.001){sprite.setVisible(false);continue;}
+        sprite.setVisible(true);
 
-      const screenPolygon=zone.polygon.map(point=>this.worldToScreen(point.x,point.y));
-      ctx.save();
-      ctx.beginPath();
-      screenPolygon.forEach((point,index)=>{
-        const x=point.x*scale,y=point.y*scale;
-        if(index===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      });
-      ctx.closePath();
-      ctx.clip();
+        const t=seconds*wisp.speed+wisp.phase;
+        const curl=Math.sin(t*.47+wisp.deformationPhase);
+        const x=wisp.baseX+
+          Math.sin(t)*wisp.driftX+
+          Math.sin(t*.39+wisp.deformationPhase)*wisp.driftX*.32;
+        const y=wisp.baseY+
+          Math.cos(t*.71)*wisp.driftY+
+          Math.sin(t*.23+wisp.deformationPhase)*3.2;
+        sprite.setPosition(x,y);
 
-      for(const band of zone.bands){
-        const wave=seconds*band.speed+band.phase;
-        const worldX=band.x+Math.sin(wave)*band.driftX;
-        const worldY=band.y+Math.cos(wave*.73)*band.driftY;
-        const screen=this.worldToScreen(worldX,worldY);
-        const zoom=screen.zoom||1;
-        const alpha=clamp01(band.opacity*zone.opacity*zone.density*intensity);
-        drawFallbackBand(ctx,{
-          cx:screen.x*scale,
-          cy:(screen.y+zone.groundOffsetY*zoom)*scale,
-          rx:band.width*.5*zoom*scale,
-          ry:band.height*.5*zoom*scale,
-          rotation:band.rotation,
-          color:band.color??zone.color,
-          alpha,
-          phase:band.phase,
-          timeSeconds:seconds
-        });
+        // Lenta compressão/expansão cria a impressão de massa respirando.
+        const deformX=1+Math.sin(t*.31+wisp.deformationPhase)*.075;
+        const deformY=1+Math.cos(t*.43+wisp.deformationPhase)*.11;
+        sprite.setScale(wisp.baseScaleX*deformX,wisp.baseScaleY*deformY);
+        sprite.setRotation(wisp.baseRotation+curl*.035);
+
+        // Nascimento/dissipação contínuos: nenhum volume fica eternamente igual.
+        const cycle=.5+.5*Math.sin(seconds*wisp.formationSpeed+wisp.phase*1.73);
+        const formation=.18+.82*smooth01(cycle);
+        let alpha=wisp.baseAlpha*zone.opacity*zone.density*2.55*intensity*formation;
+
+        // Alguns fios de primeiro plano devem ser raros, nunca uma cortina.
+        if(wisp.layer==='foreground')alpha*=.72;
+
+        const light=this.strongestLightAt(x,y);
+        if(light){
+          const tintMix=Math.min(.18,light.influence*.18);
+          sprite.setTint(mixColor(wisp.tint,light.color,tintMix));
+          alpha*=1+Math.min(.08,light.influence*.08);
+        }else sprite.setTint(wisp.tint);
+
+        sprite.setAlpha(clamp01(Math.min(alpha,wisp.layer==='mid'?.17:wisp.layer==='background'?.12:.075)));
+        sprite.setDepth(this.depthForWisp(wisp,x,y));
       }
-      ctx.restore();
     }
-    this.texture.refresh();
+  }
+
+  destroyZone(zone){
+    for(const entry of zone?.atmosphereTargets??[]){
+      const sprite=entry.sprite;
+      if(!sprite?.active||!sprite.setTint)continue;
+      if(entry.originalTint===0xffffff)sprite.clearTint?.();
+      else sprite.setTint(entry.originalTint);
+    }
+    for(const wisp of zone?.wisps??[])wisp.sprite?.destroy?.();
+    if(zone?.wisps)zone.wisps.length=0;
   }
 
   destroy(){
     if(this.destroyed)return;
     this.destroyed=true;
-    for(const zone of this.zones.values())this.destroyZoneShader(zone);
+    for(const zone of this.zones.values())this.destroyZone(zone);
     this.zones.clear();
-    this.surface?.destroy?.();
-    this.surface=null;
-    this.ctx=null;
-    this.texture=null;
-    if(this.scene?.textures?.exists?.(this.textureKey))this.scene.textures.remove(this.textureKey);
+    // Texturas pertencem a este sistema e podem ser reconstruídas no restart.
+    for(const key of this.textureKeys){
+      if(this.scene?.textures?.exists?.(key))this.scene.textures.remove(key);
+    }
+    this.textureKeys.length=0;
   }
 }
