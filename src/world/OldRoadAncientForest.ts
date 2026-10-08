@@ -68,7 +68,15 @@ export const OLD_ROAD_ANCIENT_FOREST_ASSETS=Object.freeze({
   under03:asset('ancient_forest_underbrush_03','ancient_underbrush_03.png','ground'),
   wall01:asset('ancient_forest_thorn_wall_01','ancient_thorn_wall_01.png','structure'),
   wall02:asset('ancient_forest_thorn_wall_02','ancient_thorn_wall_02.png','structure'),
-  wall03:asset('ancient_forest_thorn_wall_03','ancient_thorn_wall_03.png','structure')
+  wall03:asset('ancient_forest_thorn_wall_03','ancient_thorn_wall_03.png','structure'),
+  hauntedTreeCursed01:asset('ancient_forest_haunted_tree_cursed_01','haunted_tree_cursed_01.png','tree'),
+  hauntedTreeDeadTwisted01:asset('ancient_forest_haunted_tree_dead_twisted_01','haunted_tree_dead_twisted_01.png','tree'),
+  hauntedTreeAncient01:asset('ancient_forest_haunted_tree_ancient_01','haunted_tree_ancient_01.png','tree'),
+  hauntedTreeTwisted01:asset('ancient_forest_haunted_tree_twisted_01','haunted_tree_twisted_01.png','tree'),
+  hauntedRootsSprawl01:asset('ancient_forest_haunted_roots_sprawl_01','haunted_roots_sprawl_01.png','structure'),
+  hauntedDecayGround01:asset('ancient_forest_haunted_decay_ground_01','haunted_decay_ground_01.png','ground'),
+  hauntedWebCanopy01:asset('ancient_forest_haunted_web_canopy_01','haunted_web_canopy_01.png','structure'),
+  hauntedWebCanopy02:asset('ancient_forest_haunted_web_canopy_02','haunted_web_canopy_02.png','structure')
 });
 
 // Linha direita/inferior EXATA recuperada da marcação do usuário.
@@ -233,7 +241,9 @@ const SCENIC_VISTA_TRAIL_SEGMENTS=Object.freeze([
   ['old_road_b4d_straight_short_03',1.42,76.08,.235,-.76,.92,0x9ea08f],
   ['old_road_b4d_straight_short_05',0.28,74.28,.218,-.74,.86,0x979989],
   ['old_road_b4d_straight_short_02',-0.96,72.26,.198,-.72,.78,0x8f9287],
-  ['old_road_b4d_straight_short_04',-2.06,70.46,.178,-.69,.68,0x888b82]
+  ['old_road_b4d_straight_short_04',-2.06,70.46,.178,-.69,.68,0x888b82],
+  ['old_road_b4d_straight_short_01',-3.18,68.78,.166,-.66,.58,0x7d8077],
+  ['old_road_b4d_straight_short_03',-4.18,67.18,.148,-.64,.44,0x73776d]
 ]);
 
 const SCENIC_VISTA_TREES=Object.freeze([
@@ -270,6 +280,31 @@ const SCENIC_VISTA_SHADOWS=Object.freeze([
   ['dense',-1.12,72.42,420,240,-.20,.34],
   ['broad',0.42,70.84,500,260,-.16,.28],
   ['soft',1.58,68.96,340,190,-.10,.18]
+]);
+
+// v0.3.1 Round 1 — assets visuais dedicados para aproximar a vista da
+// floresta da referência aprovada: árvores retorcidas, teias antigas e chão
+// decadente preenchendo o vazio preto sem expandir a área jogável.
+const SCENIC_VISTA_HAUNTED_GROUND=Object.freeze([
+  ['hauntedDecayGround01',-1.84,72.56,.56,false,-.06,0x6d7065,.78],
+  ['hauntedDecayGround01',-0.26,74.24,.60,true,.04,0x726d64,.84],
+  ['hauntedDecayGround01',1.56,72.34,.50,false,-.02,0x66695f,.74]
+]);
+
+const SCENIC_VISTA_HAUNTED_STRUCTURES=Object.freeze([
+  ['hauntedRootsSprawl01',-1.18,72.22,.66,false,0x6b7369,.84,.04],
+  ['hauntedRootsSprawl01',1.74,72.82,.54,true,0x657066,.78,.03],
+  ['hauntedWebCanopy01',-1.54,70.74,.72,false,0xc2c7c7,.48,.05],
+  ['hauntedWebCanopy02',0.82,71.18,.68,true,0xc6cbcb,.44,.05],
+  ['hauntedWebCanopy01',2.38,70.92,.54,true,0xb9c1c1,.34,.04]
+]);
+
+const SCENIC_VISTA_HAUNTED_TREES=Object.freeze([
+  ['hauntedTreeCursed01',-2.46,69.24,.84,false,0x7d8987,.92,.07],
+  ['hauntedTreeTwisted01',-1.18,70.58,.82,true,0x879190,.90,.07],
+  ['hauntedTreeAncient01',0.12,71.92,.80,false,0x78827f,.88,.07],
+  ['hauntedTreeDeadTwisted01',1.74,71.06,.78,true,0x8b9492,.88,.07],
+  ['hauntedTreeTwisted01',2.74,69.94,.70,false,0x6d7773,.80,.07]
 ]);
 
 function ensureForestShadowTexture(scene,key,{width=512,height=320,stops=[[0,.52],[.28,.34],[.58,.16],[1,0]]}={}){
@@ -540,6 +575,18 @@ export class OldRoadAncientForest{
       this.addScenicGround(name,u,v,scale,flipX,rotation,{tint,alpha,layer:-70.44});
     });
 
+    SCENIC_VISTA_HAUNTED_GROUND.forEach(([name,u,v,scale,flipX,rotation,tint,alpha])=>{
+      this.addScenicGround(name,u,v,scale,flipX,rotation,{tint,alpha,layer:-70.46});
+    });
+
+    SCENIC_VISTA_HAUNTED_STRUCTURES.forEach(([name,u,v,scale,flipX,tint,alpha,depthOffset])=>{
+      this.addScenicVertical(name,u,v,scale,flipX,{tint,alpha,depthOffset});
+    });
+
+    SCENIC_VISTA_HAUNTED_TREES.forEach(([name,u,v,scale,flipX,tint,alpha,depthOffset])=>{
+      this.addScenicVertical(name,u,v,scale,flipX,{tint,alpha,depthOffset});
+    });
+
     const shadowTextureByType={
       soft:'old-road-forest-shadow-soft',
       broad:'old-road-forest-shadow-broad',
@@ -688,13 +735,14 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.30',
+      version:'v0.3.1-round1',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
       assetBases:{trees:TREE_BASES.length,structures:STRUCTURE_BASES.length,ground:GROUND_BASES.length},
       atmosphereAccents:{trees:ATMOSPHERE_TREE_ACCENTS.length,structures:ATMOSPHERE_STRUCTURE_ACCENTS.length,ground:ATMOSPHERE_GROUND_ACCENTS.length},
-      scenicVista:{backfills:SCENIC_VISTA_BACKFILLS.length,trailSegments:SCENIC_VISTA_TRAIL_SEGMENTS.length,trees:SCENIC_VISTA_TREES.length,structures:SCENIC_VISTA_STRUCTURES.length,ground:SCENIC_VISTA_GROUND.length,shadowPatches:SCENIC_VISTA_SHADOWS.length,nonPlayable:true,worldBoundsExpanded:false},
+      scenicVista:{backfills:SCENIC_VISTA_BACKFILLS.length,trailSegments:SCENIC_VISTA_TRAIL_SEGMENTS.length,trees:SCENIC_VISTA_TREES.length+SCENIC_VISTA_HAUNTED_TREES.length,structures:SCENIC_VISTA_STRUCTURES.length+SCENIC_VISTA_HAUNTED_STRUCTURES.length,ground:SCENIC_VISTA_GROUND.length+SCENIC_VISTA_HAUNTED_GROUND.length,shadowPatches:SCENIC_VISTA_SHADOWS.length,nonPlayable:true,worldBoundsExpanded:false},
+      hauntedVistaAssets:{trees:SCENIC_VISTA_HAUNTED_TREES.length,structures:SCENIC_VISTA_HAUNTED_STRUCTURES.length,ground:SCENIC_VISTA_HAUNTED_GROUND.length},
       localShadowPatches:FOREST_SHADOW_PATCHES.length,
       lowFogBands:FOREST_FOG_BANDS.length,
       fogSystem:'WorldFogSystem',
