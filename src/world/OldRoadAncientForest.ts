@@ -342,7 +342,7 @@ export class OldRoadAncientForest{
       .setDepth(depth??this.territory.groundDepth(-70.38));
     if(blendMode!=null)sprite.setBlendMode(blendMode);
     sprite.setData('oldRoadAncientForest',{
-      stage:'v0.3.1-round8-start-vista',
+      stage:'v0.3.1-round9-start-vista',
       visualOnly:true,
       nonPlayable:true,
       ...meta
@@ -365,27 +365,26 @@ export class OldRoadAncientForest{
     const baseDepth=this.territory.groundDepth(-70.42);
     const anchor=lantern??sign;
 
-    // v0.3.1-round8 — a vista inicial continua usando uma ilustração
-    // grande, mas agora com recorte/alpha orgânico no lado direito para que a
-    // floresta sinistra cubra a faixa marcada pelo usuário sem repetir o mapa
-    // original. Continua sendo visual apenas: não expande bounds nem cria
-    // colisão.
-    const backdrop=this.addVistaSprite('ancient_forest_vista_start_backdrop_02',anchor.x-710,anchor.y-420,{
+    // v0.3.1-round9 — usa a arte completa da floresta sinistra, ampliada
+    // e deslocada para a direita, para que a imagem realmente entre no mapa e
+    // cubra a faixa preta/repetida até a linha de encontro com a estrada atual.
+    // Continua sendo visual apenas: não expande bounds nem cria colisão.
+    const backdrop=this.addVistaSprite('ancient_forest_vista_start_backdrop_01',anchor.x-540,anchor.y-470,{
       originX:0,
       originY:0,
-      scale:.60,
+      scale:.72,
       alpha:1,
       depth:baseDepth,
-      visibleRadius:56,
-      activeRadius:64,
+      visibleRadius:60,
+      activeRadius:68,
       meta:{
         role:'start-vista-backdrop',
-        integration:'single-large-image-soft-blend',
+        integration:'single-large-image-expanded-right',
         visualOnly:true,
         anchoredTo:lantern?'start-sign-lantern':'start-sign',
-        offsetX:-710,
-        offsetY:-420,
-        scale:.60
+        offsetX:-540,
+        offsetY:-470,
+        scale:.72
       }
     });
 
