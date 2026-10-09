@@ -1,15 +1,17 @@
 // @ts-nocheck
 
 /**
- * v0.3.1 Round 14 — ETAPA 2
+ * v0.3.1 Round 15 — ETAPA 2 REFEITA
  *
- * A geometria aprovada no Round 13 permanece CONGELADA.
- * Esta etapa troca apenas o preenchimento provisório de validação por uma
- * base visual de floresta sinistra: solo frio/escuro, manchas orgânicas e
- * cobertura baixa usando SOMENTE assets de chão já existentes.
+ * Geometria aprovada no Round 13 permanece CONGELADA.
+ * Esta revisão troca o preenchimento provisório por uma base de chão de
+ * floresta sinistra construída com os assets de solo gerados para o projeto.
  *
- * Não cria árvores, troncos grandes, teias, estrada, colisão, interação ou
- * expansão de bounds. Nenhuma geometria aprovada é alterada.
+ * Regras desta etapa:
+ * - NÃO alterar a geometria aprovada.
+ * - NÃO expandir bounds jogáveis.
+ * - NÃO adicionar árvores altas, troncos grandes, teias ou colisões.
+ * - USAR somente a base de solo e decals de chão.
  */
 
 export const OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE=Object.freeze({
@@ -35,16 +37,62 @@ export const OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BOTTOM_WEDGE=Object.freeze
   {u:0.000,v:100.000}
 ]);
 
-const BASE_SOIL_COLOR=0x1f2b27;
-const BASE_SOIL_SECONDARY=0x2b3128;
-const BASE_SOIL_SHADOW=0x141d1b;
-const LEAF_COLOR_A=0x4a3a2c;
-const LEAF_COLOR_B=0x5a4630;
-const FLOOR_KEYS=Object.freeze([
-  'ancient_forest_floor_02',
-  'ancient_forest_floor_03',
-  'ancient_forest_floor_06',
-  'ancient_forest_floor_01'
+const BASE_SOIL_COLOR=0x202823;
+const BASE_SOIL_SECONDARY=0x2a332d;
+const BASE_SOIL_SHADOW=0x141a17;
+
+const SURFACE_KEYS=Object.freeze([
+  'sinister_ground_surface_dark_01',
+  'sinister_ground_surface_wet_01'
+]);
+
+const DECAL_KEYS=Object.freeze({
+  swamp:'sinister_ground_patch_swamp_01',
+  debris:'sinister_ground_debris_01',
+  leafPile:'sinister_ground_leaf_pile_01'
+});
+
+const SWAMP_PATCHES=Object.freeze([
+  [-48.2,55.4,.20,.34,-.10,false],
+  [-39.6,61.1,.18,.36,.08,true],
+  [-29.4,66.6,.22,.34,-.04,false],
+  [-18.7,71.8,.19,.33,.14,true],
+  [-10.1,76.3,.17,.35,-.08,false],
+  [-44.3,82.2,.21,.30,.10,true],
+  [-33.8,87.4,.18,.32,-.12,false],
+  [-22.0,92.6,.20,.31,.06,true],
+  [-11.2,96.4,.17,.30,-.10,false],
+  [2.6,88.8,.18,.28,.10,true]
+]);
+
+const DEBRIS_PATCHES=Object.freeze([
+  [-52.0,52.8,.13,.32,-.18,false],
+  [-45.0,58.8,.15,.28,.10,true],
+  [-35.2,63.2,.14,.30,-.06,false],
+  [-25.6,68.2,.13,.28,.12,true],
+  [-16.6,73.0,.15,.27,-.14,false],
+  [-7.8,77.2,.12,.30,.06,true],
+  [-48.6,80.8,.14,.27,-.10,false],
+  [-39.4,85.0,.13,.27,.14,true],
+  [-29.1,89.5,.15,.28,-.08,false],
+  [-18.5,94.0,.13,.27,.11,true],
+  [-9.0,98.0,.12,.25,-.12,false],
+  [3.8,86.0,.14,.24,.05,true]
+]);
+
+const LEAF_PILES=Object.freeze([
+  [-49.8,56.8,.11,.34,.06,false],
+  [-42.4,60.0,.10,.36,-.09,true],
+  [-32.8,65.4,.12,.35,.04,false],
+  [-22.7,70.6,.11,.34,.10,true],
+  [-13.6,75.7,.10,.33,-.07,false],
+  [-5.1,79.0,.12,.34,.08,true],
+  [-46.2,84.0,.11,.32,-.04,false],
+  [-35.6,88.6,.10,.33,.07,true],
+  [-25.0,93.1,.11,.31,-.09,false],
+  [-13.1,97.2,.10,.30,.05,true],
+  [1.3,84.8,.10,.28,-.03,false],
+  [4.9,90.6,.11,.26,.08,true]
 ]);
 
 const rectanglePoints=b=>[
@@ -70,6 +118,17 @@ const mulberry32=seed=>()=>{
   t=t+Math.imul(t^t>>>7,61|t)^t;
   return ((t^t>>>14)>>>0)/4294967296;
 };
+
+function worldBoundsFromPolygons(polygons=[]){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const poly of polygons)for(const p of poly){
+    if(p.x<minX)minX=p.x;
+    if(p.y<minY)minY=p.y;
+    if(p.x>maxX)maxX=p.x;
+    if(p.y>maxY)maxY=p.y;
+  }
+  return {minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY};
+}
 
 export class OldRoadAncientForestVisualExtension{
   constructor(territory){
@@ -118,31 +177,65 @@ export class OldRoadAncientForestVisualExtension{
     return mask;
   }
 
-  buildFloorTextureLayer(mask){
+  addGroundDecal(container,key,u,v,{scale=.2,alpha=.3,rotation=0,flipX=false,flipY=false,originX=.5,originY=.5,tint=null}={}){
+    if(!this.isInsideApprovedCoverage(u,v)||!this.scene.textures.exists(key))return null;
+    const p=this.territory.project(u,v);
+    const sprite=this.scene.add.image(p.x,p.y,key)
+      .setOrigin(originX,originY)
+      .setScale(scale)
+      .setAlpha(alpha)
+      .setRotation(rotation)
+      .setFlipX(flipX)
+      .setFlipY(flipY);
+    if(tint!=null)sprite.setTint(tint);
+    container.add(sprite);
+    this.floorSprites.push(sprite);
+    return sprite;
+  }
+
+  buildFloorTextureLayer(mask,worldPolygons){
     const depth=this.territory.groundDepth(-89.96);
     const container=this.scene.add.container(0,0).setDepth(depth);
-    const rng=mulberry32(314159);
+    const bounds=worldBoundsFromPolygons(worldPolygons);
+    const pad=160;
+    const x=bounds.minX-pad;
+    const y=bounds.minY-pad;
+    const width=Math.ceil(bounds.width+pad*2);
+    const height=Math.ceil(bounds.height+pad*2);
 
-    // Grade lógica determinística. Como o container recebe a máscara aprovada,
-    // nenhum pixel de textura pode escapar para dentro do mapa jogável.
-    for(let v=50;v<=99;v+=3.6){
-      for(let u=-55;u<=8.4;u+=4.2){
-        const ju=u+(rng()-.5)*1.8;
-        const jv=v+(rng()-.5)*1.5;
-        if(!this.isInsideApprovedCoverage(ju,jv))continue;
-        const key=FLOOR_KEYS[Math.floor(rng()*FLOOR_KEYS.length)%FLOOR_KEYS.length];
-        if(!this.scene.textures.exists(key))continue;
-        const p=this.territory.project(ju,jv);
-        const sprite=this.scene.add.image(p.x,p.y,key)
-          .setOrigin(.5,.72)
-          .setScale(.82+rng()*.34)
-          .setRotation((rng()-.5)*.18)
-          .setFlipX(rng()>.5)
-          .setAlpha(.38+rng()*.20)
-          .setTint(rng()>.45?0x58665b:0x4a584f);
-        container.add(sprite);
-        this.floorSprites.push(sprite);
-      }
+    if(this.scene.textures.exists(SURFACE_KEYS[0])){
+      const baseA=this.scene.add.tileSprite(x,y,width,height,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.72);
+      baseA.tilePositionX=168;
+      baseA.tilePositionY=96;
+      baseA.tileScaleX=.52;
+      baseA.tileScaleY=.52;
+      container.add(baseA);
+      this.floorSprites.push(baseA);
+    }
+
+    if(this.scene.textures.exists(SURFACE_KEYS[1])){
+      const baseB=this.scene.add.tileSprite(x-48,y-36,width+96,height+72,SURFACE_KEYS[1]).setOrigin(0,0).setAlpha(.46);
+      baseB.tilePositionX=392;
+      baseB.tilePositionY=148;
+      baseB.tileScaleX=.50;
+      baseB.tileScaleY=.50;
+      container.add(baseB);
+      this.floorSprites.push(baseB);
+    }
+
+    // Véu tonal para amarrar as duas superfícies e manter leitura sinistra.
+    const veil=this.scene.add.rectangle(bounds.minX+bounds.width/2,bounds.minY+bounds.height/2,width,height,0x17211d,.14);
+    container.add(veil);
+    this.floorSprites.push(veil);
+
+    for(const [u,v,scale,alpha,rotation,flipX] of SWAMP_PATCHES){
+      this.addGroundDecal(container,DECAL_KEYS.swamp,u,v,{scale,alpha,rotation,flipX,originY:.54});
+    }
+    for(const [u,v,scale,alpha,rotation,flipX] of DEBRIS_PATCHES){
+      this.addGroundDecal(container,DECAL_KEYS.debris,u,v,{scale,alpha,rotation,flipX,originY:.54});
+    }
+    for(const [u,v,scale,alpha,rotation,flipX] of LEAF_PILES){
+      this.addGroundDecal(container,DECAL_KEYS.leafPile,u,v,{scale,alpha,rotation,flipX,originY:.56});
     }
 
     container.setMask(mask);
@@ -154,28 +247,17 @@ export class OldRoadAncientForestVisualExtension{
     const details=this.scene.add.graphics();
     details.setDepth(this.territory.groundDepth(-89.95));
 
-    // Manchas maiores de terra fria e sombra para quebrar a uniformidade do
-    // preenchimento sem introduzir props ou volumes altos.
-    for(let i=0;i<150;i++){
+    // Sombras suaves e manchas frias para quebrar repetição do tile sem criar
+    // novos props. Todas continuam 100% dentro da geometria aprovada.
+    for(let i=0;i<40;i++){
       const u=-55+rng()*63;
       const v=49+rng()*51;
       if(!this.isInsideApprovedCoverage(u,v))continue;
       const p=this.territory.project(u,v);
-      const w=45+rng()*105;
-      const h=14+rng()*42;
-      details.fillStyle(rng()>.55?0x27302b:0x3a3027,.10+rng()*.13);
+      const w=120+rng()*220;
+      const h=28+rng()*70;
+      details.fillStyle(rng()>.55?0x1b241f:0x342c24,.08+rng()*.08);
       details.fillEllipse(p.x,p.y,w,h);
-    }
-
-    // Folhas secas muito discretas: detalhe de solo, não decoração/prop.
-    for(let i=0;i<420;i++){
-      const u=-55+rng()*63;
-      const v=49+rng()*51;
-      if(!this.isInsideApprovedCoverage(u,v))continue;
-      const p=this.territory.project(u,v);
-      const radius=1.1+rng()*2.0;
-      details.fillStyle(rng()>.5?LEAF_COLOR_A:LEAF_COLOR_B,.18+rng()*.18);
-      details.fillEllipse(p.x,p.y,radius*2.8,radius*1.25);
     }
 
     details.setMask(mask);
@@ -192,8 +274,8 @@ export class OldRoadAncientForestVisualExtension{
     const wedgeWorld=this.projectPolygon(wedgeLogical);
     const worldPolygons=[baseWorld,leftWorld,wedgeWorld];
 
-    // Camada sólida: mantém 100% da cobertura geométrica aprovada e elimina
-    // qualquer risco de reaparecimento do preto entre texturas transparentes.
+    // Camada sólida: garante cobertura integral e elimina qualquer reaparição
+    // de preto atrás das texturas transparentes.
     const graphics=this.scene.add.graphics();
     graphics.setDepth(this.territory.groundDepth(-90));
     graphics.fillStyle(BASE_SOIL_COLOR,1);
@@ -201,24 +283,24 @@ export class OldRoadAncientForestVisualExtension{
     this.drawWorldPolygon(graphics,leftWorld);
     this.drawWorldPolygon(graphics,wedgeWorld);
 
-    // Sombras/variação tonal ampla, ainda respeitando exatamente a geometria.
+    // Massa tonal ampla por baixo dos assets de solo.
     graphics.fillStyle(BASE_SOIL_SECONDARY,.42);
     const pA=this.territory.project(-29,66);
     const pB=this.territory.project(-31,88);
     graphics.fillEllipse(pA.x,pA.y,1320,420);
     graphics.fillEllipse(pB.x,pB.y,1180,360);
-    graphics.fillStyle(BASE_SOIL_SHADOW,.32);
+    graphics.fillStyle(BASE_SOIL_SHADOW,.30);
     const pC=this.territory.project(-48,74);
-    graphics.fillEllipse(pC.x,pC.y,900,300);
+    graphics.fillEllipse(pC.x,pC.y,920,300);
 
     const mask=this.buildMask(worldPolygons);
     graphics.setMask(mask);
-    this.buildFloorTextureLayer(mask);
+    this.buildFloorTextureLayer(mask,worldPolygons);
     this.buildOrganicGroundDetails(mask);
 
     const data={
-      version:'v0.3.1-round14-step2',
-      purpose:'sinister-forest-ground-base',
+      version:'v0.3.1-round15-step2-ground-assets',
+      purpose:'sinister-forest-ground-with-soil-assets',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -229,12 +311,14 @@ export class OldRoadAncientForestVisualExtension{
         largeLogs:false,
         spiderWebProps:false,
         roadExtension:false,
-        floorTextures:[...FLOOR_KEYS],
+        groundAssets:{
+          surfaces:[...SURFACE_KEYS],
+          decals:[DECAL_KEYS.swamp,DECAL_KEYS.debris,DECAL_KEYS.leafPile]
+        },
         palette:{
-          base:'#1f2b27',
-          secondary:'#2b3128',
-          shadow:'#141d1b',
-          leaves:['#4a3a2c','#5a4630']
+          base:'#202823',
+          secondary:'#2a332d',
+          shadow:'#141a17'
         }
       },
       approvedBase:{
