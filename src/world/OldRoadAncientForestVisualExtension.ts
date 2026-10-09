@@ -1,34 +1,59 @@
 // @ts-nocheck
 
 /**
- * v0.3.1 Round 12 — ETAPA 1
+ * v0.3.1 Round 13 — ETAPA 1B
  *
- * Fundação visual da futura extensão da Floresta Ancestral.
- * Esta etapa deliberadamente NÃO adiciona árvores, estrada, teias, props,
- * colisão, interação ou expansão de bounds. Ela só cobre o vazio preto que
- * aparece fora da borda u=0, entre o início da Estrada Velha e o fim atual da
- * Floresta Ancestral.
+ * Correção EXCLUSIVA da geometria-base visual aprovada no Round 12.
+ * A área já correta foi preservada. Esta versão acrescenta somente a região
+ * preta marcada pelo usuário no print "Captura de tela 2026-10-09 103331.png".
  *
- * Fonte de verdade espacial:
- * - u=0 é a borda lógica real do mapa.
- * - v=79.019 é o início do trecho junto à entrada da Estrada Velha.
- * - v=48.969 é o fim atual da Floresta Ancestral.
+ * Nada desta classe cria colisão, interação, estrada, árvore, prop ou expansão
+ * de bounds. É somente uma camada visual de validação atrás do mapa.
  *
- * A extensão segue para u negativo, portanto fica exclusivamente FORA da área
- * jogável. O valor -56 é somente profundidade de cobertura para garantir que a
- * câmera nunca revele preto à esquerda/atrás neste trecho; ele não muda os
- * limites lógicos/físicos do mapa.
+ * Geometria já aprovada (preservada):
+ *   u = -56..0
+ *   v = 48.969..79.019
+ *
+ * Complemento marcado no print:
+ *  A) continuação à esquerda do mapa, a partir de v=79.019 até v=100;
+ *  B) cunha abaixo do limite v=82, entre u=0 e aproximadamente u=9.24,
+ *     seguindo a marcação vermelha medida no screenshot.
  */
 
-export const OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BOUNDS=Object.freeze({
+export const OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE=Object.freeze({
   minU:-56,
   maxU:0,
   minV:48.969,
   maxV:79.019
 });
 
+export const OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_LEFT_CONTINUATION=Object.freeze({
+  minU:-56,
+  maxU:0,
+  minV:79.019,
+  maxV:100
+});
+
+// A borda interna começa EXATAMENTE no canto lógico do mapa (u=0,v=82).
+// Os demais pontos derivam da marcação vermelha do screenshot. O polígono
+// permanece fora da área jogável: v nunca é menor que 82 quando u>0.
+export const OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BOTTOM_WEDGE=Object.freeze([
+  {u:0.000,v:82.000},
+  {u:9.240,v:82.000},
+  {u:8.688,v:91.832},
+  {u:0.479,v:100.000},
+  {u:0.000,v:100.000}
+]);
+
 const DEBUG_FILL_COLOR=0x31453f;
 const DEBUG_EDGE_COLOR=0x6e9185;
+
+const rectanglePoints=b=>[
+  {u:b.minU,v:b.minV},
+  {u:b.maxU,v:b.minV},
+  {u:b.maxU,v:b.maxV},
+  {u:b.minU,v:b.maxV}
+];
 
 export class OldRoadAncientForestVisualExtension{
   constructor(territory){
@@ -38,61 +63,71 @@ export class OldRoadAncientForestVisualExtension{
     this.build();
   }
 
-  build(){
-    const b=OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BOUNDS;
-
-    // Ordem dos vértices no plano lógico: fim da floresta -> borda do mapa ->
-    // início da estrada -> extensão externa. A projeção real do projeto é usada
-    // diretamente; nenhuma posição é estimada em pixels de screenshot.
-    const logicalPoints=[
-      {u:b.minU,v:b.minV},
-      {u:b.maxU,v:b.minV},
-      {u:b.maxU,v:b.maxV},
-      {u:b.minU,v:b.maxV}
-    ];
+  drawPolygon(graphics,logicalPoints,{outline=true}={}){
     const points=logicalPoints.map(({u,v})=>this.territory.project(u,v));
-
-    const graphics=this.scene.add.graphics();
-    graphics.setDepth(this.territory.groundDepth(-90));
-    graphics.fillStyle(DEBUG_FILL_COLOR,1);
     graphics.beginPath();
     graphics.moveTo(points[0].x,points[0].y);
     for(let i=1;i<points.length;i++)graphics.lineTo(points[i].x,points[i].y);
     graphics.closePath();
     graphics.fillPath();
 
-    // Contorno propositalmente discreto nesta etapa para o usuário conseguir
-    // confirmar visualmente onde a cobertura termina. Será removido quando a
-    // geometria for aprovada e a ambientação real começar.
-    graphics.lineStyle(3,DEBUG_EDGE_COLOR,.8);
-    graphics.beginPath();
-    graphics.moveTo(points[0].x,points[0].y);
-    for(let i=1;i<points.length;i++)graphics.lineTo(points[i].x,points[i].y);
-    graphics.closePath();
-    graphics.strokePath();
+    if(outline){
+      graphics.beginPath();
+      graphics.moveTo(points[0].x,points[0].y);
+      for(let i=1;i<points.length;i++)graphics.lineTo(points[i].x,points[i].y);
+      graphics.closePath();
+      graphics.strokePath();
+    }
+    return points;
+  }
 
-    graphics.setData?.('oldRoadAncientForestVisualExtension',{
-      version:'v0.3.1-round12-step1',
+  build(){
+    const baseLogical=rectanglePoints(OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE);
+    const leftLogical=rectanglePoints(OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_LEFT_CONTINUATION);
+    const wedgeLogical=OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BOTTOM_WEDGE.map(point=>({...point}));
+
+    const graphics=this.scene.add.graphics();
+    graphics.setDepth(this.territory.groundDepth(-90));
+    graphics.fillStyle(DEBUG_FILL_COLOR,1);
+    graphics.lineStyle(3,DEBUG_EDGE_COLOR,.8);
+
+    // 1) Área que o usuário já aprovou — não alterada.
+    const baseWorld=this.drawPolygon(graphics,baseLogical);
+
+    // 2) Área preta adicional marcada em vermelho — lado esquerdo.
+    const leftWorld=this.drawPolygon(graphics,leftLogical);
+
+    // 3) Área preta adicional que contorna o canto inferior do mapa (v=82).
+    const wedgeWorld=this.drawPolygon(graphics,wedgeLogical);
+
+    const data={
+      version:'v0.3.1-round13-step1b',
       purpose:'geometry-validation-only',
       visualOnly:true,
       collision:false,
       expandsPlayableBounds:false,
-      bounds:{...b},
-      logicalPoints:logicalPoints.map(point=>({...point})),
-      worldPoints:points.map(point=>({x:point.x,y:point.y}))
-    });
+      approvedBase:{
+        bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
+        logicalPoints:baseLogical.map(point=>({...point})),
+        worldPoints:baseWorld.map(point=>({x:point.x,y:point.y}))
+      },
+      markedCorrection:{
+        source:'Captura de tela 2026-10-09 103331.png',
+        leftContinuation:{
+          bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_LEFT_CONTINUATION},
+          logicalPoints:leftLogical.map(point=>({...point})),
+          worldPoints:leftWorld.map(point=>({x:point.x,y:point.y}))
+        },
+        bottomWedge:{
+          logicalPoints:wedgeLogical.map(point=>({...point})),
+          worldPoints:wedgeWorld.map(point=>({x:point.x,y:point.y}))
+        }
+      }
+    };
 
+    graphics.setData?.('oldRoadAncientForestVisualExtension',data);
     this.graphics=graphics;
-    this.scene.registry.set('oldRoadAncientForestVisualExtension',{
-      version:'v0.3.1-round12-step1',
-      status:'geometry-validation',
-      visualOnly:true,
-      collision:false,
-      expandsPlayableBounds:false,
-      bounds:{...b},
-      logicalPoints:logicalPoints.map(point=>({...point})),
-      worldPoints:points.map(point=>({x:point.x,y:point.y}))
-    });
+    this.scene.registry.set('oldRoadAncientForestVisualExtension',data);
   }
 
   destroy(){
