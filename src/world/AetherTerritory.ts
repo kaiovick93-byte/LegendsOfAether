@@ -3,6 +3,7 @@ import {OLD_ROAD_B4D_TEXTURES} from './OldRoadVisuals';
 import {OldRoadEscarpment} from './OldRoadEscarpment';
 import {OldRoadProps} from './OldRoadProps';
 import {OldRoadAncientForest} from './OldRoadAncientForest';
+import {OldRoadAncientForestVisualExtension} from './OldRoadAncientForestVisualExtension';
 import {AETHER_FUTURE_NEW_GAME_SPAWN,AETHER_LANDMARKS,AETHER_LOGICAL_BOUNDS,getAetherSector} from './AetherTerritoryLayout';
 import {ensureAetherTerritoryMap} from './AetherTerritoryMap';
 
@@ -204,6 +205,9 @@ export class AetherTerritory{
     // reduzida a grama contínua + protótipo da Estrada Velha + acesso sul.
     this.createGroundMosaic();
     this.createOldRoadPrototype();
+    // v0.3.1 Round 12 / Etapa 1: camada-base visual exclusivamente fora de
+    // u=0. Fica atrás do terreno, sem colisão e sem expandir o mapa jogável.
+    this.oldRoadAncientForestVisualExtension=new OldRoadAncientForestVisualExtension(this);
     this.oldRoadEscarpment=new OldRoadEscarpment(this);
     this.oldRoadProps=new OldRoadProps(this);
     this.oldRoadAncientForest=new OldRoadAncientForest(this);
@@ -422,5 +426,5 @@ export class AetherTerritory{
     return false;
   }
 
-  destroy(){this.oldRoadProps?.destroy?.();this.oldRoadAncientForest?.destroy();this.oldRoadEscarpment?.destroy();this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0}
+  destroy(){this.oldRoadProps?.destroy?.();this.oldRoadAncientForest?.destroy();this.oldRoadAncientForestVisualExtension?.destroy?.();this.oldRoadEscarpment?.destroy();this.groundVariationLayers?.forEach(layer=>layer?.destroy?.());this.groundSurface?.destroy?.();this.groundMask?.destroy?.();this.sectors.destroy();this.objects.length=0}
 }

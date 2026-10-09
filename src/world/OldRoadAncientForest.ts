@@ -68,15 +68,7 @@ export const OLD_ROAD_ANCIENT_FOREST_ASSETS=Object.freeze({
   under03:asset('ancient_forest_underbrush_03','ancient_underbrush_03.png','ground'),
   wall01:asset('ancient_forest_thorn_wall_01','ancient_thorn_wall_01.png','structure'),
   wall02:asset('ancient_forest_thorn_wall_02','ancient_thorn_wall_02.png','structure'),
-  wall03:asset('ancient_forest_thorn_wall_03','ancient_thorn_wall_03.png','structure'),
-  vistaHauntedTree01:asset('ancient_forest_vista_haunted_tree_01','haunted_tree_moss_fungi_01.png','tree'),
-  vistaRoots01:asset('ancient_forest_vista_roots_01','twisted_roots_forest_01.png','structure'),
-  vistaDetritus01:asset('ancient_forest_vista_detritus_01','forest_detritus_roots_leaves_01.png','ground'),
-  vistaWeb01:asset('ancient_forest_vista_web_01','ancient_web_dead_branches_01.png','structure'),
-  vistaStartBackdrop01:asset('ancient_forest_vista_start_backdrop_01','ancient_forest_start_vista_haunted_path_01.png','vista'),
-  vistaStartBackdrop02:asset('ancient_forest_vista_start_backdrop_02','ancient_forest_start_vista_haunted_path_02.png','vista'),
-  vistaStartBackdrop03:asset('ancient_forest_vista_start_backdrop_03','ancient_forest_start_vista_haunted_path_03.png','vista'),
-  vistaStartCoverage01:asset('ancient_forest_vista_start_coverage_01','ancient_forest_start_vista_coverage_panorama_01.png','vista')
+  wall03:asset('ancient_forest_thorn_wall_03','ancient_thorn_wall_03.png','structure')
 });
 
 // Linha direita/inferior EXATA recuperada da marcação do usuário.
@@ -332,113 +324,6 @@ export class OldRoadAncientForest{
     return this.addGround(assetName,u,v,scale,flipX,rotation);
   }
 
-
-  addVistaSprite(textureKey,x,y,{originX=.5,originY=.98,scale=1,flipX=false,rotation=0,alpha=1,depth=null,blendMode=null,visibleRadius=36,activeRadius=42,trackU=.8,trackV=77.4,alwaysActive=false,meta={}}={}){
-    if(!this.scene.textures.exists(textureKey))return null;
-    const sprite=this.scene.add.image(x,y,textureKey)
-      .setOrigin(originX,originY)
-      .setScale(scale)
-      .setFlipX(flipX)
-      .setRotation(rotation)
-      .setAlpha(alpha)
-      .setDepth(depth??this.territory.groundDepth(-70.38));
-    if(blendMode!=null)sprite.setBlendMode(blendMode);
-    sprite.setData('oldRoadAncientForest',{
-      stage:'v0.3.1-round11-start-vista',
-      visualOnly:true,
-      nonPlayable:true,
-      ...meta
-    });
-    // Visual somente: registrar em um ponto lógico controlado, sem criar
-    // colisão nem alterar bounds do mapa.
-    this.territory.track(sprite,trackU,trackV,{visibleRadius,activeRadius,alwaysActive});
-    this.sprites.push(sprite);
-    return sprite;
-  }
-
-  buildStartVista(){
-    const signEntry=this.territory.oldRoadProps?.props?.find?.(prop=>prop.role==='start-sign');
-    if(!signEntry?.sprite)return;
-
-    const sign=signEntry.sprite;
-    const lanternEntry=this.territory.oldRoadProps?.props?.find?.(prop=>prop.role==='start-sign-lantern');
-    const lantern=lanternEntry?.sprite??null;
-
-    const baseDepth=this.territory.groundDepth(-70.42);
-
-    // v0.3.1-round11 — em vez de jogar uma cena completa por cima do mapa,
-    // usa-se uma vista PANORÂMICA COM TRANSPARÊNCIA preparada exatamente para
-    // cobrir apenas as regiões pretas visíveis do início da Estrada Velha até
-    // o fim da Floresta Ancestral. O asset mantém a parte jogável e a floresta
-    // atual transparentes, preenchendo somente a lateral esquerda e o topo/
-    // fundo atrás da mata existente.
-    //
-    // A ancoragem agora é feita por um ponto de junção da trilha dentro do
-    // próprio PNG, alinhado à entrada real da estrada no jogo, evitando mover
-    // a arte “no olho”.
-    const coverScale=.84;
-    const roadJoinWorldX=sign.x-96;
-    const roadJoinWorldY=sign.y+136;
-    const roadJoinImageX=918;
-    const roadJoinImageY=965;
-    const backdropX=roadJoinWorldX-roadJoinImageX*coverScale;
-    const backdropY=roadJoinWorldY-roadJoinImageY*coverScale;
-    const backdrop=this.addVistaSprite('ancient_forest_vista_start_coverage_01',backdropX,backdropY,{
-      originX:0,
-      originY:0,
-      scale:coverScale,
-      alpha:1,
-      depth:baseDepth,
-      visibleRadius:132,
-      activeRadius:138,
-      trackU:8.4,
-      trackV:56.5,
-      alwaysActive:true,
-      meta:{
-        role:'start-vista-backdrop',
-        integration:'measured-panorama-covering-left-strip-and-upper-black-area',
-        visualOnly:true,
-        anchoredTo:'start-sign-road-join',
-        roadJoinWorldX,roadJoinWorldY,
-        roadJoinImageX,roadJoinImageY,
-        scale:coverScale,
-        source:'ancient_forest_start_vista_coverage_panorama_01.png'
-      }
-    });
-
-    // Sombra ampla e baixa para assentar a arte sobre o vazio preto sem criar
-    // um corte duro entre mapa real e panorama sinistro.
-    const shadowTexture=ensureForestShadowTexture(this.scene,'old-road-start-vista-shadow-round11',{
-      width:860,height:420,stops:[[0,.38],[.26,.20],[.60,.09],[1,0]]
-    });
-    this.addVistaSprite(shadowTexture,roadJoinWorldX-310,roadJoinWorldY-18,{
-      originX:.5,originY:.5,scale:1,alpha:.26,depth:baseDepth-.04,
-      blendMode:Phaser.BlendModes.MULTIPLY,
-      visibleRadius:120,activeRadius:126,trackU:8.4,trackV:56.5,alwaysActive:true,
-      meta:{role:'start-vista-shadow',integration:'wide-panorama-soft-shadow'}
-    })?.setDisplaySize?.(860,330);
-
-    // Sombra pequena na boca da trilha para amarrar a saída da arte com a
-    // Estrada Velha real e esconder qualquer costura residual.
-    this.addVistaSprite(shadowTexture,roadJoinWorldX-36,roadJoinWorldY+8,{
-      originX:.5,originY:.5,scale:1,alpha:.16,depth:baseDepth-.03,
-      blendMode:Phaser.BlendModes.MULTIPLY,
-      visibleRadius:120,activeRadius:126,trackU:8.4,trackV:56.5,alwaysActive:true,
-      meta:{role:'start-vista-road-blend',integration:'road-transition-soft-shadow'}
-    })?.setDisplaySize?.(260,120);
-
-    if(backdrop?.setTint){
-      // Leve resfriamento/desaturação para aproximar a paleta da floresta
-      // sinistra aprovada, sem apagar detalhe do asset.
-      backdrop.setTint(0xd2dbd7);
-    }
-
-    if(lantern?.setDepth&&backdrop){
-      lantern.setDepth(Math.max(lantern.depth,backdrop.depth+.08));
-    }
-  }
-
-
   forestShadowIntensity(timeOfDayMs=worldClock.timeOfDayMs){
     const minutes=((timeOfDayMs/60000)%1440+1440)%1440;
     if(minutes>=1170||minutes<300)return 1; // 19:30–05:00
@@ -556,7 +441,6 @@ export class OldRoadAncientForest{
 
     this.buildShadowLayer();
     this.registerGlobalFogZone();
-    this.buildStartVista();
 
     // Round 79.4 — a posição/escala/arte da lanterna aprovada não muda.
     // Apenas sua ordem de desenho é corrigida quando algum sprite da floresta
@@ -566,7 +450,7 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'v0.3.1-round10',
+      version:'Round79.28',
       sourceReference:'PRIMEIRA PARTE.png',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
@@ -581,19 +465,6 @@ export class OldRoadAncientForest{
       fogReactsToLights:true,
       fogCollision:false,
       clearZoneRemovedThorn06:{...REMOVED_THORN06_CLEAR_ZONE},
-      startVista:{
-        version:'v0.3.1-round10',
-        visualOnly:true,
-        anchoredTo:'start-sign-lantern',
-        backdropSprite:1,
-        roadSegments:0,
-        groundProps:0,
-        structures:0,
-        trees:0,
-        webs:0,
-        worldBoundsExpanded:false,
-        collisionAdded:false
-      },
       polygon:OLD_ROAD_ANCIENT_FOREST_POLYGON.map(p=>({...p}))
     });
   }
