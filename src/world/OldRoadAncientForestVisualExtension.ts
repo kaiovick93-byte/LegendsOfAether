@@ -1,17 +1,13 @@
 // @ts-nocheck
 
 /**
- * v0.3.1 Round 15 — ETAPA 2 REFEITA
+ * v0.3.1 Round 16 — chão sinistro + transições.
  *
- * Geometria aprovada no Round 13 permanece CONGELADA.
- * Esta revisão troca o preenchimento provisório por uma base de chão de
- * floresta sinistra construída com os assets de solo gerados para o projeto.
- *
- * Regras desta etapa:
- * - NÃO alterar a geometria aprovada.
- * - NÃO expandir bounds jogáveis.
- * - NÃO adicionar árvores altas, troncos grandes, teias ou colisões.
- * - USAR somente a base de solo e decals de chão.
+ * Regras preservadas:
+ * - A geometria aprovada no Round 13 continua CONGELADA.
+ * - Não altera colisão, bounds jogáveis ou a posição dos props do mapa.
+ * - O objetivo desta etapa é apenas melhorar a leitura do chão da floresta
+ *   sinistra e suavizar as bordas entre o solo sombrio e o mapa existente.
  */
 
 export const OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE=Object.freeze({
@@ -49,7 +45,11 @@ const SURFACE_KEYS=Object.freeze([
 const DECAL_KEYS=Object.freeze({
   swamp:'sinister_ground_patch_swamp_01',
   debris:'sinister_ground_debris_01',
-  leafPile:'sinister_ground_leaf_pile_01'
+  leafPile:'sinister_ground_leaf_pile_01',
+  roots:'sinister_ground_twisted_roots_01',
+  grassToSwamp:'sinister_ground_transition_grass_swamp_01',
+  forestToSwamp:'sinister_ground_transition_forest_swamp_01',
+  roadToSwamp:'sinister_ground_transition_road_swamp_01'
 });
 
 const SWAMP_PATCHES=Object.freeze([
@@ -93,6 +93,43 @@ const LEAF_PILES=Object.freeze([
   [-13.1,97.2,.10,.30,.05,true],
   [1.3,84.8,.10,.28,-.03,false],
   [4.9,90.6,.11,.26,.08,true]
+]);
+
+const ROOT_ACCENTS=Object.freeze([
+  [-46.8,57.3,.16,.26,-.18,false],
+  [-35.0,64.5,.17,.24,.08,true],
+  [-23.0,71.2,.18,.24,-.12,false],
+  [-11.4,77.8,.17,.22,.16,true],
+  [-31.5,87.2,.18,.22,-.10,false],
+  [-14.3,96.0,.18,.20,.12,true]
+]);
+
+// Borda entre a floresta ancestral existente (lado do mapa) e o novo chão
+// sombrio (lado da cobertura fora do mapa).
+const FOREST_EDGE_TRANSITIONS=Object.freeze([
+  [-2.4,54.1,.28,.56,.16,true],
+  [-2.9,59.9,.30,.58,.08,true],
+  [-2.2,65.8,.31,.58,.02,true],
+  [-2.7,71.8,.30,.56,-.04,true],
+  [-2.0,76.8,.28,.54,-.10,true]
+]);
+
+// Borda onde o novo chão sombrio encosta no terreno verde já existente da
+// faixa inferior aprovada (wedge do Round 13).
+const GRASS_EDGE_TRANSITIONS=Object.freeze([
+  [1.2,83.6,.26,.54,-.16,true],
+  [3.3,87.0,.28,.56,-.30,true],
+  [4.8,90.9,.29,.56,-.40,true],
+  [3.9,95.0,.28,.54,-.52,true],
+  [1.7,98.2,.25,.52,-.62,true]
+]);
+
+// Margens da estrada onde a cobertura toca a Estrada Velha no início do mapa.
+const ROAD_EDGE_TRANSITIONS=Object.freeze([
+  [1.0,82.9,.24,.64,-.24,true],
+  [3.0,85.7,.24,.62,-.34,true],
+  [5.3,89.0,.25,.58,-.46,true],
+  [4.3,92.8,.24,.56,-.56,true]
 ]);
 
 const rectanglePoints=b=>[
@@ -177,7 +214,7 @@ export class OldRoadAncientForestVisualExtension{
     return mask;
   }
 
-  addGroundDecal(container,key,u,v,{scale=.2,alpha=.3,rotation=0,flipX=false,flipY=false,originX=.5,originY=.5,tint=null}={}){
+  addGroundDecal(container,key,u,v,{scale=.2,alpha=.3,rotation=0,flipX=false,flipY=false,originX=.5,originY=.5,tint=null,depthBias=0}={}){
     if(!this.isInsideApprovedCoverage(u,v)||!this.scene.textures.exists(key))return null;
     const p=this.territory.project(u,v);
     const sprite=this.scene.add.image(p.x,p.y,key)
@@ -188,6 +225,7 @@ export class OldRoadAncientForestVisualExtension{
       .setFlipX(flipX)
       .setFlipY(flipY);
     if(tint!=null)sprite.setTint(tint);
+    if(depthBias)sprite.setDepth(this.territory.groundDepth(-89.96+depthBias));
     container.add(sprite);
     this.floorSprites.push(sprite);
     return sprite;
@@ -204,7 +242,7 @@ export class OldRoadAncientForestVisualExtension{
     const height=Math.ceil(bounds.height+pad*2);
 
     if(this.scene.textures.exists(SURFACE_KEYS[0])){
-      const baseA=this.scene.add.tileSprite(x,y,width,height,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.72);
+      const baseA=this.scene.add.tileSprite(x,y,width,height,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.64);
       baseA.tilePositionX=168;
       baseA.tilePositionY=96;
       baseA.tileScaleX=.52;
@@ -214,17 +252,17 @@ export class OldRoadAncientForestVisualExtension{
     }
 
     if(this.scene.textures.exists(SURFACE_KEYS[1])){
-      const baseB=this.scene.add.tileSprite(x-48,y-36,width+96,height+72,SURFACE_KEYS[1]).setOrigin(0,0).setAlpha(.46);
+      const baseB=this.scene.add.tileSprite(x-48,y-36,width+96,height+72,SURFACE_KEYS[1]).setOrigin(0,0).setAlpha(.38);
       baseB.tilePositionX=392;
       baseB.tilePositionY=148;
-      baseB.tileScaleX=.50;
-      baseB.tileScaleY=.50;
+      baseB.tileScaleX=.48;
+      baseB.tileScaleY=.48;
       container.add(baseB);
       this.floorSprites.push(baseB);
     }
 
-    // Véu tonal para amarrar as duas superfícies e manter leitura sinistra.
-    const veil=this.scene.add.rectangle(bounds.minX+bounds.width/2,bounds.minY+bounds.height/2,width,height,0x17211d,.14);
+    // Véu tonal para amarrar as superfícies e manter o solo sombrio.
+    const veil=this.scene.add.rectangle(bounds.minX+bounds.width/2,bounds.minY+bounds.height/2,width,height,0x17211d,.12);
     container.add(veil);
     this.floorSprites.push(veil);
 
@@ -237,6 +275,22 @@ export class OldRoadAncientForestVisualExtension{
     for(const [u,v,scale,alpha,rotation,flipX] of LEAF_PILES){
       this.addGroundDecal(container,DECAL_KEYS.leafPile,u,v,{scale,alpha,rotation,flipX,originY:.56});
     }
+    for(const [u,v,scale,alpha,rotation,flipX] of ROOT_ACCENTS){
+      this.addGroundDecal(container,DECAL_KEYS.roots,u,v,{scale,alpha,rotation,flipX,originY:.58});
+    }
+
+    // Transições: a leitura do limite entre o mapa original e o novo chão
+    // precisa ficar orgânica. As três famílias abaixo tratam exatamente das
+    // bordas criticadas pelo usuário: floresta, grama e estrada.
+    for(const [u,v,scale,alpha,rotation,flipX] of FOREST_EDGE_TRANSITIONS){
+      this.addGroundDecal(container,DECAL_KEYS.forestToSwamp,u,v,{scale,alpha,rotation,flipX,originY:.54});
+    }
+    for(const [u,v,scale,alpha,rotation,flipX] of GRASS_EDGE_TRANSITIONS){
+      this.addGroundDecal(container,DECAL_KEYS.grassToSwamp,u,v,{scale,alpha,rotation,flipX,originY:.54});
+    }
+    for(const [u,v,scale,alpha,rotation,flipX] of ROAD_EDGE_TRANSITIONS){
+      this.addGroundDecal(container,DECAL_KEYS.roadToSwamp,u,v,{scale,alpha,rotation,flipX,originY:.54});
+    }
 
     container.setMask(mask);
     this.textureLayer=container;
@@ -247,8 +301,7 @@ export class OldRoadAncientForestVisualExtension{
     const details=this.scene.add.graphics();
     details.setDepth(this.territory.groundDepth(-89.95));
 
-    // Sombras suaves e manchas frias para quebrar repetição do tile sem criar
-    // novos props. Todas continuam 100% dentro da geometria aprovada.
+    // Manchas suaves para quebrar repetição do tile, sem introduzir props altos.
     for(let i=0;i<40;i++){
       const u=-55+rng()*63;
       const v=49+rng()*51;
@@ -256,7 +309,7 @@ export class OldRoadAncientForestVisualExtension{
       const p=this.territory.project(u,v);
       const w=120+rng()*220;
       const h=28+rng()*70;
-      details.fillStyle(rng()>.55?0x1b241f:0x342c24,.08+rng()*.08);
+      details.fillStyle(rng()>.55?0x1b241f:0x342c24,.07+rng()*.08);
       details.fillEllipse(p.x,p.y,w,h);
     }
 
@@ -284,12 +337,12 @@ export class OldRoadAncientForestVisualExtension{
     this.drawWorldPolygon(graphics,wedgeWorld);
 
     // Massa tonal ampla por baixo dos assets de solo.
-    graphics.fillStyle(BASE_SOIL_SECONDARY,.42);
+    graphics.fillStyle(BASE_SOIL_SECONDARY,.40);
     const pA=this.territory.project(-29,66);
     const pB=this.territory.project(-31,88);
     graphics.fillEllipse(pA.x,pA.y,1320,420);
     graphics.fillEllipse(pB.x,pB.y,1180,360);
-    graphics.fillStyle(BASE_SOIL_SHADOW,.30);
+    graphics.fillStyle(BASE_SOIL_SHADOW,.28);
     const pC=this.territory.project(-48,74);
     graphics.fillEllipse(pC.x,pC.y,920,300);
 
@@ -299,8 +352,8 @@ export class OldRoadAncientForestVisualExtension{
     this.buildOrganicGroundDetails(mask);
 
     const data={
-      version:'v0.3.1-round15-step2-ground-assets',
-      purpose:'sinister-forest-ground-with-soil-assets',
+      version:'v0.3.1-round16-ground-transitions',
+      purpose:'sinister-forest-ground-with-transitions',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -313,7 +366,8 @@ export class OldRoadAncientForestVisualExtension{
         roadExtension:false,
         groundAssets:{
           surfaces:[...SURFACE_KEYS],
-          decals:[DECAL_KEYS.swamp,DECAL_KEYS.debris,DECAL_KEYS.leafPile]
+          decals:[DECAL_KEYS.swamp,DECAL_KEYS.debris,DECAL_KEYS.leafPile,DECAL_KEYS.roots],
+          transitions:[DECAL_KEYS.forestToSwamp,DECAL_KEYS.grassToSwamp,DECAL_KEYS.roadToSwamp]
         },
         palette:{
           base:'#202823',
