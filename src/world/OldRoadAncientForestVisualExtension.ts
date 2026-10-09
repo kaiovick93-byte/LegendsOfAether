@@ -104,27 +104,25 @@ const ROOT_ACCENTS=Object.freeze([
   [-14.3,96.0,.18,.20,.12,true]
 ]);
 
-// Borda entre a floresta ancestral existente (lado do mapa) e o novo chão
-// sombrio (lado da cobertura fora do mapa).
+// Round 18 — costura EXATA na borda marcada pelo usuário.
+// A marcação vermelha coincide com duas arestas lógicas já conhecidas do mapa:
+//   1) aresta curta superior: u = 0, de v = 79.019 até v = 82;
+//   2) aresta diagonal longa: v = 82, de u = 0 até u = 9.24.
+// Nenhuma transição deve ser posicionada fora dessas duas arestas.
 const FOREST_EDGE_TRANSITIONS=Object.freeze([
-  [4.25,75.40,.34,.76,-.20,true],
-  [3.55,76.30,.35,.78,-.16,true],
-  [2.75,77.20,.36,.80,-.10,true],
-  [1.90,78.00,.35,.80,-.04,true],
-  [1.00,78.55,.34,.78,.02,true]
+  // [u,v,scale,alpha,rotation,flipX]
+  [0.000,80.42,.16,.90,-2.6779450446,false]
 ]);
 
-// Borda onde o novo chão sombrio encosta no terreno verde já existente da
-// faixa inferior aprovada (wedge do Round 13).
-const GRASS_EDGE_TRANSITIONS=Object.freeze([]);
+const GRASS_EDGE_TRANSITIONS=Object.freeze([
+  [1.70,82.000,.18,.90, 2.6779450446,false],
+  [4.55,82.000,.18,.90, 2.6779450446,false],
+  [7.55,82.000,.18,.90, 2.6779450446,false]
+]);
 
-// Margens da estrada onde a cobertura toca a Estrada Velha no início do mapa.
 const ROAD_EDGE_TRANSITIONS=Object.freeze([
-  [1.10,82.25,.34,.80,-.24,true],
-  [3.00,82.90,.36,.82,-.18,true],
-  [5.10,83.85,.38,.82,-.10,true],
-  [7.20,85.05,.38,.80,-.02,true],
-  [8.70,86.20,.36,.78,.06,true]
+  // Costura central da quina: lado claro/estrada voltado para o mapa.
+  [0.000,82.000,.16,.92, 3.1415926536,false]
 ]);
 
 const rectanglePoints=b=>[
@@ -170,6 +168,7 @@ export class OldRoadAncientForestVisualExtension{
     this.textureLayer=null;
     this.maskGraphics=null;
     this.detailGraphics=null;
+    this.transitionLayer=null;
     this.floorSprites=[];
     this.build();
   }
@@ -226,6 +225,41 @@ export class OldRoadAncientForestVisualExtension{
     return sprite;
   }
 
+  addTransitionDecal(container,key,u,v,{scale=.16,alpha=.9,rotation=0,flipX=false,flipY=false,originX=.5,originY=.5}={}){
+    if(!this.scene.textures.exists(key))return null;
+    const p=this.territory.project(u,v);
+    const sprite=this.scene.add.image(p.x,p.y,key)
+      .setOrigin(originX,originY)
+      .setScale(scale)
+      .setAlpha(alpha)
+      .setRotation(rotation)
+      .setFlipX(flipX)
+      .setFlipY(flipY);
+    container.add(sprite);
+    this.floorSprites.push(sprite);
+    return sprite;
+  }
+
+  buildTransitionLayer(){
+    // IMPORTANTE: esta camada NÃO recebe a máscara da cobertura externa.
+    // A metade verde precisa avançar alguns pixels para dentro do mapa para
+    // realmente costurar os dois solos. Ela fica acima do terreno-base (-80)
+    // e abaixo da Estrada Velha (-70), portanto não cobre estrada ou props.
+    const container=this.scene.add.container(0,0).setDepth(this.territory.groundDepth(-79.55));
+
+    for(const [u,v,scale,alpha,rotation,flipX] of FOREST_EDGE_TRANSITIONS){
+      this.addTransitionDecal(container,DECAL_KEYS.forestToSwamp,u,v,{scale,alpha,rotation,flipX});
+    }
+    for(const [u,v,scale,alpha,rotation,flipX] of GRASS_EDGE_TRANSITIONS){
+      this.addTransitionDecal(container,DECAL_KEYS.grassToSwamp,u,v,{scale,alpha,rotation,flipX});
+    }
+    for(const [u,v,scale,alpha,rotation,flipX] of ROAD_EDGE_TRANSITIONS){
+      this.addTransitionDecal(container,DECAL_KEYS.roadToSwamp,u,v,{scale,alpha,rotation,flipX});
+    }
+
+    this.transitionLayer=container;
+  }
+
   buildFloorTextureLayer(mask,worldPolygons){
     const depth=this.territory.groundDepth(-89.96);
     const container=this.scene.add.container(0,0).setDepth(depth);
@@ -272,19 +306,6 @@ export class OldRoadAncientForestVisualExtension{
     }
     for(const [u,v,scale,alpha,rotation,flipX] of ROOT_ACCENTS){
       this.addGroundDecal(container,DECAL_KEYS.roots,u,v,{scale,alpha,rotation,flipX,originY:.58});
-    }
-
-    // Transições: a leitura do limite entre o mapa original e o novo chão
-    // precisa ficar orgânica. As três famílias abaixo tratam exatamente das
-    // bordas criticadas pelo usuário: floresta, grama e estrada.
-    for(const [u,v,scale,alpha,rotation,flipX] of FOREST_EDGE_TRANSITIONS){
-      this.addGroundDecal(container,DECAL_KEYS.forestToSwamp,u,v,{scale,alpha,rotation,flipX,originX:.82,originY:.56});
-    }
-    for(const [u,v,scale,alpha,rotation,flipX] of GRASS_EDGE_TRANSITIONS){
-      this.addGroundDecal(container,DECAL_KEYS.grassToSwamp,u,v,{scale,alpha,rotation,flipX,originX:.80,originY:.56});
-    }
-    for(const [u,v,scale,alpha,rotation,flipX] of ROAD_EDGE_TRANSITIONS){
-      this.addGroundDecal(container,DECAL_KEYS.roadToSwamp,u,v,{scale,alpha,rotation,flipX,originX:.82,originY:.56});
     }
 
     container.setMask(mask);
@@ -345,10 +366,11 @@ export class OldRoadAncientForestVisualExtension{
     graphics.setMask(mask);
     this.buildFloorTextureLayer(mask,worldPolygons);
     this.buildOrganicGroundDetails(mask);
+    this.buildTransitionLayer();
 
     const data={
-      version:'v0.3.1-round17-border-transition-fix',
-      purpose:'sinister-forest-ground-with-transitions',
+      version:'v0.3.1-round18-exact-red-border-transition',
+      purpose:'sinister-forest-ground-exact-user-marked-border-transition',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -396,11 +418,13 @@ export class OldRoadAncientForestVisualExtension{
   destroy(){
     this.textureLayer?.destroy?.(true);
     this.detailGraphics?.destroy?.();
+    this.transitionLayer?.destroy?.(true);
     this.graphics?.destroy?.();
     this.maskGraphics?.destroy?.();
     this.floorSprites=[];
     this.textureLayer=null;
     this.detailGraphics=null;
+    this.transitionLayer=null;
     this.graphics=null;
     this.maskGraphics=null;
   }
