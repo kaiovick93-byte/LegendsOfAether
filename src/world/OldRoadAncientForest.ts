@@ -73,7 +73,8 @@ export const OLD_ROAD_ANCIENT_FOREST_ASSETS=Object.freeze({
   vistaRoots01:asset('ancient_forest_vista_roots_01','twisted_roots_forest_01.png','structure'),
   vistaDetritus01:asset('ancient_forest_vista_detritus_01','forest_detritus_roots_leaves_01.png','ground'),
   vistaWeb01:asset('ancient_forest_vista_web_01','ancient_web_dead_branches_01.png','structure'),
-  vistaStartBackdrop01:asset('ancient_forest_vista_start_backdrop_01','ancient_forest_start_vista_haunted_path_01.png','vista')
+  vistaStartBackdrop01:asset('ancient_forest_vista_start_backdrop_01','ancient_forest_start_vista_haunted_path_01.png','vista'),
+  vistaStartBackdrop02:asset('ancient_forest_vista_start_backdrop_02','ancient_forest_start_vista_haunted_path_02.png','vista')
 });
 
 // Linha direita/inferior EXATA recuperada da marcação do usuário.
@@ -341,7 +342,7 @@ export class OldRoadAncientForest{
       .setDepth(depth??this.territory.groundDepth(-70.38));
     if(blendMode!=null)sprite.setBlendMode(blendMode);
     sprite.setData('oldRoadAncientForest',{
-      stage:'v0.3.1-round7-start-vista',
+      stage:'v0.3.1-round8-start-vista',
       visualOnly:true,
       nonPlayable:true,
       ...meta
@@ -364,26 +365,27 @@ export class OldRoadAncientForest{
     const baseDepth=this.territory.groundDepth(-70.42);
     const anchor=lantern??sign;
 
-    // v0.3.1-round7 — a vista inicial passa a usar uma ilustração grande
-    // única, integrada somente como pano de fundo visual na área preta.
-    // Não expande bounds, não cria colisão e não altera a estrada jogável.
-    // A imagem é ancorada no poste/placa inicial para manter o encaixe local.
-    const backdrop=this.addVistaSprite('ancient_forest_vista_start_backdrop_01',anchor.x-742,anchor.y-398,{
+    // v0.3.1-round8 — a vista inicial continua usando uma ilustração
+    // grande, mas agora com recorte/alpha orgânico no lado direito para que a
+    // floresta sinistra cubra a faixa marcada pelo usuário sem repetir o mapa
+    // original. Continua sendo visual apenas: não expande bounds nem cria
+    // colisão.
+    const backdrop=this.addVistaSprite('ancient_forest_vista_start_backdrop_02',anchor.x-710,anchor.y-420,{
       originX:0,
       originY:0,
-      scale:.52,
+      scale:.60,
       alpha:1,
       depth:baseDepth,
-      visibleRadius:54,
-      activeRadius:62,
+      visibleRadius:56,
+      activeRadius:64,
       meta:{
         role:'start-vista-backdrop',
-        integration:'single-large-image',
+        integration:'single-large-image-soft-blend',
         visualOnly:true,
         anchoredTo:lantern?'start-sign-lantern':'start-sign',
-        offsetX:-742,
-        offsetY:-398,
-        scale:.52
+        offsetX:-710,
+        offsetY:-420,
+        scale:.60
       }
     });
 
