@@ -3,6 +3,7 @@ import { cpSync } from "node:fs";
 import { resolve } from "node:path";
 
 export default defineConfig({
+  base: "/LegendsOfAether/",
   plugins: [{
     name: "copy-runtime-game-assets",
     closeBundle() {
