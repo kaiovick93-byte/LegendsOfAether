@@ -13,6 +13,12 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('aether_main_menu','assets/images/ui/main_menu_aether.png');
     for(const asset of Object.values(OLD_ROAD_PROP_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(OLD_ROAD_ANCIENT_FOREST_ASSETS))this.load.image(asset.key,asset.path);
+    this.load.image('sinister_ground_surface_dark_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_surface_dark_01.png');
+    this.load.image('sinister_ground_surface_wet_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_surface_wet_01.png');
+    this.load.image('sinister_ground_patch_swamp_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_patch_swamp_01.png');
+    this.load.image('sinister_ground_debris_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_debris_01.png');
+    this.load.image('sinister_ground_leaf_pile_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_leaf_pile_01.png');
+    this.load.image('sinister_ground_twisted_roots_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_twisted_roots_01.png');
     for(const asset of Object.values(ESCARPMENT_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(ESCARPMENT_NATURAL_ASSETS))this.load.image(asset.key,asset.path);
     for(const key of Object.values(OLD_ROAD_B4D_TEXTURES).flat())
