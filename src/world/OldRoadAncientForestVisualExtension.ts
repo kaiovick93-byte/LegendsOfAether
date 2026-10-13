@@ -52,6 +52,50 @@ const DECAL_KEYS=Object.freeze({
   roadToSwamp:'sinister_ground_transition_road_swamp_01'
 });
 
+
+const DEAD_TREE_VARIANTS=Object.freeze([
+  'ancient_forest_tree_dead_01',
+  'ancient_forest_tree_dead_02',
+  'ancient_forest_tree_dead_03'
+]);
+
+// Round 20 — massa principal de árvores mortas.
+// Bases ficam sempre dentro da geometria aprovada da cobertura visual.
+const DEAD_TREE_MASS=Object.freeze([
+  ['ancient_forest_tree_dead_02',-49.5,52.2,1.08,false,.82,.00],
+  ['ancient_forest_tree_dead_01',-43.8,53.6,1.00,true,.78,-.01],
+  ['ancient_forest_tree_dead_03',-37.6,54.8,1.04,false,.80,.00],
+  ['ancient_forest_tree_dead_02',-31.4,56.0,.98,true,.80,.00],
+  ['ancient_forest_tree_dead_01',-25.0,57.4,1.02,false,.82,.01],
+  ['ancient_forest_tree_dead_03',-18.8,58.9,.96,true,.80,.00],
+  ['ancient_forest_tree_dead_02',-12.6,60.6,1.00,false,.82,.00],
+  ['ancient_forest_tree_dead_01',-7.4,62.1,.94,true,.84,.02],
+  ['ancient_forest_tree_dead_03',-3.5,63.7,.92,false,.82,.02],
+
+  ['ancient_forest_tree_dead_01',-50.2,61.5,1.16,false,.74,-.02],
+  ['ancient_forest_tree_dead_03',-43.5,63.1,1.10,true,.78,-.01],
+  ['ancient_forest_tree_dead_02',-36.7,64.8,1.08,false,.80,.00],
+  ['ancient_forest_tree_dead_01',-29.9,66.4,1.02,true,.82,.01],
+  ['ancient_forest_tree_dead_03',-23.2,68.0,1.04,false,.84,.01],
+  ['ancient_forest_tree_dead_02',-16.1,69.8,.98,true,.84,.01],
+  ['ancient_forest_tree_dead_01',-9.2,71.6,.96,false,.86,.02],
+  ['ancient_forest_tree_dead_03',-4.2,73.0,.94,true,.86,.02],
+
+  ['ancient_forest_tree_dead_03',-47.6,72.7,1.20,true,.70,-.03],
+  ['ancient_forest_tree_dead_02',-40.4,74.8,1.12,false,.74,-.02],
+  ['ancient_forest_tree_dead_01',-33.1,77.0,1.08,true,.78,-.01],
+  ['ancient_forest_tree_dead_03',-25.6,79.6,1.02,false,.80,.00],
+  ['ancient_forest_tree_dead_02',-18.8,82.8,1.00,true,.82,.01],
+  ['ancient_forest_tree_dead_01',-12.0,86.6,.98,false,.84,.02],
+  ['ancient_forest_tree_dead_03',-6.4,90.0,.96,true,.86,.02],
+  ['ancient_forest_tree_dead_02',-2.4,93.8,.92,false,.88,.03],
+
+  ['ancient_forest_tree_dead_01',-45.5,95.2,1.06,false,.72,-.02],
+  ['ancient_forest_tree_dead_02',-33.9,97.0,1.00,true,.76,-.01],
+  ['ancient_forest_tree_dead_03',-21.8,98.4,.96,false,.78,.00],
+  ['ancient_forest_tree_dead_01',-9.5,99.0,.92,true,.80,.01]
+]);
+
 const SWAMP_PATCHES=Object.freeze([
   [-48.2,55.4,.20,.34,-.10,false],
   [-39.6,61.1,.18,.36,.08,true],
@@ -170,6 +214,7 @@ export class OldRoadAncientForestVisualExtension{
     this.detailGraphics=null;
     this.transitionLayer=null;
     this.floorSprites=[];
+    this.treeSprites=[];
     this.build();
   }
 
@@ -238,6 +283,29 @@ export class OldRoadAncientForestVisualExtension{
     container.add(sprite);
     this.floorSprites.push(sprite);
     return sprite;
+  }
+
+
+  addDeadTree(key,u,v,{scale=1,alpha=.82,flipX=false,depthOffset=0,tint=null}={}){
+    if(!this.isInsideApprovedCoverage(u,v)||!this.scene.textures.exists(key))return null;
+    const p=this.territory.project(u,v);
+    const source=this.scene.textures.get(key)?.getSourceImage?.();
+    const originY=source?.height?Math.max(.86,Math.min(1,(source.height-12)/source.height)):.94;
+    const sprite=this.scene.add.image(p.x,p.y,key)
+      .setOrigin(.5,originY)
+      .setScale(scale)
+      .setAlpha(alpha)
+      .setFlipX(flipX)
+      .setDepth(this.territory.depthAt(u,v,.08+depthOffset));
+    if(tint!=null)sprite.setTint(tint);
+    this.treeSprites.push(sprite);
+    return sprite;
+  }
+
+  buildDeadTreeLayer(){
+    for(const [key,u,v,scale,flipX,alpha,depthOffset] of DEAD_TREE_MASS){
+      this.addDeadTree(key,u,v,{scale,flipX,alpha,depthOffset});
+    }
   }
 
   buildTransitionLayer(){
@@ -367,9 +435,10 @@ export class OldRoadAncientForestVisualExtension{
     this.buildFloorTextureLayer(mask,worldPolygons);
     this.buildOrganicGroundDetails(mask);
     this.buildTransitionLayer();
+    this.buildDeadTreeLayer();
 
     const data={
-      version:'v0.3.1-round19-exact-red-border-transition-flipped',
+      version:'v0.3.1-round20-dead-tree-mass',
       purpose:'sinister-forest-ground-exact-user-marked-border-transition',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
@@ -391,6 +460,13 @@ export class OldRoadAncientForestVisualExtension{
           secondary:'#2a332d',
           shadow:'#141a17'
         }
+      },
+      stage3:{
+        deadTreeMass:true,
+        collision:false,
+        assets:[...DEAD_TREE_VARIANTS],
+        count:DEAD_TREE_MASS.length,
+        note:'massa principal de árvores mortas somente na cobertura visual aprovada'
       },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
@@ -419,9 +495,11 @@ export class OldRoadAncientForestVisualExtension{
     this.textureLayer?.destroy?.(true);
     this.detailGraphics?.destroy?.();
     this.transitionLayer?.destroy?.(true);
+    this.treeSprites?.forEach(sprite=>sprite?.destroy?.());
     this.graphics?.destroy?.();
     this.maskGraphics?.destroy?.();
     this.floorSprites=[];
+    this.treeSprites=[];
     this.textureLayer=null;
     this.detailGraphics=null;
     this.transitionLayer=null;
