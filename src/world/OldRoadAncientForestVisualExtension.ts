@@ -111,18 +111,18 @@ const ROOT_ACCENTS=Object.freeze([
 // Nenhuma transição deve ser posicionada fora dessas duas arestas.
 const FOREST_EDGE_TRANSITIONS=Object.freeze([
   // [u,v,scale,alpha,rotation,flipX]
-  [0.000,80.42,.16,.90,-2.6779450446,false]
+  [0.000,80.42,.16,.90,-2.6779450446,true]
 ]);
 
 const GRASS_EDGE_TRANSITIONS=Object.freeze([
-  [1.70,82.000,.18,.90, 2.6779450446,false],
-  [4.55,82.000,.18,.90, 2.6779450446,false],
-  [7.55,82.000,.18,.90, 2.6779450446,false]
+  [1.70,82.000,.18,.90, 2.6779450446,true],
+  [4.55,82.000,.18,.90, 2.6779450446,true],
+  [7.55,82.000,.18,.90, 2.6779450446,true]
 ]);
 
 const ROAD_EDGE_TRANSITIONS=Object.freeze([
   // Costura central da quina: lado claro/estrada voltado para o mapa.
-  [0.000,82.000,.16,.92, 3.1415926536,false]
+  [0.000,82.000,.16,.92, 3.1415926536,true]
 ]);
 
 const rectanglePoints=b=>[
@@ -369,7 +369,7 @@ export class OldRoadAncientForestVisualExtension{
     this.buildTransitionLayer();
 
     const data={
-      version:'v0.3.1-round18-exact-red-border-transition',
+      version:'v0.3.1-round19-exact-red-border-transition-flipped',
       purpose:'sinister-forest-ground-exact-user-marked-border-transition',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
