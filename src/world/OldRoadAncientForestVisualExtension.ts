@@ -59,41 +59,33 @@ const DEAD_TREE_VARIANTS=Object.freeze([
   'ancient_forest_tree_dead_03'
 ]);
 
-// Round 20 — massa principal de árvores mortas.
-// Bases ficam sempre dentro da geometria aprovada da cobertura visual.
-const DEAD_TREE_MASS=Object.freeze([
-  ['ancient_forest_tree_dead_02',-49.5,52.2,1.08,false,.82,.00],
-  ['ancient_forest_tree_dead_01',-43.8,53.6,1.00,true,.78,-.01],
-  ['ancient_forest_tree_dead_03',-37.6,54.8,1.04,false,.80,.00],
-  ['ancient_forest_tree_dead_02',-31.4,56.0,.98,true,.80,.00],
-  ['ancient_forest_tree_dead_01',-25.0,57.4,1.02,false,.82,.01],
-  ['ancient_forest_tree_dead_03',-18.8,58.9,.96,true,.80,.00],
-  ['ancient_forest_tree_dead_02',-12.6,60.6,1.00,false,.82,.00],
-  ['ancient_forest_tree_dead_01',-7.4,62.1,.94,true,.84,.02],
-  ['ancient_forest_tree_dead_03',-3.5,63.7,.92,false,.82,.02],
+// Round 21 — preencher toda a área aprovada com massa densa de árvores mortas.
+// Não é mais um punhado de peças isoladas: a cobertura inteira recebe uma malha
+// visual contínua, com linhas alternadas, jitter e profundidade progressiva.
+const DEAD_TREE_FILL_SETTINGS=Object.freeze({
+  startU:-54,
+  endU:-1.2,
+  stepU:5.4,
+  startV:50.8,
+  endV:99.2,
+  stepV:5.0,
+  rowOffset:2.5
+});
 
-  ['ancient_forest_tree_dead_01',-50.2,61.5,1.16,false,.74,-.02],
-  ['ancient_forest_tree_dead_03',-43.5,63.1,1.10,true,.78,-.01],
-  ['ancient_forest_tree_dead_02',-36.7,64.8,1.08,false,.80,.00],
-  ['ancient_forest_tree_dead_01',-29.9,66.4,1.02,true,.82,.01],
-  ['ancient_forest_tree_dead_03',-23.2,68.0,1.04,false,.84,.01],
-  ['ancient_forest_tree_dead_02',-16.1,69.8,.98,true,.84,.01],
-  ['ancient_forest_tree_dead_01',-9.2,71.6,.96,false,.86,.02],
-  ['ancient_forest_tree_dead_03',-4.2,73.0,.94,true,.86,.02],
-
-  ['ancient_forest_tree_dead_03',-47.6,72.7,1.20,true,.70,-.03],
-  ['ancient_forest_tree_dead_02',-40.4,74.8,1.12,false,.74,-.02],
-  ['ancient_forest_tree_dead_01',-33.1,77.0,1.08,true,.78,-.01],
-  ['ancient_forest_tree_dead_03',-25.6,79.6,1.02,false,.80,.00],
-  ['ancient_forest_tree_dead_02',-18.8,82.8,1.00,true,.82,.01],
-  ['ancient_forest_tree_dead_01',-12.0,86.6,.98,false,.84,.02],
-  ['ancient_forest_tree_dead_03',-6.4,90.0,.96,true,.86,.02],
-  ['ancient_forest_tree_dead_02',-2.4,93.8,.92,false,.88,.03],
-
-  ['ancient_forest_tree_dead_01',-45.5,95.2,1.06,false,.72,-.02],
-  ['ancient_forest_tree_dead_02',-33.9,97.0,1.00,true,.76,-.01],
-  ['ancient_forest_tree_dead_03',-21.8,98.4,.96,false,.78,.00],
-  ['ancient_forest_tree_dead_01',-9.5,99.0,.92,true,.80,.01]
+const DEAD_TREE_HERO_CLUSTER=Object.freeze([
+  ['ancient_forest_tree_dead_02',-50.0,55.4,1.16,false,.88,-.02],
+  ['ancient_forest_tree_dead_01',-44.8,58.0,1.08,true,.84,-.01],
+  ['ancient_forest_tree_dead_03',-38.8,61.0,1.12,false,.84,.00],
+  ['ancient_forest_tree_dead_02',-32.4,64.0,1.06,true,.84,.00],
+  ['ancient_forest_tree_dead_01',-26.8,67.2,1.04,false,.84,.01],
+  ['ancient_forest_tree_dead_03',-20.5,70.0,1.02,true,.84,.01],
+  ['ancient_forest_tree_dead_02',-14.4,73.2,1.00,false,.84,.02],
+  ['ancient_forest_tree_dead_01',-8.8,76.4,.98,true,.86,.02],
+  ['ancient_forest_tree_dead_03',-5.8,80.2,.96,false,.86,.03],
+  ['ancient_forest_tree_dead_02',-47.5,83.8,1.10,true,.82,.00],
+  ['ancient_forest_tree_dead_01',-37.2,88.4,1.02,false,.82,.01],
+  ['ancient_forest_tree_dead_03',-25.2,92.2,.98,true,.82,.02],
+  ['ancient_forest_tree_dead_02',-12.0,96.8,.94,false,.82,.03]
 ]);
 
 const SWAMP_PATCHES=Object.freeze([
@@ -215,6 +207,7 @@ export class OldRoadAncientForestVisualExtension{
     this.transitionLayer=null;
     this.floorSprites=[];
     this.treeSprites=[];
+    this.deadTreeCount=0;
     this.build();
   }
 
@@ -303,9 +296,50 @@ export class OldRoadAncientForestVisualExtension{
   }
 
   buildDeadTreeLayer(){
-    for(const [key,u,v,scale,flipX,alpha,depthOffset] of DEAD_TREE_MASS){
-      this.addDeadTree(key,u,v,{scale,flipX,alpha,depthOffset});
+    const rng=mulberry32(424242);
+    let count=0;
+
+    // 1) Massa hero: algumas árvores maiores para quebrar a repetição.
+    for(const [key,u,v,scale,flipX,alpha,depthOffset] of DEAD_TREE_HERO_CLUSTER){
+      if(this.addDeadTree(key,u,v,{scale,flipX,alpha,depthOffset}))count++;
     }
+
+    // 2) Malha principal: preencher toda a cobertura aprovada.
+    const {startU,endU,stepU,startV,endV,stepV,rowOffset}=DEAD_TREE_FILL_SETTINGS;
+    let rowIndex=0;
+    for(let v=startV;v<=endV;v+=stepV,rowIndex++){
+      const offset=(rowIndex%2===0)?0:rowOffset;
+      for(let u=startU+offset;u<=endU;u+=stepU){
+        const jitterU=(rng()-.5)*1.45;
+        const jitterV=(rng()-.5)*1.25;
+        const uu=u+jitterU;
+        const vv=v+jitterV;
+        if(!this.isInsideApprovedCoverage(uu,vv))continue;
+
+        const variantIndex=Math.floor(rng()*DEAD_TREE_VARIANTS.length)%DEAD_TREE_VARIANTS.length;
+        const key=DEAD_TREE_VARIANTS[variantIndex];
+        const depthT=Math.max(0,Math.min(1,(vv-50)/50));
+        const scale=.84 + depthT*.22 + rng()*.12;
+        const alpha=.52 + depthT*.22 + rng()*.08;
+        const flipX=rng()>.5;
+        const depthOffset=-.02 + rng()*.05;
+        if(this.addDeadTree(key,uu,vv,{scale,alpha,flipX,depthOffset}))count++;
+      }
+    }
+
+    // 3) Faixa de borda: reforçar a leitura da parede de árvores na lateral esquerda.
+    for(let v=52;v<=98;v+=4.8){
+      const uu=-54.8 + (rng()-.5)*.9;
+      const vv=v + (rng()-.5)*1.1;
+      if(!this.isInsideApprovedCoverage(uu,vv))continue;
+      const key=DEAD_TREE_VARIANTS[Math.floor(rng()*DEAD_TREE_VARIANTS.length)%DEAD_TREE_VARIANTS.length];
+      const scale=1.02 + rng()*.20;
+      const alpha=.74 + rng()*.10;
+      const flipX=rng()>.5;
+      if(this.addDeadTree(key,uu,vv,{scale,alpha,flipX,depthOffset:.02}))count++;
+    }
+
+    this.deadTreeCount=count;
   }
 
   buildTransitionLayer(){
@@ -438,7 +472,7 @@ export class OldRoadAncientForestVisualExtension{
     this.buildDeadTreeLayer();
 
     const data={
-      version:'v0.3.1-round20-dead-tree-mass',
+      version:'v0.3.1-round21-dead-tree-full-fill',
       purpose:'sinister-forest-ground-exact-user-marked-border-transition',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
@@ -465,8 +499,8 @@ export class OldRoadAncientForestVisualExtension{
         deadTreeMass:true,
         collision:false,
         assets:[...DEAD_TREE_VARIANTS],
-        count:DEAD_TREE_MASS.length,
-        note:'massa principal de árvores mortas somente na cobertura visual aprovada'
+        count:this.deadTreeCount,
+        note:'preenchimento denso de árvores mortas em toda a cobertura visual aprovada'
       },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
