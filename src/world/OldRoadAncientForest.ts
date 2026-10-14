@@ -68,7 +68,16 @@ export const OLD_ROAD_ANCIENT_FOREST_ASSETS=Object.freeze({
   under03:asset('ancient_forest_underbrush_03','ancient_underbrush_03.png','ground'),
   wall01:asset('ancient_forest_thorn_wall_01','ancient_thorn_wall_01.png','structure'),
   wall02:asset('ancient_forest_thorn_wall_02','ancient_thorn_wall_02.png','structure'),
-  wall03:asset('ancient_forest_thorn_wall_03','ancient_thorn_wall_03.png','structure')
+  wall03:asset('ancient_forest_thorn_wall_03','ancient_thorn_wall_03.png','structure'),
+
+  // Round 23 — a Floresta Ancestral passa a usar o mesmo kit visual da
+  // Floresta Sinistra, preservando integralmente geometria, posições e colisão.
+  sinisterWall:Object.freeze({key:'sinister_forest_wall_mass_01',file:'sinister-reference/sinister_forest_wall_mass_01.png',category:'tree',path:`${BASE_PATH}/sinister-reference/sinister_forest_wall_mass_01.png`}),
+  sinisterGrove:Object.freeze({key:'sinister_forest_grove_roots_01',file:'sinister-reference/sinister_forest_grove_roots_01.png',category:'tree',path:`${BASE_PATH}/sinister-reference/sinister_forest_grove_roots_01.png`}),
+  sinisterHero:Object.freeze({key:'sinister_forest_hero_tree_01',file:'sinister-reference/sinister_forest_hero_tree_01.png',category:'tree',path:`${BASE_PATH}/sinister-reference/sinister_forest_hero_tree_01.png`}),
+  sinisterGround:Object.freeze({key:'sinister_forest_ground_clearing_01',file:'sinister-reference/sinister_forest_ground_clearing_01.png',category:'ground',path:`${BASE_PATH}/sinister-reference/sinister_forest_ground_clearing_01.png`}),
+  sinisterWebRoots:Object.freeze({key:'sinister_forest_web_roots_01',file:'sinister-reference/sinister_forest_web_roots_01.png',category:'structure',path:`${BASE_PATH}/sinister-reference/sinister_forest_web_roots_01.png`}),
+  sinisterTransition:Object.freeze({key:'sinister_forest_corruption_transition_01',file:'sinister-reference/sinister_forest_corruption_transition_01.png',category:'ground',path:`${BASE_PATH}/sinister-reference/sinister_forest_corruption_transition_01.png`})
 });
 
 // Linha direita/inferior EXATA recuperada da marcação do usuário.
@@ -132,67 +141,70 @@ const GROUND_BASES=Object.freeze([
 const REMOVED_THORN06_CLEAR_ZONE=Object.freeze({u:3.027,v:76.443,radius:.42});
 
 const TREE_VARIANTS=Object.freeze([
-  ['large01',.94,false],['medium01',.92,true],['large02',.88,true],['dead01',.92,false],
-  ['large03',.96,false],['medium02',.90,false],['large04',.90,true],['dead02',.88,true],
-  ['large05',.93,false],['medium03',.94,true],['large06',.89,true],['dead03',.90,false],
-  ['medium04',.96,false],['large01',.87,true],['large02',.91,false],['medium01',.89,false],
-  ['large03',.92,true],['dead01',.86,true],['large04',.95,false],['medium02',.91,true],
-  ['large05',.88,true],['dead02',.89,false],['large06',.93,false],['medium03',.90,false],
-  ['large01',.86,false],['medium04',.93,true]
+  ['sinisterHero',.30,false],['sinisterGrove',.27,true],['sinisterWall',.25,false],['sinisterHero',.28,true],
+  ['sinisterGrove',.29,false],['sinisterWall',.24,true],['sinisterHero',.31,false],['sinisterGrove',.27,true],
+  ['sinisterWall',.26,false],['sinisterHero',.29,true],['sinisterGrove',.28,false],['sinisterWall',.25,true],
+  ['sinisterHero',.30,false],['sinisterGrove',.27,true],['sinisterWall',.24,false],['sinisterHero',.29,true],
+  ['sinisterGrove',.28,false],['sinisterWall',.26,true],['sinisterHero',.31,false],['sinisterGrove',.27,true],
+  ['sinisterWall',.25,false],['sinisterHero',.29,true],['sinisterGrove',.28,false],['sinisterWall',.24,true],
+  ['sinisterHero',.30,false],['sinisterGrove',.27,true]
 ]);
 
 const STRUCTURE_VARIANTS=Object.freeze([
-  ['root01',.86,false],['log01',.77,true],['stump01',.82,false],['root02',.88,true],
-  ['log02',.75,false],['root03',.84,false],['wall01',.86,false],['wall02',.84,true],
-  ['log03',.76,true],['root04',.88,false],['stump02',.84,true],['root05',.86,true],
-  ['log04',.74,false],['root06',.88,false],['wall03',.84,false],['stump03',.82,false],
-  ['log05',.76,true],['under01',.82,false],['under02',.80,true]
+  ['sinisterWebRoots',.22,false],['sinisterGrove',.21,true],['sinisterWebRoots',.20,false],['sinisterWall',.20,true],
+  ['sinisterWebRoots',.21,false],['sinisterGrove',.22,false],['sinisterWall',.19,true],['sinisterWebRoots',.21,true],
+  ['sinisterGrove',.20,false],['sinisterWall',.20,true],['sinisterWebRoots',.22,false],['sinisterGrove',.21,true],
+  ['sinisterWall',.19,false],['sinisterWebRoots',.22,true],['sinisterGrove',.21,false],['sinisterWall',.20,true],
+  ['sinisterWebRoots',.21,false],['sinisterGrove',.20,true],['sinisterWebRoots',.22,false]
 ]);
 
 const GROUND_VARIANTS=Object.freeze([
-  'floor01','thorn01','floor02','thorn02','under03','floor03','thorn03','floor04',
-  'thorn04','floor05','thorn05','floor06','thorn06','floor07','thorn07','floor08',
-  'thorn08','floor01','under01','floor02','thorn02','floor03','under02','floor04',
-  'thorn04','floor05','thorn06','floor07','thorn08'
+  'sinisterGround','sinisterTransition','sinisterGround','sinisterWebRoots',
+  'sinisterGround','sinisterTransition','sinisterGround','sinisterGround',
+  'sinisterWebRoots','sinisterGround','sinisterTransition','sinisterGround',
+  'sinisterGround','sinisterWebRoots','sinisterGround','sinisterTransition',
+  'sinisterGround','sinisterGround','sinisterWebRoots','sinisterGround',
+  'sinisterTransition','sinisterGround','sinisterGround','sinisterWebRoots',
+  'sinisterGround','sinisterTransition','sinisterGround','sinisterGround'
 ]);
 
 // Round 79.7 — primeira passagem de atmosfera assustadora.
 // Objetivo: fechar visualmente a mata, criar silhuetas mais estranhas e
 // aumentar a sensação de pressão sobre a estrada sem mexer em gameplay.
 const ATMOSPHERE_TREE_ACCENTS=Object.freeze([
-  ['large05',0.462,54.870,.98,false],
-  ['dead03',2.625,55.784,.96,true],
-  ['large06',1.092,59.915,.95,false],
-  ['dead02',4.516,60.935,.93,true],
-  ['large03',1.215,68.662,.97,false],
-  ['dead01',2.758,70.191,.95,true],
-  ['large01',0.618,73.572,.98,false],
-  ['dead03',2.973,74.672,.96,true],
-  ['large04',0.984,76.658,.99,false],
-  ['dead02',2.220,77.329,.95,true]
+  ['sinisterWall',0.462,54.870,.27,false],
+  ['sinisterHero',2.625,55.784,.30,true],
+  ['sinisterGrove',1.092,59.915,.28,false],
+  ['sinisterHero',4.516,60.935,.29,true],
+  ['sinisterWall',1.215,68.662,.27,false],
+  ['sinisterHero',2.758,70.191,.30,true],
+  ['sinisterGrove',0.618,73.572,.29,false],
+  ['sinisterHero',2.973,74.672,.30,true],
+  ['sinisterWall',0.984,76.658,.28,false],
+  ['sinisterGrove',2.220,77.329,.29,true]
 ]);
 
 const ATMOSPHERE_STRUCTURE_ACCENTS=Object.freeze([
-  ['wall01',2.194,54.255,.90,false],
-  ['root03',1.334,58.252,.88,true],
-  ['wall02',4.613,61.069,.87,true],
-  ['log04',2.838,69.521,.78,false],
-  ['root06',1.495,71.238,.90,false],
-  ['wall03',3.215,73.706,.86,false],
-  ['root02',1.468,75.987,.88,true],
-  ['wall01',2.597,77.248,.88,false]
+  ['sinisterWebRoots',2.194,54.255,.22,false],
+  ['sinisterGrove',1.334,58.252,.20,true],
+  ['sinisterWebRoots',4.613,61.069,.21,true],
+  ['sinisterWall',2.838,69.521,.20,false],
+  ['sinisterWebRoots',1.495,71.238,.22,false],
+  ['sinisterGrove',3.215,73.706,.21,false],
+  ['sinisterWebRoots',1.468,75.987,.22,true],
+  ['sinisterWall',2.597,77.248,.20,false]
 ]);
 
 const ATMOSPHERE_GROUND_ACCENTS=Object.freeze([
-  ['thorn07',1.118,54.523,.86,false,-.04],
-  ['thorn05',3.833,56.937,.84,true,.03],
-  ['thorn08',2.516,60.935,.87,false,0],
-  ['under03',1.898,64.799,.82,true,.05],
-  ['thorn06',1.898,69.843,.86,true,-.02],
-  ['under01',2.032,71.989,.84,false,.02],
-  ['thorn07',1.226,73.384,.88,false,.04],
-  ['under02',2.140,75.799,.82,true,-.03],
-  ['thorn08',1.280,77.302,.86,true,.03]
+  ['sinisterGround',1.118,54.523,.18,false,-.04],
+  ['sinisterTransition',3.833,56.937,.17,true,.03],
+  ['sinisterWebRoots',2.516,60.935,.17,false,0],
+  ['sinisterGround',1.898,64.799,.18,true,.05],
+  ['sinisterTransition',1.898,69.843,.17,true,-.02],
+  ['sinisterGround',2.032,71.989,.18,false,.02],
+  ['sinisterWebRoots',1.226,73.384,.17,false,.04],
+  ['sinisterGround',2.140,75.799,.18,true,-.03],
+  ['sinisterTransition',1.280,77.302,.17,true,.03]
 ]);
 
 const FOREST_SHADOW_PATCHES=Object.freeze([
@@ -414,7 +426,8 @@ export class OldRoadAncientForest{
   build(){
     GROUND_BASES.forEach(([u,v],i)=>{
       const name=GROUND_VARIANTS[i%GROUND_VARIANTS.length];
-      this.addGround(name,u,v,.78+(i%4)*.035,!!(i%2),((i%5)-2)*.035);
+      const scale=name==='sinisterWebRoots' ? .17 : (.18+(i%4)*.012);
+      this.addGround(name,u,v,scale,!!(i%2),((i%5)-2)*.035);
     });
 
     STRUCTURE_BASES.forEach(([u,v],i)=>{
@@ -450,14 +463,15 @@ export class OldRoadAncientForest{
     this.keepStartLanternInFrontOfForest();
 
     this.scene.registry.set('oldRoadAncientForest',{
-      version:'Round79.28',
-      sourceReference:'PRIMEIRA PARTE.png',
+      version:'Round23-sinister-assets',
+      sourceReference:'Floresta Sinistra — referência aprovada + geometria original da Floresta Ancestral',
       exactMarkedPolygon:true,
       maskedAtTerrainEdge:false,
       assetBases:{trees:TREE_BASES.length,structures:STRUCTURE_BASES.length,ground:GROUND_BASES.length},
       atmosphereAccents:{trees:ATMOSPHERE_TREE_ACCENTS.length,structures:ATMOSPHERE_STRUCTURE_ACCENTS.length,ground:ATMOSPHERE_GROUND_ACCENTS.length},
       localShadowPatches:FOREST_SHADOW_PATCHES.length,
       lowFogBands:FOREST_FOG_BANDS.length,
+      visualAssetSet:'sinister-reference',
       fogSystem:'WorldFogSystem',
       fogRenderer:'world-space-multi-depth-procedural-wisps',
       fogLayerDepth:'depth-sorted-background-mid-foreground',
