@@ -1,6 +1,157 @@
+# Legends of Aether — v0.3.1 Round 23 — Floresta Ancestral com assets da Floresta Sinistra
+
+Base: `legends-of-aether-v0.3.1-round22-floresta-sinistra-referencia.zip`.
+
+## Objetivo
+
+Fazer a **Floresta Ancestral da Estrada Velha** usar o mesmo kit visual da
+**Floresta Sinistra**, preservando a geometria original, a densidade, a névoa,
+as sombras, a colisão e os pontos já aprovados da Floresta Ancestral.
+
+## Implementação
+
+- as bases/posições `TREE_BASES`, `STRUCTURE_BASES` e `GROUND_BASES` foram preservadas;
+- a geometria `OLD_ROAD_ANCIENT_FOREST_POLYGON` não foi alterada;
+- colisão e clear-zone da placa permanecem intactas;
+- árvores/estruturas/chão e acentos atmosféricos agora usam exclusivamente o kit `sinister-reference`;
+- os mesmos 6 assets da Floresta Sinistra são compartilhados entre as duas composições;
+- o preload passou a carregar esse kit através de `OLD_ROAD_ANCIENT_FOREST_ASSETS`, evitando carga duplicada.
+
+## Arquivos alterados
+
+- `src/world/OldRoadAncientForest.ts`
+- `src/scenes/PreloadScene.ts`
+- `README.md`
+
+## Assets reutilizados (sem arquivos novos)
+
+- `sinister_forest_wall_mass_01.png`
+- `sinister_forest_grove_roots_01.png`
+- `sinister_forest_hero_tree_01.png`
+- `sinister_forest_ground_clearing_01.png`
+- `sinister_forest_web_roots_01.png`
+- `sinister_forest_corruption_transition_01.png`
+
+## Validação
+
+- presença dos 6 assets confirmada;
+- sintaxe dos dois arquivos TypeScript alterados validada via `typescript.transpileModule`;
+- `npm run build` continua bloqueado por dependência incompleta herdada da base (`@types/estree`);
+- `npm run test:world-clock` também não roda nesta cópia porque o pacote `typescript` em `node_modules` está incompleto.
+
+---
+
+# Legends of Aether — v0.3.1 Round 22 — Floresta sinistra pela referência aprovada
+
+Base: `legends-of-aether-v0.3.1-round21-preenchimento-total-arvores-mortas.zip`.
+
+## Objetivo
+
+Substituir a leitura de árvores mortas isoladas pela **massa densa da floresta sinistra**, usando diretamente os seis assets recém-criados e a imagem aprovada como referência visual.
+
+## Implementação
+
+A massa agora é construída em cinco camadas visuais:
+
+1. solo orgânico de raízes/folhas;
+2. muralha contínua de floresta assombrada no fundo;
+3. bosque retorcido intermediário sobreposto;
+4. árvores hero/frontais para quebrar repetição e dar profundidade;
+5. raízes com teias e transição corrompida na borda interna.
+
+A geometria aprovada da cobertura continua congelada e não houve alteração de colisão, bounds jogáveis, estrada, placa, lanterna, cerca ou escarpa.
+
+## Novos assets integrados
+
+- `sinister_forest_wall_mass_01.png`
+- `sinister_forest_grove_roots_01.png`
+- `sinister_forest_hero_tree_01.png`
+- `sinister_forest_ground_clearing_01.png`
+- `sinister_forest_web_roots_01.png`
+- `sinister_forest_corruption_transition_01.png`
+
+## Arquivos de código alterados
+
+- `src/scenes/PreloadScene.ts`
+- `src/world/OldRoadAncientForestVisualExtension.ts`
+- `README.md`
+
+## Validação
+
+- os seis PNGs existem no caminho final do projeto e estão registrados no preload;
+- todos os seis keys são usados pela composição da floresta;
+- `PreloadScene.ts` e `OldRoadAncientForestVisualExtension.ts` passaram em validação sintática isolada com TypeScript 5.8.3;
+- o build completo continua bloqueado pelo `node_modules` incompleto herdado do ZIP (`@types/estree`/`typescript` vazios), problema já existente na base e não causado por esta alteração.
+
+---
+
+# Legends of Aether — v0.3.1 Round 21 — preenchimento total com árvores mortas
+
+Base exclusiva: `legends-of-aether-v0.3.1-round20-massa-principal-arvores-mortas.zip`.
+
+## Objetivo
+
+Preencher visualmente **toda a área aprovada da floresta sinistra** com uma massa densa
+contínua de árvores mortas, em vez de apenas algumas unidades isoladas.
+
+## O que foi feito
+
+- mantida a mesma geometria aprovada da cobertura visual;
+- preservados chão, transições de borda, estrada e props do mapa;
+- substituída a distribuição esparsa por uma **malha densa de árvores mortas**;
+- adicionada uma faixa extra de reforço na lateral esquerda para ler melhor a parede de árvores;
+- sem colisão nova e sem expansão da área jogável.
+
+## Arquivos alterados
+
+- `src/world/OldRoadAncientForestVisualExtension.ts`
+- `README.md`
+
+---
+
+# Legends of Aether — v0.3.1 Round 20 — Massa principal de árvores mortas
+
+Base exclusiva: `legends-of-aether-v0.3.1-round19-transicoes-borda-invertidas.zip`.
+
+## Escopo desta etapa
+
+Aplicar a **massa principal de árvores mortas** apenas dentro da cobertura visual
+já aprovada da floresta sinistra, preservando:
+
+- a geometria aprovada da cobertura;
+- o chão e as transições de borda já existentes;
+- a estrada, a placa, a lanterna, a cerca, a escarpa e o restante do mapa;
+- a ausência de colisão nova e a ausência de expansão da área jogável.
+
+## Implementação
+
+A densidade visual foi adicionada em `src/world/OldRoadAncientForestVisualExtension.ts`
+com uma nova etapa puramente visual de árvores mortas. As bases dos sprites ficam
+somente dentro da geometria aprovada da cobertura visual, enquanto copas e galhos
+continuam livres para avançar visualmente sobre a área externa, sem máscara.
+
+Foram usados apenas os três assets já existentes de árvores mortas:
+
+- `ancient_forest_tree_dead_01`
+- `ancient_forest_tree_dead_02`
+- `ancient_forest_tree_dead_03`
+
+Nenhum asset novo foi criado nesta etapa.
+
+## Verificação
+
+A alteração foi feita de forma localizada e sem mexer em colisão. A validação de build
+permanece pendente neste ambiente porque `npm ci` não concluiu aqui a tempo. Assim,
+a checagem entregue nesta etapa é estrutural/cirúrgica no código, partindo da última
+base aprovada.
+
+Arquivos alterados: `src/world/OldRoadAncientForestVisualExtension.ts`, `README.md`.
+
+---
+
 > **REGRAS OBRIGATÓRIAS DO PROJETO:** antes de qualquer alteração, leia `AGENTS.md` e `PROJECT_RULES.md`. Marcações visuais do usuário são geometria exata, nunca aproximada.
 
-# Legends of Aether — v0.3.0 Round 79.1 — Regras Obrigatórias Projeto
+# Legends of Aether — v0.3.0 Round 7 — Apoio da muralha quebrada e Portão Sul
 
 Base exclusiva: `legends-of-aether-v0.3.0-round6-river-bank-props-integration.zip`.
 SHA-256 da base anexada: `865c7f6cdb875deeff878b658dabe937be0a780f5fd3531cba1376e38da6e562`.

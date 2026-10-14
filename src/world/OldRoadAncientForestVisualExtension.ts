@@ -53,6 +53,51 @@ const DECAL_KEYS=Object.freeze({
 });
 
 
+// Round 22 — assets oficiais criados a partir da referência visual aprovada.
+const SINISTER_FOREST_KEYS=Object.freeze({
+  wall:'sinister_forest_wall_mass_01',
+  grove:'sinister_forest_grove_roots_01',
+  hero:'sinister_forest_hero_tree_01',
+  clearing:'sinister_forest_ground_clearing_01',
+  webRoots:'sinister_forest_web_roots_01',
+  corruptionTransition:'sinister_forest_corruption_transition_01'
+});
+
+// Três camadas de massa para reproduzir a leitura fechada da floresta ancestral:
+// fundo contínuo, bosque intermediário e árvores hero/frontais.
+const SINISTER_MASS_SETTINGS=Object.freeze({
+  background:{startU:-54,endU:-6.0,stepU:6.3,startV:51.0,endV:98.0,stepV:6.2,rowOffset:3.0},
+  middle:{startU:-51,endU:-4.6,stepU:7.4,startV:53.5,endV:97.0,stepV:7.0,rowOffset:3.5}
+});
+
+const SINISTER_HERO_TREES=Object.freeze([
+  [-48.0,55.0,.78,false,.98,-.03],[-38.5,58.5,.74,true,.98,-.02],
+  [-29.0,62.0,.80,false,.99,-.01],[-19.5,66.0,.76,true,.99,.00],
+  [-10.5,70.0,.74,false,.99,.01],[-5.2,74.0,.70,true,.98,.02],
+  [-45.0,76.0,.82,true,.98,-.01],[-34.0,81.0,.78,false,.99,.00],
+  [-23.0,86.0,.76,true,.99,.01],[-13.0,91.0,.74,false,.99,.02],
+  [-5.5,95.0,.70,true,.98,.03]
+]);
+
+const SINISTER_EDGE_ROOTS=Object.freeze([
+  [-3.8,58.0,.34,false,-.10,.90],[-3.2,65.5,.32,true,.04,.90],
+  [-2.8,72.5,.34,false,-.06,.92],[-2.4,78.0,.31,true,.05,.92],
+  [-2.0,86.0,.30,false,-.08,.90],[-1.6,94.0,.28,true,.03,.88]
+]);
+
+const SINISTER_GROUND_CLUSTERS=Object.freeze([
+  [-48,57,.34,false,-.08,.72],[-38,63,.32,true,.05,.70],[-28,69,.34,false,-.03,.74],
+  [-18,75,.32,true,.08,.72],[-9,81,.30,false,-.05,.72],[-44,86,.34,true,.04,.70],
+  [-31,91,.32,false,-.07,.72],[-18,96,.31,true,.06,.70],[-7,98,.28,false,-.04,.68]
+]);
+
+const SINISTER_CORRUPTION_EDGE=Object.freeze([
+  [-1.6,55.0,.29,.82,-.08,false],[-1.4,63.0,.28,.84,.05,true],
+  [-1.2,71.0,.28,.86,-.04,false],[-1.0,77.0,.26,.86,.03,true],
+  [-0.8,88.0,.25,.82,-.05,false],[-0.6,96.0,.24,.80,.04,true]
+]);
+
+
 const DEAD_TREE_VARIANTS=Object.freeze([
   'ancient_forest_tree_dead_01',
   'ancient_forest_tree_dead_02',
@@ -208,6 +253,7 @@ export class OldRoadAncientForestVisualExtension{
     this.floorSprites=[];
     this.treeSprites=[];
     this.deadTreeCount=0;
+    this.sinisterMassCount=0;
     this.build();
   }
 
@@ -293,6 +339,90 @@ export class OldRoadAncientForestVisualExtension{
     if(tint!=null)sprite.setTint(tint);
     this.treeSprites.push(sprite);
     return sprite;
+  }
+
+  addSinisterVertical(key,u,v,{scale=.7,alpha=1,flipX=false,depthOffset=0,tint=null}={}){
+    if(!this.isInsideApprovedCoverage(u,v)||!this.scene.textures.exists(key))return null;
+    const p=this.territory.project(u,v);
+    const source=this.scene.textures.get(key)?.getSourceImage?.();
+    const originY=source?.height?Math.max(.90,Math.min(1,(source.height-18)/source.height)):.96;
+    const sprite=this.scene.add.image(p.x,p.y,key)
+      .setOrigin(.5,originY)
+      .setScale(scale)
+      .setAlpha(alpha)
+      .setFlipX(flipX)
+      .setDepth(this.territory.depthAt(u,v,.10+depthOffset));
+    if(tint!=null)sprite.setTint(tint);
+    this.treeSprites.push(sprite);
+    return sprite;
+  }
+
+  addSinisterGround(key,u,v,{scale=.3,alpha=.75,rotation=0,flipX=false,depthBias=0,mask=null}={}){
+    if(!this.isInsideApprovedCoverage(u,v)||!this.scene.textures.exists(key))return null;
+    const p=this.territory.project(u,v);
+    const sprite=this.scene.add.image(p.x,p.y,key)
+      .setOrigin(.5,.58)
+      .setScale(scale)
+      .setAlpha(alpha)
+      .setRotation(rotation)
+      .setFlipX(flipX)
+      .setDepth(this.territory.groundDepth(-89.70+depthBias));
+    if(mask)sprite.setMask(mask);
+    this.floorSprites.push(sprite);
+    return sprite;
+  }
+
+  buildSinisterForestMass(mask){
+    const rng=mulberry32(220126);
+    let count=0;
+
+    // Chão orgânico de raízes/folhas: cobre os vazios entre troncos.
+    for(const [u,v,scale,flipX,rotation,alpha] of SINISTER_GROUND_CLUSTERS){
+      if(this.addSinisterGround(SINISTER_FOREST_KEYS.clearing,u,v,{scale,flipX,rotation,alpha,mask}))count++;
+    }
+    for(const [u,v,scale,alpha,rotation,flipX] of SINISTER_CORRUPTION_EDGE){
+      if(this.addSinisterGround(SINISTER_FOREST_KEYS.corruptionTransition,u,v,{scale,alpha,rotation,flipX,mask,depthBias:.02}))count++;
+    }
+
+    // Fundo: muralha contínua, sobreposta e com pouco espaço entre bases.
+    const bg=SINISTER_MASS_SETTINGS.background;
+    let row=0;
+    for(let v=bg.startV;v<=bg.endV;v+=bg.stepV,row++){
+      const off=(row%2?bg.rowOffset:0);
+      for(let u=bg.startU+off;u<=bg.endU;u+=bg.stepU){
+        const uu=u+(rng()-.5)*1.25, vv=v+(rng()-.5)*1.05;
+        if(!this.isInsideApprovedCoverage(uu,vv))continue;
+        const scale=.56+rng()*.09;
+        const alpha=.90+rng()*.08;
+        if(this.addSinisterVertical(SINISTER_FOREST_KEYS.wall,uu,vv,{scale,alpha,flipX:rng()>.5,depthOffset:-.04}))count++;
+      }
+    }
+
+    // Meio: bosque retorcido deslocado sobre o fundo para eliminar leitura de grade.
+    const mid=SINISTER_MASS_SETTINGS.middle;
+    row=0;
+    for(let v=mid.startV;v<=mid.endV;v+=mid.stepV,row++){
+      const off=(row%2?mid.rowOffset:0);
+      for(let u=mid.startU+off;u<=mid.endU;u+=mid.stepU){
+        const uu=u+(rng()-.5)*1.6, vv=v+(rng()-.5)*1.35;
+        if(!this.isInsideApprovedCoverage(uu,vv))continue;
+        const scale=.58+rng()*.11;
+        const alpha=.92+rng()*.07;
+        if(this.addSinisterVertical(SINISTER_FOREST_KEYS.grove,uu,vv,{scale,alpha,flipX:rng()>.5,depthOffset:.01}))count++;
+      }
+    }
+
+    // Frente: árvores maiores com silhueta distinta, seguindo a referência aprovada.
+    for(const [u,v,scale,flipX,alpha,depthOffset] of SINISTER_HERO_TREES){
+      if(this.addSinisterVertical(SINISTER_FOREST_KEYS.hero,u,v,{scale,flipX,alpha,depthOffset}))count++;
+    }
+
+    // Teias/raízes na borda interna dão continuidade à massa sem invadir a estrada.
+    for(const [u,v,scale,flipX,rotation,alpha] of SINISTER_EDGE_ROOTS){
+      if(this.addSinisterGround(SINISTER_FOREST_KEYS.webRoots,u,v,{scale,flipX,rotation,alpha,mask,depthBias:.04}))count++;
+    }
+
+    this.sinisterMassCount=count;
   }
 
   buildDeadTreeLayer(){
@@ -469,11 +599,11 @@ export class OldRoadAncientForestVisualExtension{
     this.buildFloorTextureLayer(mask,worldPolygons);
     this.buildOrganicGroundDetails(mask);
     this.buildTransitionLayer();
-    this.buildDeadTreeLayer();
+    this.buildSinisterForestMass(mask);
 
     const data={
-      version:'v0.3.1-round21-dead-tree-full-fill',
-      purpose:'sinister-forest-ground-exact-user-marked-border-transition',
+      version:'v0.3.1-round22-sinister-reference-mass',
+      purpose:'sinister-forest-reference-approved-dense-mass',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -496,11 +626,13 @@ export class OldRoadAncientForestVisualExtension{
         }
       },
       stage3:{
-        deadTreeMass:true,
+        deadTreeMass:false,
+        sinisterReferenceMass:true,
         collision:false,
-        assets:[...DEAD_TREE_VARIANTS],
-        count:this.deadTreeCount,
-        note:'preenchimento denso de árvores mortas em toda a cobertura visual aprovada'
+        assets:Object.values(SINISTER_FOREST_KEYS),
+        count:this.sinisterMassCount,
+        layers:['ground-organic','background-wall','middle-grove','hero-front','web-root-edge'],
+        note:'massa densa baseada na referência visual aprovada, usando os seis assets recém-criados'
       },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
