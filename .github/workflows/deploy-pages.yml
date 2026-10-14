@@ -20,6 +20,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Package Round 24 source
+        run: git archive --format=zip --output=legends-of-aether-v0.3.1-round24-floresta-ancestral-referencia-sinistra-source.zip HEAD^
+
+      - name: Upload Round 24 source artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: round24-source
+          path: legends-of-aether-v0.3.1-round24-floresta-ancestral-referencia-sinistra-source.zip
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
