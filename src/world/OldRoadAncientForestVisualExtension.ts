@@ -172,7 +172,11 @@ const VISUAL_ROAD_CONTINUATION=Object.freeze([
   {module:'straightLong',rotation:-76*Math.PI/180},
   {module:'straightLong',rotation:-72*Math.PI/180},
   {module:'straightLong',rotation:-68*Math.PI/180},
-  {module:'straightShort',rotation:-64*Math.PI/180}
+  {module:'straightShort',rotation:-64*Math.PI/180},
+  // Round 23 — completar EXATAMENTE o trecho restante indicado em vermelho:
+  // a estrada continua até ultrapassar a borda esquerda da área visual.
+  {module:'straightShort',rotation:-70*Math.PI/180},
+  {module:'straightShort',rotation:-76*Math.PI/180}
 ]);
 
 // Corredor visual em pixels ao redor da linha central. Apenas impede que a
@@ -335,11 +339,11 @@ export class OldRoadAncientForestVisualExtension{
       });
       if(!module)continue;
       module.sprite?.setData?.('oldRoadVisualContinuation',{
-        version:'v0.3.1-round22-visual-road-continuation',
+        version:'v0.3.1-round23-visual-road-continuation-complete',
         visualOnly:true,
         collision:false,
         expandsPlayableBounds:false,
-        reference:'refe.png',
+        reference:'Captura de tela 2026-10-14 135850(1).png — corredor vermelho autoritativo',
         ordinal:i,
         module:spec.module,
         rotation:spec.rotation
@@ -545,7 +549,7 @@ export class OldRoadAncientForestVisualExtension{
     this.buildDeadTreeLayer();
 
     const data={
-      version:'v0.3.1-round22-visual-road-continuation',
+      version:'v0.3.1-round23-visual-road-continuation-complete',
       purpose:'round21-base-plus-visual-old-road-continuation',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
@@ -581,11 +585,11 @@ export class OldRoadAncientForestVisualExtension{
         navigation:false,
         triggers:false,
         expandsPlayableBounds:false,
-        reference:'refe.png',
+        reference:'Captura de tela 2026-10-14 135850(1).png — corredor vermelho autoritativo',
         modules:VISUAL_ROAD_CONTINUATION.map(item=>({module:item.module,rotation:item.rotation})),
         clearRadiusPx:VISUAL_ROAD_CLEAR_RADIUS,
         worldPath:this.visualRoadPath.map(point=>({x:point.x,y:point.y})),
-        note:'continuidade exclusivamente visual da Estrada Velha, encaixada no conector inicial existente'
+        note:'continuidade exclusivamente visual da Estrada Velha, completada até a borda esquerda conforme a marcação vermelha do usuário'
       },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},

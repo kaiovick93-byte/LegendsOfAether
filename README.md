@@ -1,3 +1,26 @@
+# Legends of Aether — v0.3.1 Round 23 — Continuação visual completa da Estrada Velha
+
+Base exclusiva: `legends-of-aether-v0.3.1-round22-continuacao-visual-estrada.zip` (derivada do Round 21 aprovado).
+
+## Objetivo
+
+Completar **somente o trecho restante da continuação visual da Estrada Velha** indicado pela marcação vermelha do usuário, levando a estrada até a borda esquerda da área visual.
+
+## Implementação
+
+- preservada toda a estrada já aprovada do Round 22;
+- acrescentados somente os módulos finais necessários para atravessar o corredor marcado em vermelho;
+- o prolongamento termina além da borda esquerda para não deixar corte/gap visível;
+- continua sendo **100% visual**: sem colisão, navegação, triggers, quests ou expansão dos bounds jogáveis;
+- o corredor de exclusão das árvores acompanha automaticamente o caminho visual completo.
+
+## Arquivos alterados
+
+- `src/world/OldRoadAncientForestVisualExtension.ts`
+- `README.md`
+
+---
+
 # Legends of Aether — v0.3.1 Round 22 — Continuidade visual da Estrada Velha
 
 Base exclusiva: `legends-of-aether-v0.3.1-round21-preenchimento-total-arvores-mortas.zip`.
