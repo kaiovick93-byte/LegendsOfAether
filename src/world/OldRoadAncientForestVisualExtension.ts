@@ -161,6 +161,24 @@ const ROAD_EDGE_TRANSITIONS=Object.freeze([
   [0.000,82.000,.16,.92, 3.1415926536,true]
 ]);
 
+
+// Novo Round 22 (reiniciado a partir do Round 21 aprovado) — continuidade
+// VISUAL da Estrada Velha para dentro da floresta sinistra. A referência
+// aprovada mostra uma curva suave para cima/esquerda, saindo pelo lado esquerdo
+// da tela. Estes módulos usam somente a arte já aprovada da Estrada Velha;
+// não criam colisão, navegação, trigger, rota lógica ou expansão jogável.
+const VISUAL_ROAD_CONTINUATION=Object.freeze([
+  {module:'straightLong',rotation:-80*Math.PI/180},
+  {module:'straightLong',rotation:-76*Math.PI/180},
+  {module:'straightLong',rotation:-72*Math.PI/180},
+  {module:'straightLong',rotation:-68*Math.PI/180},
+  {module:'straightShort',rotation:-64*Math.PI/180}
+]);
+
+// Corredor visual em pixels ao redor da linha central. Apenas impede que a
+// massa de árvores do Round 21 nasça em cima da estrada. Não altera colisão.
+const VISUAL_ROAD_CLEAR_RADIUS=74;
+
 const rectanglePoints=b=>[
   {u:b.minU,v:b.minV},
   {u:b.maxU,v:b.minV},
@@ -176,6 +194,16 @@ const pointInPolygon=(u,v,poly)=>{
     if(hit)inside=!inside;
   }
   return inside;
+};
+
+
+const distancePointToSegment=(px,py,a,b)=>{
+  const vx=b.x-a.x,vy=b.y-a.y;
+  const wx=px-a.x,wy=py-a.y;
+  const len2=vx*vx+vy*vy;
+  const t=len2>0?Math.max(0,Math.min(1,(wx*vx+wy*vy)/len2)):0;
+  const dx=px-(a.x+vx*t),dy=py-(a.y+vy*t);
+  return Math.sqrt(dx*dx+dy*dy);
 };
 
 const mulberry32=seed=>()=>{
@@ -207,6 +235,8 @@ export class OldRoadAncientForestVisualExtension{
     this.transitionLayer=null;
     this.floorSprites=[];
     this.treeSprites=[];
+    this.visualRoadSprites=[];
+    this.visualRoadPath=[];
     this.deadTreeCount=0;
     this.build();
   }
@@ -279,8 +309,50 @@ export class OldRoadAncientForestVisualExtension{
   }
 
 
+  isInsideVisualRoadCorridor(u,v){
+    if(!this.visualRoadPath||this.visualRoadPath.length<2)return false;
+    const p=this.territory.project(u,v);
+    for(let i=1;i<this.visualRoadPath.length;i++){
+      if(distancePointToSegment(p.x,p.y,this.visualRoadPath[i-1],this.visualRoadPath[i])<=VISUAL_ROAD_CLEAR_RADIUS)return true;
+    }
+    return false;
+  }
+
+  buildVisualRoadContinuation(){
+    const road=this.scene.registry.get('oldRoadConnectorTest');
+    const start=road?.start?.actual;
+    if(!start||!this.territory.placeRoadConnectorModule)return;
+
+    let anchor={x:start.x,y:start.y};
+    this.visualRoadPath=[{...anchor}];
+
+    for(let i=0;i<VISUAL_ROAD_CONTINUATION.length;i++){
+      const spec=VISUAL_ROAD_CONTINUATION[i];
+      const module=this.territory.placeRoadConnectorModule(spec.module,anchor,'south',{
+        rotation:spec.rotation,
+        visibleRadius:40,
+        activeRadius:44
+      });
+      if(!module)continue;
+      module.sprite?.setData?.('oldRoadVisualContinuation',{
+        version:'v0.3.1-round22-visual-road-continuation',
+        visualOnly:true,
+        collision:false,
+        expandsPlayableBounds:false,
+        reference:'refe.png',
+        ordinal:i,
+        module:spec.module,
+        rotation:spec.rotation
+      });
+      if(module.sprite)this.visualRoadSprites.push(module.sprite);
+      anchor={x:module.connectors.north.x,y:module.connectors.north.y};
+      this.visualRoadPath.push({...anchor});
+    }
+  }
+
+
   addDeadTree(key,u,v,{scale=1,alpha=.82,flipX=false,depthOffset=0,tint=null}={}){
-    if(!this.isInsideApprovedCoverage(u,v)||!this.scene.textures.exists(key))return null;
+    if(!this.isInsideApprovedCoverage(u,v)||this.isInsideVisualRoadCorridor(u,v)||!this.scene.textures.exists(key))return null;
     const p=this.territory.project(u,v);
     const source=this.scene.textures.get(key)?.getSourceImage?.();
     const originY=source?.height?Math.max(.86,Math.min(1,(source.height-12)/source.height)):.94;
@@ -469,11 +541,12 @@ export class OldRoadAncientForestVisualExtension{
     this.buildFloorTextureLayer(mask,worldPolygons);
     this.buildOrganicGroundDetails(mask);
     this.buildTransitionLayer();
+    this.buildVisualRoadContinuation();
     this.buildDeadTreeLayer();
 
     const data={
-      version:'v0.3.1-round21-dead-tree-full-fill',
-      purpose:'sinister-forest-ground-exact-user-marked-border-transition',
+      version:'v0.3.1-round22-visual-road-continuation',
+      purpose:'round21-base-plus-visual-old-road-continuation',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -483,7 +556,7 @@ export class OldRoadAncientForestVisualExtension{
         largeTrees:false,
         largeLogs:false,
         spiderWebProps:false,
-        roadExtension:false,
+        roadExtension:true,
         groundAssets:{
           surfaces:[...SURFACE_KEYS],
           decals:[DECAL_KEYS.swamp,DECAL_KEYS.debris,DECAL_KEYS.leafPile,DECAL_KEYS.roots],
@@ -501,6 +574,18 @@ export class OldRoadAncientForestVisualExtension{
         assets:[...DEAD_TREE_VARIANTS],
         count:this.deadTreeCount,
         note:'preenchimento denso de árvores mortas em toda a cobertura visual aprovada'
+      },
+      stage4:{
+        visualRoadContinuation:true,
+        collision:false,
+        navigation:false,
+        triggers:false,
+        expandsPlayableBounds:false,
+        reference:'refe.png',
+        modules:VISUAL_ROAD_CONTINUATION.map(item=>({module:item.module,rotation:item.rotation})),
+        clearRadiusPx:VISUAL_ROAD_CLEAR_RADIUS,
+        worldPath:this.visualRoadPath.map(point=>({x:point.x,y:point.y})),
+        note:'continuidade exclusivamente visual da Estrada Velha, encaixada no conector inicial existente'
       },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
@@ -530,10 +615,13 @@ export class OldRoadAncientForestVisualExtension{
     this.detailGraphics?.destroy?.();
     this.transitionLayer?.destroy?.(true);
     this.treeSprites?.forEach(sprite=>sprite?.destroy?.());
+    this.visualRoadSprites?.forEach(sprite=>sprite?.destroy?.());
     this.graphics?.destroy?.();
     this.maskGraphics?.destroy?.();
     this.floorSprites=[];
     this.treeSprites=[];
+    this.visualRoadSprites=[];
+    this.visualRoadPath=[];
     this.textureLayer=null;
     this.detailGraphics=null;
     this.transitionLayer=null;

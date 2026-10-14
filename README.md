@@ -1,87 +1,25 @@
-# Legends of Aether — v0.3.1 Round 23 — Floresta Ancestral com assets da Floresta Sinistra
+# Legends of Aether — v0.3.1 Round 22 — Continuidade visual da Estrada Velha
 
-Base: `legends-of-aether-v0.3.1-round22-floresta-sinistra-referencia.zip`.
+Base exclusiva: `legends-of-aether-v0.3.1-round21-preenchimento-total-arvores-mortas.zip`.
 
 ## Objetivo
 
-Fazer a **Floresta Ancestral da Estrada Velha** usar o mesmo kit visual da
-**Floresta Sinistra**, preservando a geometria original, a densidade, a névoa,
-as sombras, a colisão e os pontos já aprovados da Floresta Ancestral.
+Implementar **somente a continuidade visual** da Estrada Velha para dentro da área
+da futura Floresta Sinistra, seguindo a referência `refe.png`.
 
 ## Implementação
 
-- as bases/posições `TREE_BASES`, `STRUCTURE_BASES` e `GROUND_BASES` foram preservadas;
-- a geometria `OLD_ROAD_ANCIENT_FOREST_POLYGON` não foi alterada;
-- colisão e clear-zone da placa permanecem intactas;
-- árvores/estruturas/chão e acentos atmosféricos agora usam exclusivamente o kit `sinister-reference`;
-- os mesmos 6 assets da Floresta Sinistra são compartilhados entre as duas composições;
-- o preload passou a carregar esse kit através de `OLD_ROAD_ANCIENT_FOREST_ASSETS`, evitando carga duplicada.
+- o encaixe começa no conector inicial real da Estrada Velha já existente;
+- a continuação usa 4 módulos `straightLong` + 1 `straightShort` do kit B4D já aprovado;
+- as rotações formam a curva progressiva para cima/esquerda vista na referência;
+- a estrada é puramente visual: sem colisão, navegação, trigger, quest ou expansão de bounds;
+- a massa de árvores do Round 21 apenas respeita um corredor visual local para não nascer sobre a estrada;
+- nenhum asset novo foi criado e nenhuma geometria aprovada do mapa foi alterada.
 
 ## Arquivos alterados
 
-- `src/world/OldRoadAncientForest.ts`
-- `src/scenes/PreloadScene.ts`
-- `README.md`
-
-## Assets reutilizados (sem arquivos novos)
-
-- `sinister_forest_wall_mass_01.png`
-- `sinister_forest_grove_roots_01.png`
-- `sinister_forest_hero_tree_01.png`
-- `sinister_forest_ground_clearing_01.png`
-- `sinister_forest_web_roots_01.png`
-- `sinister_forest_corruption_transition_01.png`
-
-## Validação
-
-- presença dos 6 assets confirmada;
-- sintaxe dos dois arquivos TypeScript alterados validada via `typescript.transpileModule`;
-- `npm run build` continua bloqueado por dependência incompleta herdada da base (`@types/estree`);
-- `npm run test:world-clock` também não roda nesta cópia porque o pacote `typescript` em `node_modules` está incompleto.
-
----
-
-# Legends of Aether — v0.3.1 Round 22 — Floresta sinistra pela referência aprovada
-
-Base: `legends-of-aether-v0.3.1-round21-preenchimento-total-arvores-mortas.zip`.
-
-## Objetivo
-
-Substituir a leitura de árvores mortas isoladas pela **massa densa da floresta sinistra**, usando diretamente os seis assets recém-criados e a imagem aprovada como referência visual.
-
-## Implementação
-
-A massa agora é construída em cinco camadas visuais:
-
-1. solo orgânico de raízes/folhas;
-2. muralha contínua de floresta assombrada no fundo;
-3. bosque retorcido intermediário sobreposto;
-4. árvores hero/frontais para quebrar repetição e dar profundidade;
-5. raízes com teias e transição corrompida na borda interna.
-
-A geometria aprovada da cobertura continua congelada e não houve alteração de colisão, bounds jogáveis, estrada, placa, lanterna, cerca ou escarpa.
-
-## Novos assets integrados
-
-- `sinister_forest_wall_mass_01.png`
-- `sinister_forest_grove_roots_01.png`
-- `sinister_forest_hero_tree_01.png`
-- `sinister_forest_ground_clearing_01.png`
-- `sinister_forest_web_roots_01.png`
-- `sinister_forest_corruption_transition_01.png`
-
-## Arquivos de código alterados
-
-- `src/scenes/PreloadScene.ts`
 - `src/world/OldRoadAncientForestVisualExtension.ts`
 - `README.md`
-
-## Validação
-
-- os seis PNGs existem no caminho final do projeto e estão registrados no preload;
-- todos os seis keys são usados pela composição da floresta;
-- `PreloadScene.ts` e `OldRoadAncientForestVisualExtension.ts` passaram em validação sintática isolada com TypeScript 5.8.3;
-- o build completo continua bloqueado pelo `node_modules` incompleto herdado do ZIP (`@types/estree`/`typescript` vazios), problema já existente na base e não causado por esta alteração.
 
 ---
 
