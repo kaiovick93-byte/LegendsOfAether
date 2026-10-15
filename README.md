@@ -1,3 +1,50 @@
+# Legends of Aether — v0.3.1 Round 28 — Floresta Sinistra ao redor da Estrada — Etapa 2
+
+Base exclusiva: `legends-of-aether-v0.3.1-round27-ajuste-final-integracao-chao.zip`.
+
+## Objetivo
+
+Iniciar a **Etapa 2 — massa baixa nas bordas da estrada**, preservando integralmente a Etapa 1 aprovada no Round 27.
+
+## Implementação
+
+Foram adicionados, de forma gradual e somente visual:
+
+- raízes maiores nas bordas da estrada;
+- galhos/troncos baixos;
+- tocos;
+- vegetação morta baixa;
+- teias próximas ao chão.
+
+A distribuição é deliberadamente moderada nesta primeira passagem da Etapa 2. Ainda **não** foi criada a parede densa de árvores da Etapa 3.
+
+## Assets
+
+Nenhum asset novo foi gerado. Foi integrado ao projeto um asset já criado anteriormente:
+
+- `sinister_low_web_roots_01.png`
+
+Os demais elementos reutilizam assets já presentes no projeto (`ancient_forest_root_*`, `ancient_forest_stump_*`, `ancient_forest_log_*`, `ancient_forest_thorn_*` e `ancient_forest_underbrush_*`), com ajuste de escala, rotação, opacidade e tonalidade.
+
+## Regras preservadas
+
+- Etapa 1 do Round 27 congelada;
+- estrada visual sem alteração;
+- sem colisão nova;
+- sem mudança de bounds;
+- sem triggers/quests/gameplay;
+- sem ossos ou crânios nesta etapa;
+- sem árvores grandes novas nesta etapa.
+
+## Arquivos alterados/adicionados
+
+- `src/world/OldRoadAncientForestVisualExtension.ts`
+- `src/scenes/PreloadScene.ts`
+- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2/sinister_low_web_roots_01.png`
+- `README.md`
+
+---
+
 # Legends of Aether — v0.3.1 Round 27
 
 ## Objetivo

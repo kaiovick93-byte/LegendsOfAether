@@ -22,6 +22,8 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('sinister_ground_transition_grass_swamp_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_transition_grass_swamp_01.png');
     this.load.image('sinister_ground_transition_forest_swamp_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_transition_forest_swamp_01.png');
     this.load.image('sinister_ground_transition_road_swamp_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_transition_road_swamp_01.png');
+    // Round 28 — Etapa 2: asset de raízes/teias já criado anteriormente e agora integrado ao jogo.
+    this.load.image('sinister_low_web_roots_01','assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2/sinister_low_web_roots_01.png');
     for(const asset of Object.values(ESCARPMENT_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(ESCARPMENT_NATURAL_ASSETS))this.load.image(asset.key,asset.path);
     for(const key of Object.values(OLD_ROAD_B4D_TEXTURES).flat())

@@ -243,6 +243,45 @@ const SINISTER_ROADSIDE_TRANSITION_KEYS=Object.freeze([
   DECAL_KEYS.grassToSwamp
 ]);
 
+
+// Round 28 — Etapa 2: massa baixa nas bordas da estrada.
+// Usa somente assets já existentes/criados anteriormente. Nenhum asset novo
+// é gerado nesta etapa. Todos os elementos são puramente visuais e sem colisão.
+const SINISTER_LOW_MASS_WEB_KEY='sinister_low_web_roots_01';
+
+const SINISTER_LOW_MASS_LAYOUT=Object.freeze([
+  // Saída junto à placa: intervenção mínima para preservar a transição verde.
+  {seg:1,t:.58,side:-1,offset:126,key:'ancient_forest_root_03',scale:.66,alpha:.86,rot:.10,flip:false,tint:0x705746},
+  {seg:1,t:.84,side:-1,offset:154,key:'ancient_forest_underbrush_03',scale:.58,alpha:.78,rot:-.08,flip:true,tint:0x68503f},
+
+  // Primeiro trecho fechado da floresta sinistra.
+  {seg:2,t:.28,side:1,offset:132,key:'ancient_forest_stump_02',scale:.62,alpha:.88,rot:.04,flip:false,tint:0x745b48},
+  {seg:2,t:.55,side:-1,offset:122,key:'ancient_forest_root_05',scale:.70,alpha:.88,rot:-.12,flip:true,tint:0x6d5342},
+  {seg:2,t:.82,side:1,offset:164,key:SINISTER_LOW_MASS_WEB_KEY,scale:.105,alpha:.82,rot:.08,flip:true,tint:null},
+
+  // Centro: alternância de raízes, troncos baixos, tocos e teias.
+  {seg:3,t:.22,side:-1,offset:142,key:'ancient_forest_log_03',scale:.54,alpha:.86,rot:.18,flip:false,tint:0x6a5140},
+  {seg:3,t:.48,side:1,offset:124,key:'ancient_forest_root_01',scale:.72,alpha:.90,rot:-.06,flip:false,tint:0x725847},
+  {seg:3,t:.76,side:-1,offset:158,key:SINISTER_LOW_MASS_WEB_KEY,scale:.098,alpha:.78,rot:-.11,flip:false,tint:null},
+
+  {seg:4,t:.24,side:1,offset:146,key:'ancient_forest_stump_01',scale:.60,alpha:.88,rot:-.03,flip:true,tint:0x6d5543},
+  {seg:4,t:.50,side:-1,offset:120,key:'ancient_forest_thorn_07',scale:.70,alpha:.82,rot:.12,flip:false,tint:0x604937},
+  {seg:4,t:.78,side:1,offset:134,key:'ancient_forest_root_06',scale:.68,alpha:.88,rot:-.14,flip:true,tint:0x725745},
+
+  {seg:5,t:.30,side:-1,offset:150,key:'ancient_forest_log_05',scale:.52,alpha:.84,rot:-.16,flip:true,tint:0x674e3d},
+  {seg:5,t:.62,side:1,offset:126,key:SINISTER_LOW_MASS_WEB_KEY,scale:.100,alpha:.80,rot:.09,flip:false,tint:null},
+  {seg:5,t:.86,side:-1,offset:122,key:'ancient_forest_underbrush_02',scale:.60,alpha:.80,rot:.04,flip:false,tint:0x624a39},
+
+  // Trechos finais: massa baixa um pouco mais fechada, ainda sem parede de árvores.
+  {seg:6,t:.24,side:1,offset:144,key:'ancient_forest_root_02',scale:.70,alpha:.89,rot:.15,flip:false,tint:0x6f5644},
+  {seg:6,t:.52,side:-1,offset:132,key:'ancient_forest_stump_03',scale:.60,alpha:.86,rot:-.05,flip:true,tint:0x6b5241},
+  {seg:6,t:.80,side:1,offset:164,key:SINISTER_LOW_MASS_WEB_KEY,scale:.102,alpha:.78,rot:-.08,flip:true,tint:null},
+
+  {seg:7,t:.22,side:-1,offset:142,key:'ancient_forest_log_02',scale:.52,alpha:.84,rot:.14,flip:false,tint:0x654d3c},
+  {seg:7,t:.50,side:1,offset:126,key:'ancient_forest_root_04',scale:.68,alpha:.88,rot:-.10,flip:true,tint:0x6c5342},
+  {seg:7,t:.76,side:-1,offset:156,key:'ancient_forest_thorn_08',scale:.68,alpha:.80,rot:.06,flip:true,tint:0x5e4736}
+]);
+
 const rectanglePoints=b=>[
   {u:b.minU,v:b.minV},
   {u:b.maxU,v:b.minV},
@@ -303,6 +342,8 @@ export class OldRoadAncientForestVisualExtension{
     this.visualRoadPath=[];
     this.roadsideGroundSprites=[];
     this.roadsideGroundCount=0;
+    this.lowMassSprites=[];
+    this.lowMassCount=0;
     this.deadTreeCount=0;
     this.build();
   }
@@ -540,6 +581,58 @@ export class OldRoadAncientForestVisualExtension{
     this.roadsideGroundCount=count;
   }
 
+  addLowMassSprite(key,x,y,{scale=.65,alpha=.86,rotation=0,flipX=false,tint=null,depthBias=0,originY=.72}={}){
+    if(!this.scene.textures.exists(key))return null;
+    const sprite=this.scene.add.image(x,y,key)
+      .setOrigin(.5,originY)
+      .setScale(scale)
+      .setAlpha(alpha)
+      .setRotation(rotation)
+      .setFlipX(flipX)
+      .setDepth(this.territory.groundDepth(-69.86+depthBias));
+    if(tint!=null)sprite.setTint(tint);
+    sprite.setData('sinisterRoadsideLowMass',{
+      version:'v0.3.1-round28-stage2-low-mass',
+      visualOnly:true,
+      collision:false,
+      key
+    });
+    this.lowMassSprites.push(sprite);
+    return sprite;
+  }
+
+  buildRoadsideLowMass(){
+    if(!this.visualRoadPath||this.visualRoadPath.length<2)return;
+    let count=0;
+
+    for(const spec of SINISTER_LOW_MASS_LAYOUT){
+      const a=this.visualRoadPath[spec.seg-1];
+      const b=this.visualRoadPath[spec.seg];
+      if(!a||!b)continue;
+      const dx=b.x-a.x,dy=b.y-a.y;
+      const len=Math.hypot(dx,dy)||1;
+      const tx=dx/len,ty=dy/len;
+      const nx=-ty,ny=tx;
+      const baseX=a.x+dx*spec.t;
+      const baseY=a.y+dy*spec.t;
+      const x=baseX+nx*spec.offset*spec.side;
+      const y=baseY+ny*spec.offset*spec.side;
+      const roadAngle=Math.atan2(dy,dx);
+
+      if(this.addLowMassSprite(spec.key,x,y,{
+        scale:spec.scale,
+        alpha:spec.alpha,
+        rotation:roadAngle+spec.rot,
+        flipX:spec.flip,
+        tint:spec.tint,
+        depthBias:(spec.side>0 ? .02 : .01),
+        originY:spec.key===SINISTER_LOW_MASS_WEB_KEY ? .58 : .74
+      }))count++;
+    }
+
+    this.lowMassCount=count;
+  }
+
   addDeadTree(key,u,v,{scale=1,alpha=.82,flipX=false,depthOffset=0,tint=null}={}){
     if(!this.isInsideApprovedCoverage(u,v)||this.isInsideVisualRoadCorridor(u,v)||!this.scene.textures.exists(key))return null;
     const p=this.territory.project(u,v);
@@ -772,11 +865,12 @@ export class OldRoadAncientForestVisualExtension{
     this.buildTransitionLayer();
     this.buildVisualRoadContinuation();
     this.buildRoadsideSinisterGround();
+    this.buildRoadsideLowMass();
     this.buildDeadTreeLayer();
 
     const data={
-      version:'v0.3.1-round27-stage1-ground-final-integration',
-      purpose:'round23-road-base-plus-round27-stage1-ground-final-integration',
+      version:'v0.3.1-round28-stage2-low-mass',
+      purpose:'round27-approved-stage1-plus-round28-stage2-low-mass',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -830,6 +924,27 @@ export class OldRoadAncientForestVisualExtension{
         reference:'aether_caminho_na_floresta_assombrada.png',
         note:'Etapa 1 finalizada: transição inferior/direita suavizada nas arestas aprovadas do wedge e repetição superior quebrada com variação das mesmas texturas existentes; sem árvores novas, sem assets inéditos e sem mudança de geometria.'
       },
+      stage6:{
+        sinisterForestAroundRoadStage:2,
+        visualOnly:true,
+        collision:false,
+        roadChanged:false,
+        stage1GroundFrozen:true,
+        treesAdded:false,
+        bonesAdded:false,
+        lowMassSprites:this.lowMassCount,
+        assets:[
+          SINISTER_LOW_MASS_WEB_KEY,
+          'ancient_forest_root_01','ancient_forest_root_02','ancient_forest_root_03',
+          'ancient_forest_root_04','ancient_forest_root_05','ancient_forest_root_06',
+          'ancient_forest_stump_01','ancient_forest_stump_02','ancient_forest_stump_03',
+          'ancient_forest_log_02','ancient_forest_log_03','ancient_forest_log_05',
+          'ancient_forest_thorn_07','ancient_forest_thorn_08',
+          'ancient_forest_underbrush_02','ancient_forest_underbrush_03'
+        ],
+        reference:'aether_caminho_na_floresta_assombrada.png',
+        note:'Etapa 2 inicial: massa baixa gradual nas bordas da estrada com raízes, galhos, tocos, vegetação morta e teias baixas; sem parede de árvores, sem ossos e sem colisão.'
+      },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
         logicalPoints:baseLogical.map(point=>({...point})),
@@ -860,6 +975,7 @@ export class OldRoadAncientForestVisualExtension{
     this.treeSprites?.forEach(sprite=>sprite?.destroy?.());
     this.visualRoadSprites?.forEach(sprite=>sprite?.destroy?.());
     this.roadsideGroundSprites?.forEach(sprite=>sprite?.destroy?.());
+    this.lowMassSprites?.forEach(sprite=>sprite?.destroy?.());
     this.graphics?.destroy?.();
     this.maskGraphics?.destroy?.();
     this.floorSprites=[];
@@ -868,6 +984,8 @@ export class OldRoadAncientForestVisualExtension{
     this.visualRoadPath=[];
     this.roadsideGroundSprites=[];
     this.roadsideGroundCount=0;
+    this.lowMassSprites=[];
+    this.lowMassCount=0;
     this.textureLayer=null;
     this.detailGraphics=null;
     this.transitionLayer=null;
