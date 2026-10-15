@@ -1,3 +1,35 @@
+# Legends of Aether — v0.3.1 Round 24 — Floresta Sinistra ao redor da Estrada — Etapa 1
+
+Base exclusiva: `legends-of-aether-v0.3.1-round23-continuacao-visual-estrada-completa.zip`.
+
+## Objetivo
+
+Implementar **somente a Etapa 1** da Floresta Sinistra ao redor da continuação visual da Estrada Velha, usando a referência aprovada `aether_caminho_na_floresta_assombrada.png`.
+
+Nesta etapa entram apenas elementos de chão junto à estrada:
+
+- solo escuro;
+- folhas secas;
+- detritos orgânicos;
+- raízes rasas;
+- costura local entre o terreno já existente e a nova área sombria.
+
+## Regras preservadas
+
+- a Estrada Velha visual do Round 23 não foi reposicionada, redimensionada ou redesenhada;
+- nenhuma árvore nova foi adicionada nesta etapa;
+- nenhum osso ou crânio foi adicionado nesta etapa;
+- nenhuma colisão, navegação, trigger, quest ou bounds jogável foi alterado;
+- a composição usa somente assets de solo já existentes no projeto;
+- a Etapa 1 é uma camada visual de acabamento ao longo dos dois lados da estrada.
+
+## Arquivos alterados
+
+- `src/world/OldRoadAncientForestVisualExtension.ts`
+- `README.md`
+
+---
+
 # Legends of Aether — v0.3.1 Round 23 — Continuação visual completa da Estrada Velha
 
 Base exclusiva: `legends-of-aether-v0.3.1-round22-continuacao-visual-estrada.zip` (derivada do Round 21 aprovado).

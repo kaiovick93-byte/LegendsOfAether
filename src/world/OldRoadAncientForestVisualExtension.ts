@@ -181,7 +181,28 @@ const VISUAL_ROAD_CONTINUATION=Object.freeze([
 
 // Corredor visual em pixels ao redor da linha central. Apenas impede que a
 // massa de árvores do Round 21 nasça em cima da estrada. Não altera colisão.
+
 const VISUAL_ROAD_CLEAR_RADIUS=74;
+
+// Round 24 — Etapa 1 da Floresta Sinistra ao redor da estrada visual.
+// Somente chão/vegetação rasteira: solo escuro, folhas secas, detritos e
+// raízes rasas. Não adiciona árvores, ossos, caveiras, colisão ou gameplay.
+const SINISTER_ROADSIDE_GROUND=Object.freeze({
+  innerOffset:92,
+  outerOffset:132,
+  sampleStepPx:92,
+  sideJitterPx:10,
+  alongJitterPx:8,
+  baseScale:.145,
+  alpha:.72
+});
+
+const SINISTER_ROADSIDE_KEYS=Object.freeze([
+  DECAL_KEYS.swamp,
+  DECAL_KEYS.debris,
+  DECAL_KEYS.leafPile,
+  DECAL_KEYS.roots
+]);
 
 const rectanglePoints=b=>[
   {u:b.minU,v:b.minV},
@@ -241,6 +262,8 @@ export class OldRoadAncientForestVisualExtension{
     this.treeSprites=[];
     this.visualRoadSprites=[];
     this.visualRoadPath=[];
+    this.roadsideGroundSprites=[];
+    this.roadsideGroundCount=0;
     this.deadTreeCount=0;
     this.build();
   }
@@ -339,7 +362,7 @@ export class OldRoadAncientForestVisualExtension{
       });
       if(!module)continue;
       module.sprite?.setData?.('oldRoadVisualContinuation',{
-        version:'v0.3.1-round23-visual-road-continuation-complete',
+        version:'v0.3.1-round24-stage1-sinister-roadside-ground',
         visualOnly:true,
         collision:false,
         expandsPlayableBounds:false,
@@ -354,6 +377,85 @@ export class OldRoadAncientForestVisualExtension{
     }
   }
 
+
+
+  addRoadsideGroundSprite(key,x,y,{scale=.15,alpha=.72,rotation=0,flipX=false,depthBias=0}={}){
+    if(!this.scene.textures.exists(key))return null;
+    const sprite=this.scene.add.image(x,y,key)
+      .setOrigin(.5,.56)
+      .setScale(scale)
+      .setAlpha(alpha)
+      .setRotation(rotation)
+      .setFlipX(flipX)
+      .setDepth(this.territory.groundDepth(-79.72+depthBias));
+    sprite.setData('sinisterRoadsideGround',{
+      version:'v0.3.1-round24-stage1-roadside-ground',
+      visualOnly:true,
+      collision:false,
+      key
+    });
+    this.roadsideGroundSprites.push(sprite);
+    return sprite;
+  }
+
+  buildRoadsideSinisterGround(){
+    if(!this.visualRoadPath||this.visualRoadPath.length<2)return;
+
+    const rng=mulberry32(241014);
+    let count=0;
+    const cfg=SINISTER_ROADSIDE_GROUND;
+
+    for(let seg=1;seg<this.visualRoadPath.length;seg++){
+      const a=this.visualRoadPath[seg-1];
+      const b=this.visualRoadPath[seg];
+      const dx=b.x-a.x,dy=b.y-a.y;
+      const len=Math.hypot(dx,dy);
+      if(len<1)continue;
+      const tx=dx/len,ty=dy/len;
+      const nx=-ty,ny=tx;
+      const samples=Math.max(1,Math.ceil(len/cfg.sampleStepPx));
+      const roadAngle=Math.atan2(dy,dx);
+
+      for(let i=0;i<=samples;i++){
+        const t=Math.min(1,i/samples);
+        const baseX=a.x+dx*t;
+        const baseY=a.y+dy*t;
+
+        for(const side of [-1,1]){
+          // Duas faixas rasas por lado: uma imediatamente após a estrada e
+          // outra um pouco mais externa para a transição parecer orgânica.
+          for(const ring of [0,1]){
+            const offset=(ring===0?cfg.innerOffset:cfg.outerOffset)+(rng()-.5)*cfg.sideJitterPx;
+            const along=(rng()-.5)*cfg.alongJitterPx;
+            const x=baseX+nx*offset*side+tx*along;
+            const y=baseY+ny*offset*side+ty*along;
+            const key=SINISTER_ROADSIDE_KEYS[Math.floor(rng()*SINISTER_ROADSIDE_KEYS.length)%SINISTER_ROADSIDE_KEYS.length];
+            const scale=cfg.baseScale+(ring===0 ? .016 : .004)+(rng()-.5)*.018;
+            const alpha=cfg.alpha-(ring===0?0:.08)+(rng()-.5)*.08;
+            const rotation=roadAngle+(rng()-.5)*.34;
+            const flipX=rng()>.5;
+            if(this.addRoadsideGroundSprite(key,x,y,{scale,alpha,rotation,flipX,depthBias:ring*.01}))count++;
+          }
+        }
+      }
+    }
+
+    // Costura local no início da extensão: reforça folhas/raízes sem cobrir
+    // a estrada e sem alterar a transição global já aprovada do mapa.
+    const first=this.visualRoadPath[0];
+    const second=this.visualRoadPath[1];
+    if(first&&second){
+      const dx=second.x-first.x,dy=second.y-first.y,len=Math.hypot(dx,dy)||1;
+      const nx=-dy/len,ny=dx/len;
+      for(const side of [-1,1]){
+        const x=first.x+nx*108*side;
+        const y=first.y+ny*108*side;
+        if(this.addRoadsideGroundSprite(DECAL_KEYS.forestToSwamp,x,y,{scale:.17,alpha:.78,rotation:Math.atan2(dy,dx),flipX:side<0,depthBias:.02}))count++;
+      }
+    }
+
+    this.roadsideGroundCount=count;
+  }
 
   addDeadTree(key,u,v,{scale=1,alpha=.82,flipX=false,depthOffset=0,tint=null}={}){
     if(!this.isInsideApprovedCoverage(u,v)||this.isInsideVisualRoadCorridor(u,v)||!this.scene.textures.exists(key))return null;
@@ -546,11 +648,12 @@ export class OldRoadAncientForestVisualExtension{
     this.buildOrganicGroundDetails(mask);
     this.buildTransitionLayer();
     this.buildVisualRoadContinuation();
+    this.buildRoadsideSinisterGround();
     this.buildDeadTreeLayer();
 
     const data={
-      version:'v0.3.1-round23-visual-road-continuation-complete',
-      purpose:'round21-base-plus-visual-old-road-continuation',
+      version:'v0.3.1-round24-stage1-sinister-roadside-ground',
+      purpose:'round23-road-base-plus-stage1-sinister-roadside-ground',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -591,6 +694,18 @@ export class OldRoadAncientForestVisualExtension{
         worldPath:this.visualRoadPath.map(point=>({x:point.x,y:point.y})),
         note:'continuidade exclusivamente visual da Estrada Velha, completada até a borda esquerda conforme a marcação vermelha do usuário'
       },
+      stage5:{
+        sinisterForestAroundRoadStage:1,
+        visualOnly:true,
+        collision:false,
+        treesAdded:false,
+        bonesAdded:false,
+        roadChanged:false,
+        groundSprites:this.roadsideGroundCount,
+        assets:[...SINISTER_ROADSIDE_KEYS,DECAL_KEYS.forestToSwamp],
+        reference:'aether_caminho_na_floresta_assombrada.png',
+        note:'Etapa 1: chão sinistro junto à continuação visual da estrada, com terra escura, folhas secas, detritos, raízes rasas e costura local; sem árvores novas.'
+      },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
         logicalPoints:baseLogical.map(point=>({...point})),
@@ -620,12 +735,15 @@ export class OldRoadAncientForestVisualExtension{
     this.transitionLayer?.destroy?.(true);
     this.treeSprites?.forEach(sprite=>sprite?.destroy?.());
     this.visualRoadSprites?.forEach(sprite=>sprite?.destroy?.());
+    this.roadsideGroundSprites?.forEach(sprite=>sprite?.destroy?.());
     this.graphics?.destroy?.();
     this.maskGraphics?.destroy?.();
     this.floorSprites=[];
     this.treeSprites=[];
     this.visualRoadSprites=[];
     this.visualRoadPath=[];
+    this.roadsideGroundSprites=[];
+    this.roadsideGroundCount=0;
     this.textureLayer=null;
     this.detailGraphics=null;
     this.transitionLayer=null;
