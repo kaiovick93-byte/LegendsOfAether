@@ -1,3 +1,26 @@
+# Legends of Aether — v0.3.1 Round 30 — Remoção das árvores espalhadas da Floresta Sinistra
+
+Base: `legends-of-aether-v0.3.1-round29-etapa2-teste-controlado.zip`.
+
+## Objetivo
+
+Remover **somente as árvores mortas espalhadas/procedurais da Floresta Sinistra** identificadas pelo usuário.
+
+## Alteração
+
+- desativada a construção/renderização da camada `buildDeadTreeLayer()`;
+- removida da cena a malha procedural baseada em `DEAD_TREE_FILL_SETTINGS`;
+- removidos também os hero clusters e a faixa lateral gerados pela mesma camada;
+- mantidos intactos o chão aprovado do Round 27, a continuação visual da estrada e o teste controlado da Etapa 2 do Round 29;
+- nenhuma colisão, bounds, navegação, trigger, quest ou gameplay foi alterado.
+
+## Arquivos alterados
+
+- `src/world/OldRoadAncientForestVisualExtension.ts`
+- `README.md`
+
+---
+
 # Legends of Aether — v0.3.1 Round 29 — Etapa 2 TESTE CONTROLADO
 
 Base exclusiva: `legends-of-aether-v0.3.1-round27-ajuste-final-integracao-chao.zip`.

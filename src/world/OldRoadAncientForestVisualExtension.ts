@@ -576,7 +576,7 @@ export class OldRoadAncientForestVisualExtension{
       .setFlipX(flipX)
       .setDepth(this.territory.groundDepth(-69.92+depthBias));
     sprite.setData('sinisterStage2ControlledTest',{
-      version:'v0.3.1-round29-stage2-controlled-test',
+      version:'v0.3.1-round30-remove-scattered-dead-trees',
       visualOnly:true,
       collision:false,
       key
@@ -845,11 +845,14 @@ export class OldRoadAncientForestVisualExtension{
     this.buildVisualRoadContinuation();
     this.buildRoadsideSinisterGround();
     this.buildStage2ControlledTest();
-    this.buildDeadTreeLayer();
+    // Round 30 — remover integralmente as árvores mortas espalhadas da Floresta Sinistra.
+    // A camada procedural/hero/borda continua definida abaixo apenas para histórico,
+    // mas NÃO é mais construída/renderizada no jogo.
+    this.deadTreeCount=0;
 
     const data={
-      version:'v0.3.1-round29-stage2-controlled-test',
-      purpose:'round27-approved-base-plus-stage2-controlled-test',
+      version:'v0.3.1-round30-remove-scattered-dead-trees',
+      purpose:'round29-controlled-test-minus-scattered-dead-trees',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -872,11 +875,12 @@ export class OldRoadAncientForestVisualExtension{
         }
       },
       stage3:{
-        deadTreeMass:true,
+        deadTreeMass:false,
         collision:false,
         assets:[...DEAD_TREE_VARIANTS],
-        count:this.deadTreeCount,
-        note:'preenchimento denso de árvores mortas em toda a cobertura visual aprovada'
+        count:0,
+        removedInRound:30,
+        note:'árvores mortas espalhadas/procedurais removidas integralmente da Floresta Sinistra; solo, estrada e teste controlado da Etapa 2 preservados'
       },
       stage4:{
         visualRoadContinuation:true,
