@@ -208,19 +208,19 @@ const SINISTER_ROADSIDE_KEYS=Object.freeze([
 // O objetivo é densificar o solo sombrio, suavizar a leitura das bordas
 // junto à estrada e quebrar a aparência de faixa única/repetitiva.
 const SINISTER_ROADSIDE_POLISH=Object.freeze({
-  sampleStepPx:68,
-  shoulderOffset:58,
-  shoulderJitterPx:6,
-  shoulderScale:.112,
-  shoulderAlpha:.34,
-  transitionOffset:146,
-  transitionJitterPx:10,
-  transitionScale:.125,
-  transitionAlpha:.36,
-  clusterRadiusPx:88
+  sampleStepPx:64,
+  shoulderOffset:50,
+  shoulderJitterPx:10,
+  shoulderScale:.102,
+  shoulderAlpha:.28,
+  transitionOffset:118,
+  transitionJitterPx:18,
+  transitionScale:.118,
+  transitionAlpha:.28,
+  clusterRadiusPx:72
 });
 
-const SINISTER_ROADSIDE_RING_OFFSETS=Object.freeze([80,110,142]);
+const SINISTER_ROADSIDE_RING_OFFSETS=Object.freeze([64,88,112]);
 
 const SINISTER_ROADSIDE_RING_BIASES=Object.freeze([
   [DECAL_KEYS.roots,DECAL_KEYS.debris,DECAL_KEYS.leafPile],
@@ -392,7 +392,7 @@ export class OldRoadAncientForestVisualExtension{
       });
       if(!module)continue;
       module.sprite?.setData?.('oldRoadVisualContinuation',{
-        version:'v0.3.1-round25-roadside-ground-polish',
+        version:'v0.3.1-round26-roadside-ground-microadjust',
         visualOnly:true,
         collision:false,
         expandsPlayableBounds:false,
@@ -419,7 +419,7 @@ export class OldRoadAncientForestVisualExtension{
       .setFlipX(flipX)
       .setDepth(this.territory.groundDepth(-79.72+depthBias));
     sprite.setData('sinisterRoadsideGround',{
-      version:'v0.3.1-round25-roadside-ground-polish',
+      version:'v0.3.1-round26-roadside-ground-microadjust',
       visualOnly:true,
       collision:false,
       key
@@ -445,6 +445,7 @@ export class OldRoadAncientForestVisualExtension{
       const tx=dx/len,ty=dy/len;
       const nx=-ty,ny=tx;
       const samples=Math.max(1,Math.ceil(len/polish.sampleStepPx));
+      const upperSideBias=(side)=>side>0?-8:0;
       const roadAngle=Math.atan2(dy,dx);
 
       for(let i=0;i<=samples;i++){
@@ -453,29 +454,32 @@ export class OldRoadAncientForestVisualExtension{
         const baseY=a.y+dy*t;
 
         for(const side of [-1,1]){
-          // Faixa principal do chão: agora em três anéis, para o solo não virar
-          // uma faixa dura/repetitiva e para preencher melhor entre estrada e mata.
+          const sideBias=side>0?-8:0;
+
+          // Faixa principal do chão: três anéis mais estreitos e irregulares.
           for(let ring=0;ring<SINISTER_ROADSIDE_RING_OFFSETS.length;ring++){
-            const offset=SINISTER_ROADSIDE_RING_OFFSETS[ring]+(rng()-.5)*cfg.sideJitterPx;
-            const along=(rng()-.5)*(cfg.alongJitterPx+6);
+            if(ring===2&&rng()<.28)continue;
+            if(ring===1&&rng()<.10)continue;
+            const offset=SINISTER_ROADSIDE_RING_OFFSETS[ring]+sideBias+(rng()-.5)*(cfg.sideJitterPx+ring*4);
+            const along=(rng()-.5)*(cfg.alongJitterPx+10+ring*2);
             const x=baseX+nx*offset*side+tx*along;
             const y=baseY+ny*offset*side+ty*along;
             const pool=SINISTER_ROADSIDE_RING_BIASES[ring];
             const key=pool[Math.floor(rng()*pool.length)%pool.length];
-            const scale=(ring===0?.158:ring===1?.146:.134)+(rng()-.5)*.020;
-            const alpha=(ring===0?.78:ring===1?.70:.60)+(rng()-.5)*.08;
-            const rotation=roadAngle+(rng()-.5)*.38;
+            const scale=(ring===0?.152:ring===1?.140:.126)+(rng()-.5)*.022;
+            const alpha=(ring===0?.72:ring===1?.58:.42)+(rng()-.5)*.10;
+            const rotation=roadAngle+(rng()-.5)*.46;
             const flipX=rng()>.5;
             if(this.addRoadsideGroundSprite(key,x,y,{scale,alpha,rotation,flipX,depthBias:ring*.01,originY:ring===0?.57:.56}))count++;
           }
 
           // Costura rente à estrada com o asset já existente de transição.
-          const shoulderOffset=polish.shoulderOffset+(rng()-.5)*polish.shoulderJitterPx;
-          const shoulderX=baseX+nx*shoulderOffset*side+tx*((rng()-.5)*6);
-          const shoulderY=baseY+ny*shoulderOffset*side+ty*((rng()-.5)*6);
+          const shoulderOffset=polish.shoulderOffset+sideBias+(rng()-.5)*polish.shoulderJitterPx;
+          const shoulderX=baseX+nx*shoulderOffset*side+tx*((rng()-.5)*8);
+          const shoulderY=baseY+ny*shoulderOffset*side+ty*((rng()-.5)*8);
           if(this.addRoadsideGroundSprite(DECAL_KEYS.roadToSwamp,shoulderX,shoulderY,{
-            scale:polish.shoulderScale+(rng()-.5)*.012,
-            alpha:polish.shoulderAlpha+(rng()-.5)*.06,
+            scale:polish.shoulderScale+(rng()-.5)*.014,
+            alpha:polish.shoulderAlpha+(rng()-.5)*.05,
             rotation:roadAngle,
             flipX:side<0,
             depthBias:.022,
@@ -483,14 +487,14 @@ export class OldRoadAncientForestVisualExtension{
           }))count++;
 
           // Costura mais externa com o terreno/mata, ainda sem criar asset novo.
-          const transKey=SINISTER_ROADSIDE_TRANSITION_KEYS[1+(Math.floor(rng()*2)%2)];
-          const transOffset=polish.transitionOffset+(rng()-.5)*polish.transitionJitterPx;
-          const transX=baseX+nx*transOffset*side+tx*((rng()-.5)*10);
-          const transY=baseY+ny*transOffset*side+ty*((rng()-.5)*10);
+          const transKey=(side>0&&rng()<.55)?DECAL_KEYS.forestToSwamp:SINISTER_ROADSIDE_TRANSITION_KEYS[1+(Math.floor(rng()*2)%2)];
+          const transOffset=polish.transitionOffset+sideBias+(rng()-.5)*polish.transitionJitterPx;
+          const transX=baseX+nx*transOffset*side+tx*((rng()-.5)*14);
+          const transY=baseY+ny*transOffset*side+ty*((rng()-.5)*14);
           if(this.addRoadsideGroundSprite(transKey,transX,transY,{
-            scale:polish.transitionScale+(rng()-.5)*.014,
-            alpha:polish.transitionAlpha+(rng()-.5)*.06,
-            rotation:roadAngle,
+            scale:polish.transitionScale+(rng()-.5)*.016,
+            alpha:polish.transitionAlpha+(rng()-.5)*.05,
+            rotation:roadAngle+(rng()-.5)*.18,
             flipX:side<0,
             depthBias:.026,
             originY:.54
@@ -508,17 +512,17 @@ export class OldRoadAncientForestVisualExtension{
       const nx=-dy/len,ny=dx/len;
       const angle=Math.atan2(dy,dx);
       for(const side of [-1,1]){
-        for(const localOffset of [74,102,132]){
+        for(const localOffset of [66,88,108]){
           const x=first.x+nx*localOffset*side+tx*((rng()-.5)*18);
           const y=first.y+ny*localOffset*side+ty*((rng()-.5)*18);
-          const localKey=side<0&&localOffset===74?DECAL_KEYS.roadToSwamp:SINISTER_ROADSIDE_KEYS[Math.floor(rng()*SINISTER_ROADSIDE_KEYS.length)%SINISTER_ROADSIDE_KEYS.length];
+          const localKey=side<0&&localOffset===66?DECAL_KEYS.roadToSwamp:SINISTER_ROADSIDE_KEYS[Math.floor(rng()*SINISTER_ROADSIDE_KEYS.length)%SINISTER_ROADSIDE_KEYS.length];
           if(this.addRoadsideGroundSprite(localKey,x,y,{
-            scale:(localOffset===74?.152:.142)+(rng()-.5)*.02,
-            alpha:(localOffset===74?.52:.72)+(rng()-.5)*.08,
+            scale:(localOffset===66?.146:.136)+(rng()-.5)*.018,
+            alpha:(localOffset===66?.46:.62)+(rng()-.5)*.07,
             rotation:angle+(rng()-.5)*.28,
             flipX:side<0,
             depthBias:.03,
-            originY:localOffset===74?.54:.56
+            originY:localOffset===66?.54:.56
           }))count++;
         }
       }
@@ -722,8 +726,8 @@ export class OldRoadAncientForestVisualExtension{
     this.buildDeadTreeLayer();
 
     const data={
-      version:'v0.3.1-round25-roadside-ground-polish',
-      purpose:'round23-road-base-plus-round25-roadside-ground-polish',
+      version:'v0.3.1-round26-roadside-ground-microadjust',
+      purpose:'round23-road-base-plus-round26-roadside-ground-microadjust',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -775,7 +779,7 @@ export class OldRoadAncientForestVisualExtension{
         polish:true,
         assets:[...SINISTER_ROADSIDE_KEYS,DECAL_KEYS.forestToSwamp],
         reference:'aether_caminho_na_floresta_assombrada.png',
-        note:'Etapa 1 polida: chão sinistro mais denso ao longo dos dois lados da estrada visual, com costura mais suave junto à estrada e melhor transição para a mata; sem árvores novas e sem assets inéditos.'
+        note:'Etapa 1 com microajuste de integração: faixa escura mais estreita, borda externa mais quebrada e costura inicial junto à placa/entrada mais suave; sem árvores novas e sem assets inéditos.'
       },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
