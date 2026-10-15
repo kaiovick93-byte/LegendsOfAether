@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 /**
- * v0.3.1 Round 25 — polimento do chão sinistro ao redor da estrada.
+ * v0.3.1 Round 27 — ajuste final de integração do chão sinistro.
  *
  * Regras preservadas:
  * - A geometria aprovada no Round 13 continua CONGELADA.
@@ -159,6 +159,15 @@ const GRASS_EDGE_TRANSITIONS=Object.freeze([
 const ROAD_EDGE_TRANSITIONS=Object.freeze([
   // Costura central da quina: lado claro/estrada voltado para o mapa.
   [0.000,82.000,.16,.92, 3.1415926536,true]
+]);
+
+// Round 27 — fechamento da Etapa 1. A borda inferior/direita do polígono
+// aprovado ainda encontrava o gramado com uma linha muito abrupta. Estes dois
+// segmentos são EXATAMENTE as arestas externas já aprovadas do bottom wedge;
+// só recebem a mesma transição grass->swamp já existente, sem mudar geometria.
+const WEDGE_OUTER_GRASS_TRANSITION_SEGMENTS=Object.freeze([
+  [{u:9.240,v:82.000},{u:8.688,v:91.832},3],
+  [{u:8.688,v:91.832},{u:.479,v:100.000},4]
 ]);
 
 
@@ -392,7 +401,7 @@ export class OldRoadAncientForestVisualExtension{
       });
       if(!module)continue;
       module.sprite?.setData?.('oldRoadVisualContinuation',{
-        version:'v0.3.1-round26-roadside-ground-microadjust',
+        version:'v0.3.1-round27-stage1-ground-final-integration',
         visualOnly:true,
         collision:false,
         expandsPlayableBounds:false,
@@ -419,7 +428,7 @@ export class OldRoadAncientForestVisualExtension{
       .setFlipX(flipX)
       .setDepth(this.territory.groundDepth(-79.72+depthBias));
     sprite.setData('sinisterRoadsideGround',{
-      version:'v0.3.1-round26-roadside-ground-microadjust',
+      version:'v0.3.1-round27-stage1-ground-final-integration',
       visualOnly:true,
       collision:false,
       key
@@ -594,6 +603,26 @@ export class OldRoadAncientForestVisualExtension{
     this.deadTreeCount=count;
   }
 
+  addLogicalTransitionSegment(container,key,a,b,count,{scale=.145,alpha=.46,flipSeed=0}={}){
+    const pa=this.territory.project(a.u,a.v);
+    const pb=this.territory.project(b.u,b.v);
+    const worldAngle=Math.atan2(pb.y-pa.y,pb.x-pa.x);
+    // Mantém a orientação visual já usada nas transições aprovadas em v=82.
+    const rotation=Math.PI-worldAngle;
+    for(let i=1;i<=count;i++){
+      const t=i/(count+1);
+      const u=a.u+(b.u-a.u)*t;
+      const v=a.v+(b.v-a.v)*t;
+      this.addTransitionDecal(container,key,u,v,{
+        scale:scale+((i%2)?-.008:.006),
+        alpha:alpha+((i%2)?-.04:.03),
+        rotation,
+        flipX:((i+flipSeed)%2)===0,
+        originY:.54
+      });
+    }
+  }
+
   buildTransitionLayer(){
     // IMPORTANTE: esta camada NÃO recebe a máscara da cobertura externa.
     // A metade verde precisa avançar alguns pixels para dentro do mapa para
@@ -611,6 +640,16 @@ export class OldRoadAncientForestVisualExtension{
       this.addTransitionDecal(container,DECAL_KEYS.roadToSwamp,u,v,{scale,alpha,rotation,flipX});
     }
 
+    // Suavização final da borda inferior/direita: apenas nas arestas já
+    // aprovadas do wedge, usando o asset existente de transição com gramado.
+    WEDGE_OUTER_GRASS_TRANSITION_SEGMENTS.forEach(([a,b,count],index)=>{
+      this.addLogicalTransitionSegment(container,DECAL_KEYS.grassToSwamp,a,b,count,{
+        scale:index===0?.142:.148,
+        alpha:index===0?.44:.40,
+        flipSeed:index
+      });
+    });
+
     this.transitionLayer=container;
   }
 
@@ -625,21 +664,31 @@ export class OldRoadAncientForestVisualExtension{
     const height=Math.ceil(bounds.height+pad*2);
 
     if(this.scene.textures.exists(SURFACE_KEYS[0])){
-      const baseA=this.scene.add.tileSprite(x,y,width,height,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.64);
+      const baseA=this.scene.add.tileSprite(x,y,width,height,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.60);
       baseA.tilePositionX=168;
       baseA.tilePositionY=96;
-      baseA.tileScaleX=.52;
-      baseA.tileScaleY=.52;
+      baseA.tileScaleX=.55;
+      baseA.tileScaleY=.50;
       container.add(baseA);
       this.floorSprites.push(baseA);
+
+      // Terceira leitura muito sutil do MESMO asset: escala e deslocamento
+      // desencontrados quebram a repetição perceptível sem introduzir textura nova.
+      const baseC=this.scene.add.tileSprite(x-72,y-54,width+144,height+108,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.10);
+      baseC.tilePositionX=517;
+      baseC.tilePositionY=271;
+      baseC.tileScaleX=.43;
+      baseC.tileScaleY=.58;
+      container.add(baseC);
+      this.floorSprites.push(baseC);
     }
 
     if(this.scene.textures.exists(SURFACE_KEYS[1])){
-      const baseB=this.scene.add.tileSprite(x-48,y-36,width+96,height+72,SURFACE_KEYS[1]).setOrigin(0,0).setAlpha(.38);
+      const baseB=this.scene.add.tileSprite(x-48,y-36,width+96,height+72,SURFACE_KEYS[1]).setOrigin(0,0).setAlpha(.34);
       baseB.tilePositionX=392;
       baseB.tilePositionY=148;
-      baseB.tileScaleX=.48;
-      baseB.tileScaleY=.48;
+      baseB.tileScaleX=.47;
+      baseB.tileScaleY=.53;
       container.add(baseB);
       this.floorSprites.push(baseB);
     }
@@ -672,14 +721,14 @@ export class OldRoadAncientForestVisualExtension{
     details.setDepth(this.territory.groundDepth(-89.95));
 
     // Manchas suaves para quebrar repetição do tile, sem introduzir props altos.
-    for(let i=0;i<40;i++){
+    for(let i=0;i<52;i++){
       const u=-55+rng()*63;
       const v=49+rng()*51;
       if(!this.isInsideApprovedCoverage(u,v))continue;
       const p=this.territory.project(u,v);
       const w=120+rng()*220;
       const h=28+rng()*70;
-      details.fillStyle(rng()>.55?0x1b241f:0x342c24,.07+rng()*.08);
+      details.fillStyle(rng()>.55?0x1b241f:0x342c24,.055+rng()*.065);
       details.fillEllipse(p.x,p.y,w,h);
     }
 
@@ -726,8 +775,8 @@ export class OldRoadAncientForestVisualExtension{
     this.buildDeadTreeLayer();
 
     const data={
-      version:'v0.3.1-round26-roadside-ground-microadjust',
-      purpose:'round23-road-base-plus-round26-roadside-ground-microadjust',
+      version:'v0.3.1-round27-stage1-ground-final-integration',
+      purpose:'round23-road-base-plus-round27-stage1-ground-final-integration',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -779,7 +828,7 @@ export class OldRoadAncientForestVisualExtension{
         polish:true,
         assets:[...SINISTER_ROADSIDE_KEYS,DECAL_KEYS.forestToSwamp],
         reference:'aether_caminho_na_floresta_assombrada.png',
-        note:'Etapa 1 com microajuste de integração: faixa escura mais estreita, borda externa mais quebrada e costura inicial junto à placa/entrada mais suave; sem árvores novas e sem assets inéditos.'
+        note:'Etapa 1 finalizada: transição inferior/direita suavizada nas arestas aprovadas do wedge e repetição superior quebrada com variação das mesmas texturas existentes; sem árvores novas, sem assets inéditos e sem mudança de geometria.'
       },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
