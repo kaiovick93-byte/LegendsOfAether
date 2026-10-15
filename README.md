@@ -1,46 +1,39 @@
-# Legends of Aether — v0.3.1 Round 28 — Floresta Sinistra ao redor da Estrada — Etapa 2
+# Legends of Aether — v0.3.1 Round 29 — Etapa 2 TESTE CONTROLADO
 
 Base exclusiva: `legends-of-aether-v0.3.1-round27-ajuste-final-integracao-chao.zip`.
 
 ## Objetivo
 
-Iniciar a **Etapa 2 — massa baixa nas bordas da estrada**, preservando integralmente a Etapa 1 aprovada no Round 27.
+Reiniciar a **Etapa 2 — massa baixa nas bordas da estrada** a partir do Round 27 aprovado, descartando totalmente a implementação rejeitada do Round 28.
+
+Nesta rodada, os assets são aplicados **somente em um trecho curto da estrada (~20%)** para validação visual antes de qualquer expansão.
 
 ## Implementação
 
-Foram adicionados, de forma gradual e somente visual:
+- 5 props apenas, concentrados entre o segmento 3 e o início do segmento 4 da continuação visual;
+- nada foi espalhado pela estrada inteira;
+- offsets mantêm todos os props fora da faixa da estrada;
+- sem colisão, navegação, trigger, quest ou mudança de bounds;
+- Etapa 1 do Round 27 permanece congelada;
+- nenhum osso ou crânio foi usado;
+- nenhuma parede de árvores foi criada.
 
-- raízes maiores nas bordas da estrada;
-- galhos/troncos baixos;
-- tocos;
-- vegetação morta baixa;
-- teias próximas ao chão.
+## Assets usados no teste
 
-A distribuição é deliberadamente moderada nesta primeira passagem da Etapa 2. Ainda **não** foi criada a parede densa de árvores da Etapa 3.
-
-## Assets
-
-Nenhum asset novo foi gerado. Foi integrado ao projeto um asset já criado anteriormente:
-
-- `sinister_low_web_roots_01.png`
-
-Os demais elementos reutilizam assets já presentes no projeto (`ancient_forest_root_*`, `ancient_forest_stump_*`, `ancient_forest_log_*`, `ancient_forest_thorn_*` e `ancient_forest_underbrush_*`), com ajuste de escala, rotação, opacidade e tonalidade.
-
-## Regras preservadas
-
-- Etapa 1 do Round 27 congelada;
-- estrada visual sem alteração;
-- sem colisão nova;
-- sem mudança de bounds;
-- sem triggers/quests/gameplay;
-- sem ossos ou crânios nesta etapa;
-- sem árvores grandes novas nesta etapa.
+- `sinister_low_roots_01.png` — raiz rasteira baixa;
+- `sinister_low_thorn_bush_01.png` — arbusto seco/espinhos;
+- `ancient_forest_stump_02.png` — toco baixo já existente no kit ancestral;
+- `sinister_low_web_01.png` — teia baixa entre raízes/galhos;
+- `sinister_low_branch_pile_01.png` — amontoado de raízes/galhos/espinhos.
 
 ## Arquivos alterados/adicionados
 
 - `src/world/OldRoadAncientForestVisualExtension.ts`
 - `src/scenes/PreloadScene.ts`
-- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2/sinister_low_web_roots_01.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_roots_01.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_thorn_bush_01.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_web_01.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_branch_pile_01.png`
 - `README.md`
 
 ---
