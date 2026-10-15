@@ -1,3 +1,34 @@
+# Legends of Aether — v0.3.1 Round 25 — Polimento do chão sinistro ao redor da estrada
+
+Base exclusiva: `legends-of-aether-v0.3.1-round24-etapa1-chao-sinistro-ao-redor-da-estrada.zip`.
+
+## Objetivo
+
+Polir **somente o chão** da Floresta Sinistra ao redor da continuação visual da Estrada Velha, usando apenas os assets já existentes no projeto.
+
+## O que foi feito
+
+- densificado o chão sombrio ao longo dos dois lados da estrada visual;
+- ampliada a variação com raízes, folhas, detritos e manchas úmidas usando apenas assets já existentes;
+- criada uma costura mais suave rente à estrada com os assets de transição já existentes;
+- reforçada a transição externa para a mata/terreno sem criar árvore nova, osso, caveira ou colisão;
+- preservada integralmente a geometria, a estrada visual e a área jogável.
+
+## Regras preservadas
+
+- nenhum asset novo foi criado nesta etapa;
+- nenhuma árvore nova foi adicionada nesta etapa;
+- nenhum osso ou crânio foi adicionado nesta etapa;
+- nenhuma colisão, navegação, trigger, quest ou bounds jogável foi alterado;
+- a continuação visual da Estrada Velha do Round 23 permanece na mesma posição.
+
+## Arquivos alterados
+
+- `src/world/OldRoadAncientForestVisualExtension.ts`
+- `README.md`
+
+---
+
 # Legends of Aether — v0.3.1 Round 24 — Floresta Sinistra ao redor da Estrada — Etapa 1
 
 Base exclusiva: `legends-of-aether-v0.3.1-round23-continuacao-visual-estrada-completa.zip`.
