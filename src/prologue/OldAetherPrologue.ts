@@ -3,6 +3,8 @@ import {Enemy} from '../entities/Enemy';
 import {Npc} from '../npc/Npc';
 import {AETHER_PROLOGUE_ANCHORS} from '../world/AetherTerritoryLayout';
 import {worldClock,GAME_DAY_MS} from '../world/WorldClock';
+import {readPrologueTrackedObjective} from '../quests/PrologueTrackerState';
+import {QuestTracker} from '../ui/QuestTracker';
 
 const ISO_CONFIG={tileWidth:96,tileHeight:48,screenOriginX:1600,screenOriginY:250,depthBase:-20000};
 
@@ -133,32 +135,25 @@ const STAGES=new Set(Object.values(OLD_AETHER_PROLOGUE_STAGES));
 
 /** Rastreio provisório, ancorado abaixo do minimapa, e não na tela-mundo. */
 class PrologueHud{
-  constructor(scene){
+  constructor(scene,readState){
     this.scene=scene;
-    this.root=scene.add.container(0,0).setScrollFactor(0).setDepth(1750);
-    this.back=scene.add.graphics().setScrollFactor(0);
-    this.label=scene.add.text(13,9,'OBJETIVO',{fontFamily:'Arial',fontSize:10,color:'#e7c982',fontStyle:'bold',letterSpacing:1}).setScrollFactor(0);
-    this.objective=scene.add.text(13,26,'',{fontFamily:'Georgia, serif',fontSize:15,color:'#f7f8f9',fontStyle:'bold',wordWrap:{width:292}}).setScrollFactor(0);
-    this.root.add([this.back,this.label,this.objective]);
+    this.readState=readState;
+    this.tracker=new QuestTracker(scene);
+    this.root=this.tracker.root;
     this.hintText=scene.add.text(scene.scale.width/2,116,'',{fontFamily:'Georgia, serif',fontSize:15,color:'#fffdf6',fontStyle:'bold',stroke:'#101820',strokeThickness:4,align:'center',wordWrap:{width:460}}).setOrigin(.5).setScrollFactor(0).setDepth(1760).setAlpha(0);
     this.resizeHandler=()=>this.layout();
     scene.scale.on(Phaser.Scale.Events.RESIZE,this.resizeHandler);
     this.layout();
   }
   layout(){
-    const width=Math.min(326,Math.max(226,this.scene.scale.width-44));
+    this.tracker.layout();
     const pad=Phaser.Math.Clamp(Math.round(this.scene.scale.width*.012),10,16);
     // O minimapa ocupa ~208 px na HUD; mantém uma folga visual estável abaixo.
     const top=Math.min(this.scene.scale.height-74,pad+216);
-    this.root.setPosition(this.scene.scale.width-pad-width,top);
-    this.back.clear().fillStyle(0x101821,.88).fillRoundedRect(0,0,width,58,9).lineStyle(1,0xc4a45a,.74).strokeRoundedRect(0,0,width,58,9);
-    this.objective.setWordWrapWidth(width-25,true);
     this.hintText.setPosition(this.scene.scale.width/2,Math.max(104,top-26)).setWordWrapWidth(Math.min(520,this.scene.scale.width-56),true);
   }
   setObjective(text){
-    this.objective.setText(text);
-    // O tracker permanece oculto enquanto nao ha objetivo narrativo.
-    this.root.setVisible(Boolean(text));
+    this.tracker.setTrackedObjective(readPrologueTrackedObjective(this.readState(),text));
   }
   hint(text,{persistent=false}={}){
     this.scene.tweens.killTweensOf(this.hintText);
@@ -174,7 +169,7 @@ class PrologueHud{
     this.scene.tweens.killTweensOf(this.hintText);
     this.hintText.setText('').setAlpha(0);
   }
-  destroy(){this.scene.scale.off(Phaser.Scale.Events.RESIZE,this.resizeHandler);this.root.destroy(true);this.hintText.destroy();}
+  destroy(){this.scene.scale.off(Phaser.Scale.Events.RESIZE,this.resizeHandler);this.tracker.destroy();this.hintText.destroy();}
 }
 
 /** Prompt de interação com asset próprio, ligado ao prop real. */
@@ -235,7 +230,7 @@ export class OldAetherPrologue{
     this.anchors=AETHER_PROLOGUE_ANCHORS;
     this.enemies=[];
     this.ensureAnimations();
-    this.hud=new PrologueHud(scene);
+    this.hud=new PrologueHud(scene,()=>this.state);
     this.cue=new PrologueCue(scene);
     this.createRoadSetDressing();
     this.createBloodTrailDressing();

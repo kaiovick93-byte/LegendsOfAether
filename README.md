@@ -1,4 +1,69 @@
-# Legends of Aether — v0.3.1 Round 32
+# Legends of Aether — v0.3.1 Round 33
+
+## Base exclusiva deste round
+`legends-of-aether-v0.3.1-round32-relogio-dia-noite-base-round31.zip`.
+
+## Integração mínima
+Uma camada somente de leitura associa o objetivo fornecido por `syncObjective`
+ao identificador `prologue`, ao nome definido em `questData.ts` e aos indicadores
+de conclusão já existentes, entregando esses dados ao tracker da HUD.
+
+Não foi necessário criar `trackedQuestId` nem modificar o formato de save:
+o estágio atual do prólogo identifica automaticamente o objetivo exibido.
+`QuestManager`, as três quests já cadastradas, os triggers e a progressão
+permanecem intactos. Nenhum Diário de Quests ou seleção manual foi criado.
+
+## Tracker visual
+- Painel de 326 px, na mesma região à direita e abaixo do minimapa.
+- Cabeçalho `Missões`, ícone da quest, nome e objetivo vindos dos dados.
+- Texto com quebra automática e altura do painel calculada pelo conteúdo.
+- Moldura composta por nove regiões: ornamentos com escala uniforme, apenas
+  trechos retos e fundo ajustados para acomodar a altura.
+- Botões `-` e `+` alteram somente a visibilidade do conteúdo do painel.
+- Checkbox marcado somente quando o indicador existente daquele objetivo é
+  verdadeiro. Concluir o prólogo não marca a nova instrução de falar com o
+  General como concluída.
+- Quatro PNGs originais preservados byte a byte; os recortes de exibição dos
+  ícones/botões retiram apenas margens transparentes do arquivo exportado.
+
+## Arquivos alterados neste round
+- `README.md`
+- `src/prologue/OldAetherPrologue.ts` — somente apresentação da HUD e passagem
+  de um acesso de leitura ao estado; `syncObjective` e toda a lógica do prólogo
+  permanecem iguais ao Round 32.
+- `src/quests/questData.ts` — metadados visuais do prólogo, separados de `QUESTS`.
+- `src/scenes/PreloadScene.ts` — carregar os quatro PNGs do tracker.
+
+## Arquivos adicionados neste round
+- `src/quests/PrologueTrackerState.ts`
+- `src/ui/QuestTracker.ts`
+- `tests/quest-tracker.test.mjs`
+- `assets/images/ui/hud/quest-tracker/moldura_ornamental_de_rpg_fantasia.png`
+- `assets/images/ui/hud/quest-tracker/ícone_dourado_de_missão_fantástica.png`
+- `assets/images/ui/hud/quest-tracker/botão_ornado_de_minimizar.png`
+- `assets/images/ui/hud/quest-tracker/botão_dourado_ornamental_com_símbolo_de_expansão.png`
+
+Nenhum arquivo removido. Relógio, minimapa, barra inferior, HP/Mana, mapas,
+floresta, estrada, colisões e demais sistemas preservados.
+
+## Validação deste round
+- `npm run check` e `npm run build`: aprovados.
+- `node --test tests/quest-tracker.test.mjs`: seis testes aprovados.
+- `npm run test:world-clock`: 13 testes aprovados.
+- Chromium, jogo real em 1920×1080: nome e objetivo atuais, recolher/expandir
+  por clique, quebra de linha, mudança de objetivo e checkbox após a ação de
+  coleta existente. Nenhum erro no console ou de JavaScript.
+- Recolher/expandir preservou exatamente o estado do prólogo, quests e save.
+- Save sem `trackedQuestId` recarregado: objetivo detectado automaticamente,
+  progresso, inventário, posição, quests e relógio preservados. Somente o
+  `savedAt` foi atualizado pelo salvamento de entrada já existente na cena.
+- Nome longo fornecido ao componente também quebrou linha dentro do painel.
+- Conferência visual de ausência de sobreposição com minimapa e restante da HUD.
+- Comparação de bytes com a base exclusiva e integridade do ZIP verificadas.
+
+---
+
+# Histórico preservado — v0.3.1 Round 32
 
 ## Base exclusiva deste round
 `legends-of-aether-v0.3.1-round31-etapa2-refeita-base-round27.zip`.

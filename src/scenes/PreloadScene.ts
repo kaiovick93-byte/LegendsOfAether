@@ -8,11 +8,13 @@ import {OLD_ROAD_PROP_ASSETS} from '../world/OldRoadProps';
 import {OLD_ROAD_ANCIENT_FOREST_ASSETS} from '../world/OldRoadAncientForest';
 import {SINISTER_LOW_ROADSIDE_ASSETS} from '../world/OldRoadSinisterRoadside';
 import {WORLD_CLOCK_HUD_ASSETS} from '../ui/WorldClockHud';
+import {QUEST_TRACKER_ASSETS} from '../ui/QuestTracker';
 import {PLAYER_APPEARANCE_ORDER,PLAYER_DIRECTION_ROWS,PLAYER_VISUAL_STATES,playerDirectionRowForAppearance,playerOutlineTextureKey,playerTextureKey} from '../character/PlayerAppearance';
 export class PreloadScene extends Phaser.Scene{
   constructor(){super('PreloadScene')}
   preload(){
     for(const asset of WORLD_CLOCK_HUD_ASSETS)this.load.image(asset.key,asset.path);
+    for(const asset of QUEST_TRACKER_ASSETS)this.load.image(asset.key,asset.path);
     this.load.image('aether_main_menu','assets/images/ui/main_menu_aether.png');
     for(const asset of Object.values(OLD_ROAD_PROP_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(OLD_ROAD_ANCIENT_FOREST_ASSETS))this.load.image(asset.key,asset.path);
