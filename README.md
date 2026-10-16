@@ -1,87 +1,63 @@
-# Legends of Aether — v0.3.1 Round 30 — Remoção das árvores espalhadas da Floresta Sinistra
+# Legends of Aether — v0.3.1 Round 31
 
-Base: `legends-of-aether-v0.3.1-round29-etapa2-teste-controlado.zip`.
+## Base exclusiva
+`legends-of-aether-v0.3.1-round27-ajuste-final-integracao-chao(1).zip`.
+Nenhum código, composição ou distribuição dos Rounds 28/29/30 foi utilizado.
 
-## Objetivo
+## Escopo: somente Etapa 2
+Massa baixa contínua nas duas bordas da continuação visual da Estrada Velha.
+Raízes, espinhos, galhos secos e folhas se sobrepõem numa composição consolidada
+em uma única camada. A faixa fica mais densa voltada para a mata e mais leve
+voltada para a estrada. Quatro teias pequenas entram como detalhe secundário.
 
-Remover **somente as árvores mortas espalhadas/procedurais da Floresta Sinistra** identificadas pelo usuário.
+O posicionamento acompanha os conectores originais da estrada. A camada nova
+é limitada por pixel à cobertura aprovada do Round 27 e deixa livre toda a
+largura das imagens da estrada, inclusive suas margens. Não há props novos
+espalhados pelo interior da floresta. Escala, rotação, espelhamento e ordem de
+sobreposição variam para misturar as peças. Os PNGs originais não foram editados.
 
-## Alteração
-
-- desativada a construção/renderização da camada `buildDeadTreeLayer()`;
-- removida da cena a malha procedural baseada em `DEAD_TREE_FILL_SETTINGS`;
-- removidos também os hero clusters e a faixa lateral gerados pela mesma camada;
-- mantidos intactos o chão aprovado do Round 27, a continuação visual da estrada e o teste controlado da Etapa 2 do Round 29;
-- nenhuma colisão, bounds, navegação, trigger, quest ou gameplay foi alterado.
-
-## Arquivos alterados
-
-- `src/world/OldRoadAncientForestVisualExtension.ts`
-- `README.md`
-
----
-
-# Legends of Aether — v0.3.1 Round 29 — Etapa 2 TESTE CONTROLADO
-
-Base exclusiva: `legends-of-aether-v0.3.1-round27-ajuste-final-integracao-chao.zip`.
-
-## Objetivo
-
-Reiniciar a **Etapa 2 — massa baixa nas bordas da estrada** a partir do Round 27 aprovado, descartando totalmente a implementação rejeitada do Round 28.
-
-Nesta rodada, os assets são aplicados **somente em um trecho curto da estrada (~20%)** para validação visual antes de qualquer expansão.
-
-## Implementação
-
-- 5 props apenas, concentrados entre o segmento 3 e o início do segmento 4 da continuação visual;
-- nada foi espalhado pela estrada inteira;
-- offsets mantêm todos os props fora da faixa da estrada;
-- sem colisão, navegação, trigger, quest ou mudança de bounds;
-- Etapa 1 do Round 27 permanece congelada;
-- nenhum osso ou crânio foi usado;
-- nenhuma parede de árvores foi criada.
-
-## Assets usados no teste
-
-- `sinister_low_roots_01.png` — raiz rasteira baixa;
-- `sinister_low_thorn_bush_01.png` — arbusto seco/espinhos;
-- `ancient_forest_stump_02.png` — toco baixo já existente no kit ancestral;
-- `sinister_low_web_01.png` — teia baixa entre raízes/galhos;
-- `sinister_low_branch_pile_01.png` — amontoado de raízes/galhos/espinhos.
-
-## Arquivos alterados/adicionados
-
-- `src/world/OldRoadAncientForestVisualExtension.ts`
-- `src/scenes/PreloadScene.ts`
-- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_roots_01.png`
-- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_thorn_bush_01.png`
-- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_web_01.png`
-- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_branch_pile_01.png`
-- `README.md`
-
----
-
-# Legends of Aether — v0.3.1 Round 27
-
-## Objetivo
-Fechar a Etapa 1 do chão sinistro ao redor da continuação visual da Estrada Velha com o ajuste final de integração, preservando integralmente a estrada, a geometria aprovada e todos os sistemas de gameplay.
-
-## O que foi ajustado
-- suavizada a transição inferior/direita entre o chão sinistro e o gramado usando somente o asset de transição já existente;
-- aplicada essa suavização exatamente nas duas arestas externas já aprovadas do `bottom wedge`, sem alterar a geometria;
-- quebrada a repetição perceptível da textura na parte superior/esquerda usando as mesmas superfícies existentes com escalas e deslocamentos desencontrados;
-- aumentada de forma sutil a variação tonal do chão com manchas de baixa opacidade já geradas pelo próprio sistema;
-- preservada a largura, posição e traçado da estrada visual;
-- nenhuma árvore, osso, crânio ou prop novo foi adicionado.
+A Etapa 1 permanece intacta. As árvores que já existiam no Round 27 também
+permanecem intactas; nenhuma árvore foi adicionada. A Etapa 3 não foi iniciada.
 
 ## Arquivos alterados
+- `src/scenes/PreloadScene.ts` — carregar os quatro PNGs necessários que não estavam no ZIP; reutilizar a textura de folhas já carregada.
 - `src/world/OldRoadAncientForestVisualExtension.ts`
-- `README.md`
+  — somente importar, construir e destruir a camada independente da Etapa 2.
+- `README.md` — registro desta entrega.
+
+## Arquivos adicionados
+- `src/world/OldRoadSinisterRoadside.ts`
+- `assets/images/environment/outskirts/old-road-ancient-forest/low-roadside/raízes_retorcidas_da_floresta_assombrada.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/low-roadside/teia_antiga_entre_galhos_mortos.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/low-roadside/arbusto_espinhoso_ressecadoaco.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/low-roadside/amontoado_de_raízes_e_espinhos_assombrados.png`
+
+Nenhum arquivo foi removido.
+
+## Os cinco assets utilizados
+Os quatro PNGs adicionados acima são as imagens originais de raízes baixas,
+teia, arbusto espinhoso e amontoado de raízes/espinhos, copiadas sem edição.
+O `montinho_de_folhas_secas_da_floresta.png` é reutilizado pela versão já
+presente no Round 27:
+`assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_leaf_pile_01.png`.
+Nenhum sexto asset é usado na camada da Etapa 2.
 
 ## Regras preservadas
-- nenhum asset novo foi criado;
-- nenhuma colisão foi alterada;
-- nenhum bounds jogável foi alterado;
-- nenhuma navegação, trigger, quest ou lógica de gameplay foi alterada;
-- a geometria aprovada do Round 13 continua congelada;
-- a continuação visual da estrada permanece exatamente onde estava no Round 26.
+- Chão e transições aprovados na Etapa 1 do Round 27.
+- Posição, largura, escala, rotação e conectores da estrada.
+- Floresta verde e árvores existentes.
+- Colisões, bounds, navegação, triggers, quests e gameplay.
+- Geometria aprovada do Round 13, já presente no Round 27.
+
+## Verificação
+- `npm run check` e `npm run build`: aprovados.
+- Jogo renderizado em Chromium: inspeção do conjunto, entrada, meio e final da estrada.
+- Comparação com o Round 27: os 56 elementos de chão, 245 detalhes de solo das
+  bordas, 121 árvores existentes e sete módulos da estrada mantêm os mesmos
+  parâmetros visuais. Identificadores aleatórios de texturas internas do Phaser
+  são desconsiderados nessa comparação.
+- `node --test tests/*.test.mjs`: 18 testes aprovados e oito falhas na suíte
+  de muralhas. As mesmas oito falhas foram reproduzidas no ZIP Round 27 intacto:
+  a simulação de texturas dessa suíte lança `getSourceImage` sobre uma textura
+  ausente. Esses testes e os sistemas de muralhas não foram alterados.
+- ZIP conferido por comparação de conteúdo com a base e teste de integridade.

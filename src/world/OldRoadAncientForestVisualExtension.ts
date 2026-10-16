@@ -1,4 +1,5 @@
 // @ts-nocheck
+import {OldRoadSinisterRoadside} from './OldRoadSinisterRoadside';
 
 /**
  * v0.3.1 Round 27 — ajuste final de integração do chão sinistro.
@@ -243,29 +244,6 @@ const SINISTER_ROADSIDE_TRANSITION_KEYS=Object.freeze([
   DECAL_KEYS.grassToSwamp
 ]);
 
-
-// Round 29 — Etapa 2 TESTE CONTROLADO.
-// Base obrigatória: Round 27 aprovado. O Round 28 rejeitado NÃO é usado.
-// Aplicar apenas em um trecho curto (~20% da continuação visual da estrada),
-// para validar escala, leitura e integração antes de espalhar pelo restante.
-const SINISTER_STAGE2_TEST_KEYS=Object.freeze({
-  roots:'sinister_stage2_test_roots_01',
-  stump:'ancient_forest_stump_02',
-  thorns:'sinister_stage2_test_thorn_bush_01',
-  web:'sinister_stage2_test_web_01',
-  branchPile:'sinister_stage2_test_branch_pile_01'
-});
-
-const SINISTER_STAGE2_TEST_LAYOUT=Object.freeze([
-  // Um único trecho curto concentrado entre o final do segmento 3 e início do 4.
-  // Offsets mantêm os props fora da estrada; nada é espalhado pela extensão inteira.
-  {seg:3,t:.18,side:-1,offset:102,key:SINISTER_STAGE2_TEST_KEYS.roots,scale:.074,alpha:.92,rot:-.08,flip:false,originY:.72},
-  {seg:3,t:.38,side: 1,offset:108,key:SINISTER_STAGE2_TEST_KEYS.thorns,scale:.062,alpha:.90,rot:.10,flip:true,originY:.74},
-  {seg:3,t:.60,side:-1,offset:116,key:SINISTER_STAGE2_TEST_KEYS.stump,scale:.46,alpha:.90,rot:-.04,flip:true,originY:.86},
-  {seg:3,t:.82,side: 1,offset:112,key:SINISTER_STAGE2_TEST_KEYS.web,scale:.070,alpha:.84,rot:.06,flip:false,originY:.68},
-  {seg:4,t:.10,side:-1,offset:110,key:SINISTER_STAGE2_TEST_KEYS.branchPile,scale:.066,alpha:.90,rot:-.07,flip:true,originY:.72}
-]);
-
 const rectanglePoints=b=>[
   {u:b.minU,v:b.minV},
   {u:b.maxU,v:b.minV},
@@ -326,8 +304,6 @@ export class OldRoadAncientForestVisualExtension{
     this.visualRoadPath=[];
     this.roadsideGroundSprites=[];
     this.roadsideGroundCount=0;
-    this.stage2TestSprites=[];
-    this.stage2TestCount=0;
     this.deadTreeCount=0;
     this.build();
   }
@@ -565,53 +541,6 @@ export class OldRoadAncientForestVisualExtension{
     this.roadsideGroundCount=count;
   }
 
-
-  addStage2TestSprite(key,x,y,{scale=.08,alpha=.90,rotation=0,flipX=false,originY=.72,depthBias=0}={}){
-    if(!this.scene.textures.exists(key))return null;
-    const sprite=this.scene.add.image(x,y,key)
-      .setOrigin(.5,originY)
-      .setScale(scale)
-      .setAlpha(alpha)
-      .setRotation(rotation)
-      .setFlipX(flipX)
-      .setDepth(this.territory.groundDepth(-69.92+depthBias));
-    sprite.setData('sinisterStage2ControlledTest',{
-      version:'v0.3.1-round30-remove-scattered-dead-trees',
-      visualOnly:true,
-      collision:false,
-      key
-    });
-    this.stage2TestSprites.push(sprite);
-    return sprite;
-  }
-
-  buildStage2ControlledTest(){
-    if(!this.visualRoadPath||this.visualRoadPath.length<4)return;
-    let count=0;
-    for(const spec of SINISTER_STAGE2_TEST_LAYOUT){
-      const a=this.visualRoadPath[spec.seg-1];
-      const b=this.visualRoadPath[spec.seg];
-      if(!a||!b)continue;
-      const dx=b.x-a.x,dy=b.y-a.y;
-      const len=Math.hypot(dx,dy)||1;
-      const nx=-dy/len,ny=dx/len;
-      const baseX=a.x+dx*spec.t;
-      const baseY=a.y+dy*spec.t;
-      const x=baseX+nx*spec.offset*spec.side;
-      const y=baseY+ny*spec.offset*spec.side;
-      const angle=Math.atan2(dy,dx)+spec.rot;
-      if(this.addStage2TestSprite(spec.key,x,y,{
-        scale:spec.scale,
-        alpha:spec.alpha,
-        rotation:angle,
-        flipX:spec.flip,
-        originY:spec.originY,
-        depthBias:spec.side>0?.02:.01
-      }))count++;
-    }
-    this.stage2TestCount=count;
-  }
-
   addDeadTree(key,u,v,{scale=1,alpha=.82,flipX=false,depthOffset=0,tint=null}={}){
     if(!this.isInsideApprovedCoverage(u,v)||this.isInsideVisualRoadCorridor(u,v)||!this.scene.textures.exists(key))return null;
     const p=this.territory.project(u,v);
@@ -844,15 +773,13 @@ export class OldRoadAncientForestVisualExtension{
     this.buildTransitionLayer();
     this.buildVisualRoadContinuation();
     this.buildRoadsideSinisterGround();
-    this.buildStage2ControlledTest();
-    // Round 30 — remover integralmente as árvores mortas espalhadas da Floresta Sinistra.
-    // A camada procedural/hero/borda continua definida abaixo apenas para histórico,
-    // mas NÃO é mais construída/renderizada no jogo.
-    this.deadTreeCount=0;
+    this.buildDeadTreeLayer();
+    // Etapa 2 independente: as chamadas e os dados da Etapa 1 acima ficam intactos.
+    this.lowBorder=new OldRoadSinisterRoadside(this);
 
     const data={
-      version:'v0.3.1-round30-remove-scattered-dead-trees',
-      purpose:'round29-controlled-test-minus-scattered-dead-trees',
+      version:'v0.3.1-round27-stage1-ground-final-integration',
+      purpose:'round23-road-base-plus-round27-stage1-ground-final-integration',
       geometrySource:'v0.3.1-round13-approved',
       geometryFrozen:true,
       visualOnly:true,
@@ -875,12 +802,11 @@ export class OldRoadAncientForestVisualExtension{
         }
       },
       stage3:{
-        deadTreeMass:false,
+        deadTreeMass:true,
         collision:false,
         assets:[...DEAD_TREE_VARIANTS],
-        count:0,
-        removedInRound:30,
-        note:'árvores mortas espalhadas/procedurais removidas integralmente da Floresta Sinistra; solo, estrada e teste controlado da Etapa 2 preservados'
+        count:this.deadTreeCount,
+        note:'preenchimento denso de árvores mortas em toda a cobertura visual aprovada'
       },
       stage4:{
         visualRoadContinuation:true,
@@ -907,26 +833,6 @@ export class OldRoadAncientForestVisualExtension{
         reference:'aether_caminho_na_floresta_assombrada.png',
         note:'Etapa 1 finalizada: transição inferior/direita suavizada nas arestas aprovadas do wedge e repetição superior quebrada com variação das mesmas texturas existentes; sem árvores novas, sem assets inéditos e sem mudança de geometria.'
       },
-      stage6:{
-        sinisterForestAroundRoadStage:2,
-        mode:'controlled-test',
-        visualOnly:true,
-        collision:false,
-        roadChanged:false,
-        stage1GroundFrozen:true,
-        fullRoadCoverage:false,
-        testCoverage:'single short section (~20%)',
-        propsPlaced:this.stage2TestCount,
-        assets:[
-          SINISTER_STAGE2_TEST_KEYS.roots,
-          SINISTER_STAGE2_TEST_KEYS.stump,
-          SINISTER_STAGE2_TEST_KEYS.thorns,
-          SINISTER_STAGE2_TEST_KEYS.web,
-          SINISTER_STAGE2_TEST_KEYS.branchPile
-        ],
-        reference:'aether_caminho_na_floresta_assombrada.png',
-        note:'Etapa 2 reiniciada a partir do Round 27: apenas cinco props de massa baixa em um trecho curto para validação; Round 28 rejeitado não reutilizado.'
-      },
       approvedBase:{
         bounds:{...OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE},
         logicalPoints:baseLogical.map(point=>({...point})),
@@ -951,13 +857,13 @@ export class OldRoadAncientForestVisualExtension{
   }
 
   destroy(){
+    this.lowBorder?.destroy();
     this.textureLayer?.destroy?.(true);
     this.detailGraphics?.destroy?.();
     this.transitionLayer?.destroy?.(true);
     this.treeSprites?.forEach(sprite=>sprite?.destroy?.());
     this.visualRoadSprites?.forEach(sprite=>sprite?.destroy?.());
     this.roadsideGroundSprites?.forEach(sprite=>sprite?.destroy?.());
-    this.stage2TestSprites?.forEach(sprite=>sprite?.destroy?.());
     this.graphics?.destroy?.();
     this.maskGraphics?.destroy?.();
     this.floorSprites=[];
@@ -966,8 +872,6 @@ export class OldRoadAncientForestVisualExtension{
     this.visualRoadPath=[];
     this.roadsideGroundSprites=[];
     this.roadsideGroundCount=0;
-    this.stage2TestSprites=[];
-    this.stage2TestCount=0;
     this.textureLayer=null;
     this.detailGraphics=null;
     this.transitionLayer=null;
