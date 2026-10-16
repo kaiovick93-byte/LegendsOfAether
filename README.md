@@ -1,4 +1,71 @@
-# Legends of Aether — v0.3.1 Round 34
+# Legends of Aether — v0.3.1 Round 35
+
+## Base exclusiva
+`legends-of-aether-v0.3.1-round34-floresta-sinistra-base-round33.zip`.
+SHA-256: `ca0892e8113f4bb7267c5ef2e8e715f480f8feb5933a54872764cb228a5b249e`.
+
+## Escopo
+Substituição somente da apresentação do minimapa pela moldura circular enviada.
+O conteúdo do mapa, a estrada representada, o jogador e os marcadores existentes
+continuam vindo do mesmo sistema do Round 34. Nenhum mapa ilustrado ou POI foi criado.
+
+- Máscara circular real (`GeometryMask` / stencil) aplicada ao conteúdo e a todos
+  os marcadores. Não há imagens pretas cobrindo os cantos.
+- A janela original de 216 × 162, o zoom 3,25, a projeção, o recorte e a atualização
+  dos marcadores permanecem iguais. A apresentação apenas recorta essa janela em círculo.
+- `normalized`, `pointOnMap`, `update`, `markerAllowed` e
+  `refreshMarkerVisibility` permanecem idênticos aos métodos da base.
+- O jogador conserva o marcador, a orientação e o comportamento de centralização
+  ou limitação do recorte nas bordas do mapa. A bússola permanece fixa no norte.
+- Moldura com 220 px de largura, escala uniforme e sem deformação em 1920 × 1080.
+  A placa encaixa sobre o ornamento inferior e termina antes do tracker existente.
+- O nome completo da região é recebido pelo fluxo já existente
+  `MapHud.setLocalName` / `AetherTerritory.getLocalName`. Não foi necessária
+  metadata nova; nenhum nome de região foi fixado no componente ou no PNG.
+- Texto marfim, serifado, centralizado, com sombra discreta e quebra de linha.
+- Ordem: mapa/conteúdo, marcadores, moldura, bússola, placa e texto da região.
+- A máscara acompanha o redimensionamento da HUD e é liberada ao encerrar a cena.
+- Os três PNGs enviados são preservados byte a byte. Frames de textura selecionam
+  apenas a arte útil, excluindo margens de exportação e o fragmento solto à direita
+  da bússola; os ornamentos não foram redesenhados.
+
+Relógio, Quest Tracker, barra inferior, HP/Mana, mapas, estrada, florestas,
+iluminação, câmera, coordenadas, movimentação, colisões, bounds, quests, triggers,
+WorldClock e save/load permanecem sem alteração.
+
+## Arquivos alterados
+- `README.md` — registro desta entrega.
+- `src/ui/Minimap.ts` — apresentação circular, assets, máscara e nome na placa.
+- `src/scenes/PreloadScene.ts` — importação e carregamento dos três assets.
+
+## Assets adicionados
+Pasta: `assets/images/ui/hud/minimap/`.
+
+- `minimapa_moldura.png`
+- `minimapa_bussola_n.png`
+- `minimapa_placa_regiao.png`
+
+São as cópias originais dos anexos com sufixo `(1)`, usando os nomes solicitados
+no projeto. Nenhum arquivo removido.
+
+## Validação
+- `npm run check` e `npm run build`.
+- 19 testes existentes de relógio e Quest Tracker aprovados.
+- Jogo real em Chromium: estrada, centro da cidade e setor residencial; nomes
+  dinâmicos completos; movimentação por teclado e oito orientações do jogador.
+- Comparação com o Round 34: demais elementos da HUD, câmera, posição inicial,
+  estrada, floresta, estados de quests e prólogo idênticos.
+- Verificação visual em 1920 × 1080 e redimensionamento em 1366 × 768,
+  1280 × 720 e 1024 × 768, sem sobreposição com o Quest Tracker.
+- Teste do recorte com moldura e placa ocultas: 20.416 pixels do conteúdo visíveis,
+  nenhum fora do círculo. A geometria da máscara permanece independente da arte.
+- Abrir/fechar o mapa completo preserva o estado e a visibilidade do minimapa;
+  reiniciar a cena libera a máscara anterior e cria apenas um minimapa novo.
+- Console sem erros durante as verificações.
+
+---
+
+# Histórico — v0.3.1 Round 34
 
 ## Base exclusiva
 `legends-of-aether-v0.3.1-round33-quest-tracker-base-round32.zip`.
