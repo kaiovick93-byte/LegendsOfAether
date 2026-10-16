@@ -43,6 +43,7 @@ globalThis.Phaser = {
 };
 const {WorldClock, worldClock, REAL_DAY_MS, GAME_DAY_MS} = await load('src/world/WorldClock.ts');
 const {installWorldClock} = await load('src/world/WorldClockRuntime.ts');
+const {duskToDawnLightIntensity} = await load('src/render/WorldLightingSystem.ts');
 const {SaveManager} = await load('src/save/SaveManager.ts');
 const {Player} = await load('src/entities/Player.ts');
 const {MapHud} = await load('src/ui/MapHud.ts');
@@ -60,17 +61,46 @@ after(() => rmSync(temporary, {recursive: true, force: true}));
 
 function map(key = 'AetherCityScene') {
   const texts = [];
+  const objects = [];
+  const textures = new Map([
+    ['relogio_moldura', {width: 2026, height: 395}],
+    ['relogio_sol', {width: 397, height: 384}],
+    ['relogio_lua', {width: 327, height: 292}]
+  ]);
+  function object(x, y, values = {}) {
+    const view = {x, y, scaleX: 1, scaleY: 1, destroyed: false, ...values,
+      setName(name) { this.name = name; return this; },
+      setScrollFactor() { return this; }, setDepth() { return this; },
+      setOrigin() { return this; },
+      setScale(x, y = x) { this.scaleX = x; this.scaleY = y; return this; },
+      get displayHeight() { return this.height * this.scaleY; },
+      setTexture(key) { Object.assign(this, textures.get(key), {texture: {key}}); return this; },
+      setText(value) { this.text = value; this.width = value.length * 12; return this; },
+      add(children) { this.list.push(...children); return this; },
+      destroy() { this.destroyed = true; this.list?.forEach(child => child.destroy()); }
+    };
+    objects.push(view); return view;
+  }
   const scene = {
-    active: true, sys: {settings: {key}}, events: new EventEmitter(), texts,
+    active: true, sys: {settings: {key}}, events: new EventEmitter(), texts, objects,
     time: {paused: false, timeScale: 1, delayedCall: () => {}},
     physics: {world: {isPaused: false}},
-    add: {text(x, y, text) {
-      const label = {x, y, text, destroyed: false,
-        setScrollFactor() { return this; }, setDepth() { return this; },
-        setText(value) { this.text = value; return this; },
-        destroy() { this.destroyed = true; }};
-      texts.push(label); return label;
-    }}
+    textures: {
+      exists: key => textures.has(key),
+      get: key => ({getSourceImage: () => textures.get(key)}),
+      createCanvas(key, width, height) {
+        textures.set(key, {width, height});
+        return {getContext: () => ({drawImage() {}, clearRect() {}}), refresh() {}};
+      }
+    },
+    add: {
+      container: (x, y) => object(x, y, {list: []}),
+      image: (x, y, key) => object(x, y).setTexture(key),
+      text(x, y, text) {
+        const label = object(x, y, {text});
+        texts.push(label); return label;
+      }
+    }
   };
   const player = Object.create(Player.prototype);
   Object.assign(player, {
@@ -228,10 +258,51 @@ test('map transitions and repeated installation cannot reset or accelerate the c
     run.frame(3000);
     assert.equal(worldClock.serialize().timeOfDayMs, before.timeOfDayMs + 60000);
     assert.equal(run.scenes[0].texts.length, 1);
-    assert.equal(run.scenes[0].texts[0].text, worldClock.format());
+    assert.equal(run.scenes[0].texts[0].text, worldClock.format().replace(' • ', ' ◆ '));
   }
   run.game.events.emit('destroy');
   assert.equal(run.game.events.listenerCount('poststep'), 0);
+});
+
+test('HUD follows the existing lantern day/night transition without moving frame or text', () => {
+  const scene = map();
+  const run = runtime([scene]);
+  run.frame();
+  const frame = scene.objects.find(object => object.name === 'worldClockFrame');
+  const icon = scene.objects.find(object => object.name === 'worldClockIcon');
+  const label = scene.texts[0];
+  const layout = () => [frame.x, frame.y, frame.scaleX, frame.scaleY, label.x, label.y];
+  const initialLayout = layout();
+  for (const [hour, minute, night] of [
+    [12, 7, false], [17, 30, false], [19, 23, false], [19, 24, true],
+    [22, 5, true], [4, 30, true], [5, 43, true], [5, 44, false], [6, 0, false]
+  ]) {
+    worldClock.restore({version: 1, day: 3, timeOfDayMs: (hour * 60 + minute) * 60000});
+    run.frame();
+    assert.equal(duskToDawnLightIntensity() > .18, night);
+    assert.equal(icon.texture.key, night ? 'relogio_lua' : 'relogio_sol_hud');
+    assert.equal(label.text, `Dia 3 ◆ ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+    assert.deepEqual(layout(), initialLayout);
+    assert.equal(frame.scaleX, frame.scaleY);
+    assert.equal(icon.scaleX, icon.scaleY);
+  }
+  assert.equal(scene.objects.filter(object => object.name === 'worldClockHud').length, 1);
+  run.dispose();
+  assert.ok(scene.objects.every(object => object.destroyed));
+});
+
+test('HUD updates the day at midnight and minutes with two digits at the unchanged speed', () => {
+  const run = runtime();
+  worldClock.restore({version: 1, day: 9, timeOfDayMs: GAME_DAY_MS - 60000});
+  run.frame();
+  const label = run.scenes[0].texts[0];
+  assert.equal(label.text, 'Dia 9 ◆ 23:59');
+  run.frame(2999);
+  assert.equal(label.text, 'Dia 9 ◆ 23:59');
+  run.frame(1);
+  assert.equal(label.text, 'Dia 10 ◆ 00:00');
+  run.frame(3000);
+  assert.equal(label.text, 'Dia 10 ◆ 00:01');
 });
 
 test('all existing modal/scene/game pauses stop time without catch-up on resume', () => {

@@ -1,4 +1,58 @@
-# Legends of Aether — v0.3.1 Round 31
+# Legends of Aether — v0.3.1 Round 32
+
+## Base exclusiva deste round
+`legends-of-aether-v0.3.1-round31-etapa2-refeita-base-round27.zip`.
+
+## Escopo: somente o relógio da HUD
+- Formato dinâmico: `[ícone] Dia X ◆ HH:MM`.
+- Moldura fixa de 380 × 74,09 px em (22, 52), com escala uniforme.
+- Ícone à esquerda e texto marfim com sombra à direita, ambos com posição fixa.
+- A troca sol/lua usa `duskToDawnLightIntensity()` e o mesmo limiar visual
+  `> .18` já utilizado pela lanterna de `OldRoadProps`. Não há novo calendário,
+  cálculo de horário ou alteração do sistema de iluminação.
+- O texto reutiliza `worldClock.format()`, trocando apenas o separador visual.
+  Horas e minutos conservam dois dígitos; dia e horário continuam atualizando.
+- Os três PNGs fornecidos foram copiados sem alterar seus bytes. Na exibição,
+  recortes transparentes ocultam somente fragmentos desconectados que vieram
+  nas extremidades dos arquivos de sol e moldura. Nenhum novo asset foi criado.
+
+## Arquivos alterados neste round
+- `README.md` — registro da entrega.
+- `src/scenes/PreloadScene.ts` — carregar os três assets do relógio.
+- `src/world/WorldClockRuntime.ts` — substituir apenas a apresentação e sua
+  limpeza por `WorldClockHud`; avanço do tempo e condições de pausa intactos.
+- `tests/world-clock.test.mjs` — adaptar o mock visual e validar ícones,
+  transições, estabilidade da moldura/texto e atualização na virada do dia.
+
+## Arquivos adicionados neste round
+- `src/ui/WorldClockHud.ts`
+- `assets/images/ui/hud/clock/relogio_moldura.png`
+- `assets/images/ui/hud/clock/relogio_sol.png`
+- `assets/images/ui/hud/clock/relogio_lua.png`
+
+Nenhum arquivo removido. Todos os demais arquivos do Round 31 foram preservados,
+incluindo `WorldClock.ts`, iluminação, minimapa, objetivo, barra inferior,
+HP/Mana, quests, mapas, floresta, estrada, colisões, bounds e gameplay.
+
+## Validação deste round
+- `npm run check`: aprovado.
+- `npm run build`: aprovado.
+- `npm run test:world-clock`: 13 testes aprovados.
+- Chromium, jogo real em 1920×1080: 12:07 diurno, 19:23/19:24 na transição,
+  22:05 noturno, 05:43/05:44 no amanhecer, com ícones corretos e moldura/texto
+  estáveis. Nenhum erro de console ou JavaScript durante o teste.
+- Runtime real: `Dia 9 ◆ 23:59` → `Dia 10 ◆ 00:00` → `Dia 10 ◆ 00:01`,
+  preservando três segundos reais por minuto de jogo e a pausa existente.
+- Comparação da HUD antes/depois: 93 objetos externos ao relógio preservados.
+  Desconsiderados apenas IDs aleatórios de texturas de texto e a fase de
+  pulsação dos dois indicadores animados de jogador nos mapas.
+- Comparação dos arquivos com o ZIP exclusivo e teste de integridade do ZIP.
+- Inspeção visual concentrada em `AetherCityScene`; ciclo de troca entre as
+  cinco cenas com relógio também coberto pelos testes automatizados existentes.
+
+---
+
+# Histórico preservado — v0.3.1 Round 31
 
 ## Base exclusiva
 `legends-of-aether-v0.3.1-round27-ajuste-final-integracao-chao(1).zip`.

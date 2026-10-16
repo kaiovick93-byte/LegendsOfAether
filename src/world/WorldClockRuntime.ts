@@ -1,6 +1,7 @@
-import type {Game, Scene, GameObjects} from 'phaser';
+import type {Game, Scene} from 'phaser';
 import {SaveManager} from '../save/SaveManager';
 import {worldClock} from './WorldClock';
+import {WorldClockHud} from '../ui/WorldClockHud';
 
 type ClockScene = Scene & {
   player?: {isDead(): boolean};
@@ -24,27 +25,23 @@ export function installWorldClock(game: Game) {
   let previousScene: ClockScene | undefined;
   let revision = worldClock.revision;
   const suspended = new Set<string>();
-  const labels = new Map<ClockScene, {text: GameObjects.Text; remove: () => void}>();
+  const labels = new Map<ClockScene, {hud: WorldClockHud; remove: () => void}>();
 
   function showClock(scene: ClockScene) {
     let entry = labels.get(scene);
     if (!entry) {
-      const text = scene.add.text(22, 52, worldClock.format(), {
-        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#d1c29f',
-        backgroundColor: '#101821', padding: {left: 7, right: 7, top: 4, bottom: 4}
-      }).setScrollFactor(0).setDepth(681);
+      const hud = new WorldClockHud(scene);
       const remove = () => {
         scene.events.off('shutdown', remove);
-        text.destroy();
+        hud.destroy();
         labels.delete(scene);
         if (previousScene === scene) previousScene = undefined;
       };
-      entry = {text, remove};
+      entry = {hud, remove};
       labels.set(scene, entry);
       scene.events.once('shutdown', remove);
     }
-    const label = worldClock.format();
-    if (entry.text.text !== label) entry.text.setText(label);
+    entry.hud.update();
   }
 
   function step(_time: number, delta: number) {

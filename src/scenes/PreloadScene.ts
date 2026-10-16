@@ -6,10 +6,13 @@ import {ESCARPMENT_ASSETS} from '../world/OldRoadEscarpmentAssets';
 import {ESCARPMENT_NATURAL_ASSETS} from '../world/OldRoadEscarpmentNaturalAssets';
 import {OLD_ROAD_PROP_ASSETS} from '../world/OldRoadProps';
 import {OLD_ROAD_ANCIENT_FOREST_ASSETS} from '../world/OldRoadAncientForest';
+import {SINISTER_LOW_ROADSIDE_ASSETS} from '../world/OldRoadSinisterRoadside';
+import {WORLD_CLOCK_HUD_ASSETS} from '../ui/WorldClockHud';
 import {PLAYER_APPEARANCE_ORDER,PLAYER_DIRECTION_ROWS,PLAYER_VISUAL_STATES,playerDirectionRowForAppearance,playerOutlineTextureKey,playerTextureKey} from '../character/PlayerAppearance';
 export class PreloadScene extends Phaser.Scene{
   constructor(){super('PreloadScene')}
   preload(){
+    for(const asset of WORLD_CLOCK_HUD_ASSETS)this.load.image(asset.key,asset.path);
     this.load.image('aether_main_menu','assets/images/ui/main_menu_aether.png');
     for(const asset of Object.values(OLD_ROAD_PROP_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(OLD_ROAD_ANCIENT_FOREST_ASSETS))this.load.image(asset.key,asset.path);
@@ -22,12 +25,8 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('sinister_ground_transition_grass_swamp_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_transition_grass_swamp_01.png');
     this.load.image('sinister_ground_transition_forest_swamp_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_transition_forest_swamp_01.png');
     this.load.image('sinister_ground_transition_road_swamp_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_transition_road_swamp_01.png');
-    // Round 29 — Etapa 2 controlada: quatro assets novos de massa baixa.
-    // O quinto elemento (toco) reutiliza ancient_forest_stump_02 já carregado pelo kit ancestral.
-    this.load.image('sinister_stage2_test_roots_01','assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_roots_01.png');
-    this.load.image('sinister_stage2_test_thorn_bush_01','assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_thorn_bush_01.png');
-    this.load.image('sinister_stage2_test_web_01','assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_web_01.png');
-    this.load.image('sinister_stage2_test_branch_pile_01','assets/images/environment/outskirts/old-road-ancient-forest/sinister-stage2-test/sinister_low_branch_pile_01.png');
+    for(const [name,asset] of Object.entries(SINISTER_LOW_ROADSIDE_ASSETS))
+      if(name!=='leaves')this.load.image(asset.key,asset.path);
     for(const asset of Object.values(ESCARPMENT_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(ESCARPMENT_NATURAL_ASSETS))this.load.image(asset.key,asset.path);
     for(const key of Object.values(OLD_ROAD_B4D_TEXTURES).flat())
