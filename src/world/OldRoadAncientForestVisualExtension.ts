@@ -1,5 +1,6 @@
 // @ts-nocheck
 import {OldRoadSinisterRoadside} from './OldRoadSinisterRoadside';
+import {OldRoadSinisterForest,SINISTER_FOREST_ASSETS} from './OldRoadSinisterForest';
 
 /**
  * v0.3.1 Round 27 — ajuste final de integração do chão sinistro.
@@ -773,7 +774,8 @@ export class OldRoadAncientForestVisualExtension{
     this.buildTransitionLayer();
     this.buildVisualRoadContinuation();
     this.buildRoadsideSinisterGround();
-    this.buildDeadTreeLayer();
+    // Round 34: substitui somente as árvores isoladas da cobertura sinistra.
+    this.forestMass=new OldRoadSinisterForest(this);
     // Etapa 2 independente: as chamadas e os dados da Etapa 1 acima ficam intactos.
     this.lowBorder=new OldRoadSinisterRoadside(this);
 
@@ -804,9 +806,9 @@ export class OldRoadAncientForestVisualExtension{
       stage3:{
         deadTreeMass:true,
         collision:false,
-        assets:[...DEAD_TREE_VARIANTS],
-        count:this.deadTreeCount,
-        note:'preenchimento denso de árvores mortas em toda a cobertura visual aprovada'
+        assets:Object.values(SINISTER_FOREST_ASSETS).map(asset=>asset.key),
+        count:this.forestMass.entries.length,
+        note:'Round 34: muralha contínua, árvores principais, raízes e teias dentro da cobertura aprovada'
       },
       stage4:{
         visualRoadContinuation:true,
@@ -857,6 +859,7 @@ export class OldRoadAncientForestVisualExtension{
   }
 
   destroy(){
+    this.forestMass?.destroy();
     this.lowBorder?.destroy();
     this.textureLayer?.destroy?.(true);
     this.detailGraphics?.destroy?.();

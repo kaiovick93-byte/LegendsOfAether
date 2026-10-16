@@ -7,6 +7,7 @@ import {ESCARPMENT_NATURAL_ASSETS} from '../world/OldRoadEscarpmentNaturalAssets
 import {OLD_ROAD_PROP_ASSETS} from '../world/OldRoadProps';
 import {OLD_ROAD_ANCIENT_FOREST_ASSETS} from '../world/OldRoadAncientForest';
 import {SINISTER_LOW_ROADSIDE_ASSETS} from '../world/OldRoadSinisterRoadside';
+import {SINISTER_FOREST_ASSETS} from '../world/OldRoadSinisterForest';
 import {WORLD_CLOCK_HUD_ASSETS} from '../ui/WorldClockHud';
 import {QUEST_TRACKER_ASSETS} from '../ui/QuestTracker';
 import {PLAYER_APPEARANCE_ORDER,PLAYER_DIRECTION_ROWS,PLAYER_VISUAL_STATES,playerDirectionRowForAppearance,playerOutlineTextureKey,playerTextureKey} from '../character/PlayerAppearance';
@@ -18,6 +19,7 @@ export class PreloadScene extends Phaser.Scene{
     this.load.image('aether_main_menu','assets/images/ui/main_menu_aether.png');
     for(const asset of Object.values(OLD_ROAD_PROP_ASSETS))this.load.image(asset.key,asset.path);
     for(const asset of Object.values(OLD_ROAD_ANCIENT_FOREST_ASSETS))this.load.image(asset.key,asset.path);
+    for(const asset of Object.values(SINISTER_FOREST_ASSETS))this.load.image(asset.key,asset.path);
     this.load.image('sinister_ground_surface_dark_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_surface_dark_01.png');
     this.load.image('sinister_ground_surface_wet_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_surface_wet_01.png');
     this.load.image('sinister_ground_patch_swamp_01','assets/images/environment/outskirts/old-road-ancient-forest/generated-ground/sinister_ground_patch_swamp_01.png');

@@ -1,4 +1,89 @@
-# Legends of Aether — v0.3.1 Round 33
+# Legends of Aether — v0.3.1 Round 34
+
+## Base exclusiva
+`legends-of-aether-v0.3.1-round33-quest-tracker-base-round32.zip`.
+SHA-256: `ef3fd1a55aff25a738411e22c7ada1cb89de222d2d6ab2c472cb731eceb6ac4e`.
+
+## Escopo e composição
+Reconstrução exclusivamente visual da Floresta Sinistra ao redor do prolongamento
+existente da Estrada Velha, seguindo `floresta_sinistra_na_estrada_de_aether.png`.
+A referência não foi adicionada ao jogo.
+
+- A muralha forma a cobertura principal sobreposta; árvores maiores criam profundidade.
+- Raízes, espinhos e folhas ligam essa cobertura à margem da estrada.
+- Teias ficam presas à vegetação; mata com cogumelos aparece em apenas dois detalhes.
+- A sequência repetitiva de raízes grandes foi reduzida após inspeção no jogo.
+- Cada peça preserva sua proporção, com escala uniforme, flip horizontal e pequenas rotações.
+- A composição é montada uma vez em texturas de até 1024 × 1024 px. Não há reconstrução por frame.
+- O recorte por pixel mantém toda a nova arte dentro da cobertura aprovada e a mais de 66 px da linha central original da estrada.
+- As antigas árvores isoladas da extensão foram substituídas pela massa contínua.
+  A floresta verde, implementada separadamente, permanece intacta.
+
+Nenhuma alteração em posição, direção, largura, módulos, curvas ou comprimento da
+estrada. Chão/transições aprovados, placa, lanterna, escarpa, colisões, bounds,
+triggers, navegação, quests, gameplay, iluminação global, WorldClock e HUD preservados.
+
+## Arquivos alterados
+- `README.md`
+- `src/scenes/PreloadScene.ts` — carregar os quatro PNGs principais adicionados.
+- `src/world/OldRoadAncientForestVisualExtension.ts` — construir/destruir a nova
+  camada visual no lugar da antiga distribuição de árvores isoladas; atualizar
+  somente seus metadados de diagnóstico.
+
+## Arquivos adicionados
+- `src/world/OldRoadSinisterForest.ts`
+- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-forest/muralha_de_floresta_assombrada.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-forest/árvore_ancestral_na_floresta_assombrada.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-forest/teia_nebulosa_em_galhos_retorcidos.png`
+- `assets/images/environment/outskirts/old-road-ancient-forest/sinister-forest/mata_decomposta_com_raízes_e_cogumelos.png`
+
+Nenhum arquivo removido. Os quatro PNGs adicionados conservam os bytes originais.
+Todos os demais arquivos e assets do Round 33 permanecem idênticos.
+
+## Assets usados na composição
+Caminhos relativos a `assets/images/environment/outskirts/old-road-ancient-forest/`:
+
+| Asset solicitado | Arquivo no projeto |
+| --- | --- |
+| `muralha_de_floresta_assombrada.png` | `sinister-forest/muralha_de_floresta_assombrada.png` |
+| `árvore_ancestral_na_floresta_assombrada.png` | `sinister-forest/árvore_ancestral_na_floresta_assombrada.png` |
+| `raízes_retorcidas_da_floresta_assombrada.png` | `low-roadside/raízes_retorcidas_da_floresta_assombrada.png` |
+| `amontoado_de_raízes_e_espinhos_assombrados.png` | `low-roadside/amontoado_de_raízes_e_espinhos_assombrados.png` |
+| `arbusto_espinhoso_ressecadoaco.png` | `low-roadside/arbusto_espinhoso_ressecadoaco.png` |
+| `teia_antiga_entre_galhos_mortos.png` | `low-roadside/teia_antiga_entre_galhos_mortos.png` |
+| `teia_nebulosa_em_galhos_retorcidos.png` | `sinister-forest/teia_nebulosa_em_galhos_retorcidos.png` |
+| `montinho_de_folhas_secas_da_floresta.png` | `generated-ground/sinister_ground_leaf_pile_01.png` (versão já integrada) |
+| `detritos_florestais_de_outono_em_transparência.png` | `generated-ground/sinister_ground_debris_01.png` (versão já integrada) |
+| `mata_decomposta_com_raízes_e_cogumelos.png` | `sinister-forest/mata_decomposta_com_raízes_e_cogumelos.png` |
+
+O chão aprovado continua usando, sem alteração, as folhas e detritos acima e:
+- `generated-ground/sinister_ground_surface_dark_01.png`
+- `generated-ground/sinister_ground_surface_wet_01.png`
+- `generated-ground/sinister_ground_patch_swamp_01.png`
+- `generated-ground/sinister_ground_twisted_roots_01.png`
+- `generated-ground/sinister_ground_transition_grass_swamp_01.png`
+- `generated-ground/sinister_ground_transition_forest_swamp_01.png`
+- `generated-ground/sinister_ground_transition_road_swamp_01.png`
+
+As árvores verdes e a transição verde mencionadas como inadequadas não foram
+adicionadas à nova massa. Nenhuma imagem inteira de referência foi usada como cenário.
+
+## Verificação
+- TypeScript e build de produção aprovados.
+- Os 19 testes existentes do Quest Tracker e WorldClock passaram.
+- Inspeção visual em Chromium, 1920 × 1080: entrada, meio e extremidade do prolongamento,
+  comparados à base e à referência; massa contínua e estrada visível.
+- Dados da estrada, geometria aprovada, parâmetros do terreno, HUD, prólogo e quests
+  comparados à base Round 33 sem diferenças.
+- Conferência dos pixels finais: nenhuma arte nova dentro do corredor protegido
+  ou fora da cobertura aprovada.
+- Recolher/expandir o tracker preserva o progresso; reentrada da cena limpa e recria
+  as texturas da floresta sem duplicações. Console sem erros.
+- Comparação de bytes dos arquivos e integridade do ZIP verificadas antes da entrega.
+
+---
+
+# Histórico preservado — v0.3.1 Round 33
 
 ## Base exclusiva deste round
 `legends-of-aether-v0.3.1-round32-relogio-dia-noite-base-round31.zip`.
