@@ -393,21 +393,37 @@ export class OldRoadAncientForest{
     const bands=FOREST_FOG_BANDS.map(([type,u,v,width,height,rotation,opacity,driftX,driftY,speed,phase])=>{
       this.assertBaseInside(u,v,`forest-fog-${type}`);
       const p=this.territory.project(u,v);
-      return {type,x:p.x,y:p.y,u,v,width,height,rotation,opacity,driftX,driftY,speed,phase};
+      // Round 37: estas faixas antigas tinham só 52–72 px de altura; após a
+      // escala por camada (0.48–0.76), sobravam véus de 25–55 px escondidos
+      // pelo emaranhado de copas/raízes. Ampliar SÓ a projeção vertical da
+      // névoa, mantendo o centro e a largura de todos os emissores.
+      return {type,x:p.x,y:p.y,u,v,width,height:height*2.2,rotation,opacity,driftX,driftY,speed,phase};
     });
 
     this.fogZoneHandle=fog.registerZone({
       id:'old-road-ancient-forest',
       polygon,
       bands,
-      color:0x809087,
-      density:.46,
+      // Round 37: a zona sinistra já utiliza esta família de cor e ganho
+      // porque a textura procedural contém sua própria transparência. A
+      // Ancestral mantinha densidade .46, alphaGain=1 e piso temporal .18:
+      // a multiplicação tornava cada véu praticamente imperceptível.
+      color:0xc1c1b2,
+      nightColor:0xb8c8dc,
+      density:.70,
+      alphaGain:4,
+      alphaLimits:{background:.46,mid:.64,foreground:.26},
       // Estratégia 2 usada apenas como perspectiva atmosférica muito sutil.
       // Ground decals ficam intactos; apenas árvores/estruturas distantes
       // recebem até ~6% de tint no pico da névoa.
       atmosphereTargets:this.sprites.filter(sprite=>sprite?.getData?.('aetherRenderClass')!=='ground'),
       atmosphereTintStrength:.06,
-      schedule:(timeOfDayMs)=>this.forestFogIntensity(timeOfDayMs)
+      // Mesmos horários/curva do WorldClock, com piso visual do sistema que
+      // já funciona na Floresta Sinistra (0.32 durante o dia).
+      schedule:(timeOfDayMs)=>{
+        const current=this.forestFogIntensity(timeOfDayMs);
+        return .32+.68*(current-.18)/.82;
+      }
     });
   }
 
