@@ -319,7 +319,11 @@ export class WorldFogSystem{
             baseRotation:(band.rotation??0)+(rnd()-.5)*.08,
             baseAlpha:profile.alpha*band.opacity,
             depthOffset:profile.depthOffset,
-            fixedDepth:zone.layerDepths?.[layer],
+            // A Floresta Ancestral tem copas independentes: uma faixa pode
+            // precisar de profundidade própria para não ficar inteiramente
+            // atrás das árvores. Zonas existentes sem esta configuração
+            // (inclusive a Sinistra) permanecem idênticas.
+            fixedDepth:band.layerDepths?.[layer]??zone.layerDepths?.[layer],
             driftX:band.driftX*profile.drift*(.62+rnd()*.68),
             driftY:Math.max(2,band.driftY*profile.drift*(.70+rnd()*.65)),
             speed:band.speed*(.70+rnd()*.62),

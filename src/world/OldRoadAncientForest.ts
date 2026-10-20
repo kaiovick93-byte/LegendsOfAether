@@ -385,6 +385,34 @@ export class OldRoadAncientForest{
     return .18;
   }
 
+  // Round 38 — uma massa com sprites individuais exige um depth local por
+  // faixa. O depthAt(center) usado até o Round 37 fica atrás de copas de
+  // árvores cuja base está à frente do centro, deixando a névoa invisível.
+  // Cada faixa é posicionada entre as camadas de sua própria vizinhança;
+  // jamais alteramos os depths, escala ou coordenadas dos sprites da floresta.
+  fogDepthsForBand(band){
+    const halfWidth=band.width*.30+Math.max(20,band.driftX*2);
+    const halfHeight=band.height*.46+Math.max(12,band.driftY*3);
+    const xMin=band.x-halfWidth,xMax=band.x+halfWidth;
+    const yMin=band.y-halfHeight,yMax=band.y+halfHeight;
+    const nearby=this.sprites.filter(sprite=>{
+      if(!sprite?.active||!Number.isFinite(sprite.depth)||
+        sprite.getData?.('aetherRenderClass')==='ground'||!sprite.getBounds)return false;
+      const bounds=sprite.getBounds();
+      return bounds?.right>=xMin&&bounds.left<=xMax&&
+        bounds.bottom>=yMin&&bounds.top<=yMax;
+    }).map(sprite=>sprite.depth);
+    const ownDepth=this.territory.depthAt(band.u,band.v,.06);
+    // Sem árvore sobreposta, o efeito continua ligado à profundidade local.
+    const frontDepth=Math.max(ownDepth,...nearby);
+    const backDepth=nearby.length?Math.min(ownDepth,...nearby):ownDepth;
+    return {
+      background:backDepth-.08,
+      mid:frontDepth+.04,
+      foreground:frontDepth+.08
+    };
+  }
+
   registerGlobalFogZone(){
     const fog=this.scene.worldFog;
     if(!fog?.registerZone)return;
@@ -397,13 +425,18 @@ export class OldRoadAncientForest{
       // escala por camada (0.48–0.76), sobravam véus de 25–55 px escondidos
       // pelo emaranhado de copas/raízes. Ampliar SÓ a projeção vertical da
       // névoa, mantendo o centro e a largura de todos os emissores.
-      return {type,x:p.x,y:p.y,u,v,width,height:height*2.2,rotation,opacity,driftX,driftY,speed,phase};
+      const band={type,x:p.x,y:p.y,u,v,width,height:height*2.2,
+        rotation,opacity,driftX,driftY,speed,phase};
+      band.layerDepths=this.fogDepthsForBand(band);
+      return band;
     });
 
     this.fogZoneHandle=fog.registerZone({
       id:'old-road-ancient-forest',
       polygon,
       bands,
+      // Round 38: mid/foreground usam a profundidade local acima das copas
+      // sobrepostas (calculada por faixa). Somente a névoa muda de camada.
       // Round 37: a zona sinistra já utiliza esta família de cor e ganho
       // porque a textura procedural contém sua própria transparência. A
       // Ancestral mantinha densidade .46, alphaGain=1 e piso temporal .18:

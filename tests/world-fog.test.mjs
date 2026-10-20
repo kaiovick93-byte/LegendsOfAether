@@ -116,7 +116,7 @@ test('ancient forest uses visible world fog in daylight, dusk and night without 
   scene.depthAt=(u,v,offset=0)=>-20000+(u+v)*100+offset;
   const forest=Object.create(OldRoadAncientForest.prototype);
   const project=(u,v)=>({x:1600+(u-v)*48,y:250+(u+v)*24});
-  Object.assign(forest,{scene,territory:{project},sprites:[]});
+  Object.assign(forest,{scene,territory:{project,depthAt:(u,v,offset=0)=>scene.depthAt(u,v,offset)},sprites:[]});
   forest.registerGlobalFogZone();
   const zone=fog.zones.get('old-road-ancient-forest');
   assert.ok(zone,'ancient forest must register its own zone');
@@ -127,6 +127,12 @@ test('ancient forest uses visible world fog in daylight, dusk and night without 
     [2.005,69.655],[1.602,72.714],[1.361,74.109]
   ],'emitter positions must be identical');
   assert.ok(zone.bands.every(b=>b.height>=110),'fog must reach visibly between forest roots and trees');
+  assert.ok(zone.bands.every(b=>Number.isFinite(b.layerDepths.mid)),
+    'each ancient fog emitter must use a fixed, locally calculated depth');
+  assert.ok(zone.wisps.filter(w=>w.layer==='mid').every(w=>
+    w.fixedDepth>w.sprite.depth-0.0001),
+    'mid-depth stays stable during the simulation');
+
 
   const totals=[];
   for(const hour of [12,17.1,18,18.5,19,19.5,22]){
@@ -151,4 +157,43 @@ test('ancient forest uses visible world fog in daylight, dusk and night without 
   const offset=fog.logicalOffsetFromScreen(mid.sprite.x-mid.bandX,mid.sprite.y-mid.bandY);
   assert.ok(mid.sprite.depth>scene.depthAt(mid.baseU+offset.du,mid.baseV+offset.dv,.06),'mid fog must appear ahead of trees at the same world position');
   forest.fogZoneHandle.destroy();fog.destroy();
+});
+
+// Round 38: the Round 37 visual regression was missed because earlier tests
+// asserted alpha only; trees at greater depth actually rendered over all fog.
+test('ancient mid and foreground fog render above nearby overlapping trees, with no effect on sinister fog',()=>{
+  const scene=sceneStub();scene.depthAt=(u,v,offset=0)=>-20000+(u+v)*100+offset;
+  scene.aetherTerritory={config:{tileWidth:96,tileHeight:48}};
+  const fog=new WorldFogSystem(scene);scene.worldFog=fog;
+  const project=(u,v)=>({x:1600+(u-v)*48,y:250+(u+v)*24});
+  const focus=project(1.145,54.657);
+  const overlapping={active:true,depth:-9100,
+    getData:()=>undefined,
+    getBounds:()=>({left:focus.x-55,right:focus.x+55,top:focus.y-60,bottom:focus.y+60})};
+  const farAway={active:true,depth:5000,
+    getData:()=>undefined,
+    getBounds:()=>({left:focus.x+9000,right:focus.x+9100,top:focus.y,bottom:focus.y+100})};
+  const ground={active:true,depth:9999,
+    getData:key=>key==='aetherRenderClass'?'ground':null,
+    getBounds:overlapping.getBounds};
+  const forest=Object.create(OldRoadAncientForest.prototype);
+  Object.assign(forest,{scene,territory:{project,depthAt:scene.depthAt},sprites:[overlapping,farAway,ground]});
+  forest.registerGlobalFogZone();
+  const zone=fog.zones.get('old-road-ancient-forest');
+  const focusBand=zone.bands[0];
+  assert.ok(focusBand.layerDepths.mid>overlapping.depth,
+    'mid wisps must draw in front of the tree that previously occluded them');
+  assert.ok(focusBand.layerDepths.foreground>overlapping.depth);
+  assert.ok(focusBand.layerDepths.mid<farAway.depth,
+    'unrelated distant objects may not lift the entire forest fog into the HUD');
+  assert.ok(focusBand.layerDepths.mid<ground.depth,
+    'ground decals must not be misidentified as occluding tree canopies');
+  const wisps=zone.wisps.filter(w=>w.bandX===focusBand.x&&w.bandY===focusBand.y);
+  assert.ok(wisps.some(w=>w.layer==='mid'&&w.fixedDepth===focusBand.layerDepths.mid));
+  worldClock.restore({version:1,day:1,timeOfDayMs:17*3600000+4*60000});
+  fog.elapsedMs=23000;fog.update(0,0);
+  const front=wisps.filter(w=>w.layer==='mid'||w.layer==='foreground');
+  assert.ok(front.some(w=>w.sprite.alpha>.07&&w.sprite.depth>overlapping.depth),
+    'at 17:04 the rendered wisp must have non-negligible alpha above nearby trees');
+  fog.destroy();
 });
