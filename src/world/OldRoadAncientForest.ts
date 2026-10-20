@@ -443,9 +443,15 @@ export class OldRoadAncientForest{
       // a multiplicação tornava cada véu praticamente imperceptível.
       color:0xc1c1b2,
       nightColor:0xb8c8dc,
-      density:.70,
-      alphaGain:4,
-      alphaLimits:{background:.46,mid:.64,foreground:.26},
+      // Round 39: reforço de massa da névoa ancestral, já visível no Round 38.
+      // Mais véus dentro dos mesmos sete emissores, sem tocar nos sprites da
+      // floresta, na geometria nem nas configurações da floresta sinistra.
+      density:.74,
+      alphaGain:5.6,
+      wispCountMultiplier:2,
+      wispWidthMultiplier:1.28,
+      wispHeightMultiplier:1.30,
+      alphaLimits:{background:.50,mid:.70,foreground:.30},
       // Estratégia 2 usada apenas como perspectiva atmosférica muito sutil.
       // Ground decals ficam intactos; apenas árvores/estruturas distantes
       // recebem até ~6% de tint no pico da névoa.

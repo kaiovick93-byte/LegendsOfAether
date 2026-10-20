@@ -121,7 +121,12 @@ test('ancient forest uses visible world fog in daylight, dusk and night without 
   const zone=fog.zones.get('old-road-ancient-forest');
   assert.ok(zone,'ancient forest must register its own zone');
   assert.equal(zone.bands.length,7,'do not change the number of original emitters');
-  assert.equal(zone.wisps.length,38,'retain the existing multi-depth distribution');
+  assert.equal(zone.wisps.length,76,'double the independent wisps within the seven existing emitters');
+  assert.equal(zone.wispCountMultiplier,2);
+  assert.equal(zone.wispWidthMultiplier,1.28);
+  assert.equal(zone.wispHeightMultiplier,1.30);
+  assert.ok(zone.wisps.some(w=>w.layer==='mid'&&w.sprite.displayWidth>180),
+    'broader veils should fill spaces between adjacent trees');
   assert.deepEqual(zone.bands.map(b=>[b.u,b.v]),[
     [1.145,54.657],[2.382,58.494],[1.629,62.062],[1.468,65.604],
     [2.005,69.655],[1.602,72.714],[1.361,74.109]
@@ -155,7 +160,7 @@ test('ancient forest uses visible world fog in daylight, dusk and night without 
   assert.ok(totals.at(-1)>totals[0]*2,'night atmosphere should be significantly denser than day');
   const mid=zone.wisps.find(w=>w.layer==='mid');
   const offset=fog.logicalOffsetFromScreen(mid.sprite.x-mid.bandX,mid.sprite.y-mid.bandY);
-  assert.ok(mid.sprite.depth>scene.depthAt(mid.baseU+offset.du,mid.baseV+offset.dv,.06),'mid fog must appear ahead of trees at the same world position');
+  assert.equal(mid.sprite.depth,mid.fixedDepth,'mid fog must preserve the locally selected depth while drifting');
   forest.fogZoneHandle.destroy();fog.destroy();
 });
 
@@ -196,4 +201,45 @@ test('ancient mid and foreground fog render above nearby overlapping trees, with
   assert.ok(front.some(w=>w.sprite.alpha>.07&&w.sprite.depth>overlapping.depth),
     'at 17:04 the rendered wisp must have non-negligible alpha above nearby trees');
   fog.destroy();
+});
+
+// Round 39: separação explícita entre as duas regiões, preservando o efeito
+// já aprovado da Sinistra e distribuindo massa visível dentro da Ancestral.
+test('Round 39: ancestral fog has denser coverage at 17:06 and 20:02, without changing sinister fog defaults',()=>{
+  const scene=sceneStub();
+  scene.aetherTerritory={config:{tileWidth:96,tileHeight:48}};
+  scene.depthAt=(u,v,offset=0)=>-20000+(u+v)*100+offset;
+  const fog=new WorldFogSystem(scene);scene.worldFog=fog;
+  const forest=Object.create(OldRoadAncientForest.prototype);
+  const project=(u,v)=>({x:1600+(u-v)*48,y:250+(u+v)*24});
+  Object.assign(forest,{scene,territory:{project,depthAt:scene.depthAt},sprites:[]});
+  forest.registerGlobalFogZone();
+  const zone=fog.zones.get('old-road-ancient-forest');
+  assert.equal(zone.bands.length,7);
+  const perBand=new Map();
+  for(const w of zone.wisps){
+    const key=`${w.bandX}:${w.bandY}`;
+    perBand.set(key,(perBand.get(key)??0)+1);
+  }
+  assert.equal(perBand.size,7,'all fog wisps must belong to the original seven locations');
+  assert.ok([...perBand.values()].every(n=>n>=8));
+  const totals=[];
+  for(const hh of [17+6/60,18+39/60,19+22/60,20+2/60]){
+    worldClock.restore({version:1,day:1,timeOfDayMs:hh*3600000});
+    fog.elapsedMs=23000;fog.update(0,0);
+    const active=zone.wisps.filter(w=>w.sprite.alpha>.08);
+    const midActive=active.filter(w=>w.layer==='mid');
+    assert.ok(midActive.length>=8,`too few mid-depth veils visible at ${hh}: ${midActive.length}`);
+    totals.push(zone.wisps.reduce((total,w)=>total+w.sprite.alpha,0));
+  }
+  assert.ok(totals.every((v,i)=>i===0||v>totals[i-1]),'dusk must progressively add fog mass');
+  assert.ok(totals[0]>4,'17:06 requires a meaningful combined opacity budget');
+  assert.ok(totals.at(-1)>totals[0]*2,'20:02 must feel notably foggier than the day');
+  const other=fog.registerZone({id:'test-other-forest',polygon:rect,bands:[{x:500,y:500,width:400,height:200,opacity:.8}]});
+  const otherZone=fog.zones.get('test-other-forest');
+  assert.equal(otherZone.wispCountMultiplier,1);
+  assert.equal(otherZone.wispWidthMultiplier,1);
+  assert.equal(otherZone.wispHeightMultiplier,1);
+  assert.equal(otherZone.wisps.length,6,'existing default wisp arrangement must not change');
+  other.destroy();forest.fogZoneHandle.destroy();fog.destroy();
 });

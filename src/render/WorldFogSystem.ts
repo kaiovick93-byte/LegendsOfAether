@@ -228,6 +228,11 @@ export class WorldFogSystem{
       nightColor:spec.nightColor??spec.color??0x83908c,
       alphaGain:Math.max(0,spec.alphaGain??1),
       alphaLimits:spec.alphaLimits??{background:.12,mid:.17,foreground:.075},
+      // Reforço opt-in: somente zonas que pedirem ganham mais volumes.
+      // Padrão 1 preserva integralmente a Floresta Sinistra e outras zonas.
+      wispCountMultiplier:Math.max(1,Math.min(3,Math.round(spec.wispCountMultiplier??1))),
+      wispWidthMultiplier:Math.max(1,Math.min(1.5,spec.wispWidthMultiplier??1)),
+      wispHeightMultiplier:Math.max(1,Math.min(1.5,spec.wispHeightMultiplier??1)),
       layerDepths:spec.layerDepths??null,
       constrainToPolygon:spec.constrainToPolygon===true,
       clearPath:(spec.clearPath??[]).map(p=>({x:p.x,y:p.y})),
@@ -293,7 +298,9 @@ export class WorldFogSystem{
       ];
       for(const [layer,count] of layers){
         const profile=layerProfile(layer);
-        for(let i=0;i<count;i++){
+        // Repete apenas os véus dentro do emissor original: não cria novos
+        // centros nem expande o limite geográfico da floresta.
+        for(let i=0;i<count*zone.wispCountMultiplier;i++){
           const localX=(rnd()-.5)*band.width*.58;
           const localY=(rnd()-.5)*Math.max(12,band.height*.34)+(layer==='foreground'?6:0);
           const textureKey=this.textureKeys[Math.floor(rnd()*this.textureKeys.length)%this.textureKeys.length];
@@ -304,8 +311,8 @@ export class WorldFogSystem{
             .setAlpha(0)
             .setVisible(zone.enabled);
 
-          const displayWidth=Math.max(72,band.width*profile.width*(.78+rnd()*.48));
-          const displayHeight=Math.max(18,band.height*profile.height*(.78+rnd()*.46));
+          const displayWidth=Math.max(72,band.width*profile.width*(.78+rnd()*.48))*zone.wispWidthMultiplier;
+          const displayHeight=Math.max(18,band.height*profile.height*(.78+rnd()*.46))*zone.wispHeightMultiplier;
           sprite.setDisplaySize(displayWidth,displayHeight);
           const baseScaleX=sprite.scaleX,baseScaleY=sprite.scaleY;
           const logical=this.logicalOffsetFromScreen(localX,localY);
