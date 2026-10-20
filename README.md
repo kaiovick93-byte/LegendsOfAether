@@ -1,4 +1,70 @@
-# Legends of Aether — v0.3.1 Round 35
+# Legends of Aether — v0.3.1 Round 36
+
+## Base exclusiva
+`legends-of-aether-v0.3.1-round35-minimapa-circular-base-round34.zip`.
+SHA-256: `add5e6c96deacb2451e0ada8d9f2c1f2086f0938414554bf5fcd26d3df143ff4`.
+
+## Diagnóstico
+O WorldFogSystem era criado e atualizado corretamente. Entretanto, somente os
+sete emissores da faixa ancestral verde estavam registrados: a cobertura sinistra
+do prolongamento não possuía emissores. Na comparação do prolongamento, ligar ou
+desligar a névoa da base produziu imagens idênticas, de dia e à noite.
+
+Além disso, a multiplicação de densidade, intensidade diurna, formação e alfa
+reduzia a opacidade dos sprites antigos a no máximo 2,71% no quadro medido, antes
+da transparência da própria textura procedural. O polígono registrado servia
+apenas como metadata e não limitava a área renderizada dos volumes.
+
+## Correção exclusiva da névoa
+- Registro da cobertura sinistra no mesmo WorldFogSystem, com emissores ancorados
+  nas bases de árvores e raízes já existentes; nenhuma árvore foi alterada.
+- Reutilização das seis texturas procedurais existentes, com opacidade calibrada
+  para dia visível, aumento gradual ao entardecer e noite mais densa e fria.
+- A intensidade lê a curva de névoa já existente, alimentada pelo WorldClock.
+  Nenhum horário, velocidade, estado de tempo ou iluminação foi modificado.
+- Movimento lento com fases, deriva e deformação independentes. As três camadas
+  usam profundidades compatíveis com os tiles da floresta: fundo atrás da massa,
+  camadas média/próxima acima dela, todas abaixo dos atores e da iluminação.
+- Dissipação gradual do volume inteiro ao aproximar-se do contorno aprovado ou
+  do corredor da estrada. A checagem considera o retângulo completo do sprite,
+  sua rotação, deformação e deriva; não produz borda recortada ou película global.
+- A zona antiga da faixa verde conserva seus emissores e parâmetros anteriores.
+- Liberação dos emissores ao destruir a extensão ou reiniciar a cena.
+
+## Arquivos alterados/adicionados
+Alterados:
+- `src/render/WorldFogSystem.ts` — visibilidade por zona, tonalidade noturna,
+  profundidades e dissipação pela área completa dos volumes.
+- `src/world/OldRoadAncientForestVisualExtension.ts` — registro e liberação da
+  névoa dentro da cobertura sinistra existente.
+- `README.md` — diagnóstico e registro desta entrega.
+
+Adicionado:
+- `tests/world-fog.test.mjs` — limites, corredor da estrada, transição de
+  intensidade, independência do relógio, movimento e ciclo de vida.
+
+Nenhum asset adicionado, alterado ou removido. Os outros 415 arquivos da base
+permanecem idênticos, incluindo HUD, minimapa, Quest Tracker, WorldClock,
+iluminação, floresta, estrada, colisões, bounds, quests, gameplay e saves.
+
+## Validação
+- `npm run check` e `npm run build` aprovados.
+- 22 testes aprovados: névoa, WorldClock e Quest Tracker.
+- Jogo executado em Chromium/WebGL a 1920 × 1080; inspeção visual às 12:00,
+  18:30 e 22:00, na entrada, no prolongamento e no interior da cobertura.
+- Comparações da névoa ligada/desligada nos três períodos: efeito visível,
+  zero pixels alterados fora da cobertura sinistra e zero sobre o corredor da estrada.
+- Varredura de dois minutos de animação: 340.060 pontos dos retângulos de volumes
+  visíveis verificados contra a cobertura e a estrada, sem violações.
+- Animação confirmada pela atualização normal da cena e por quadros em instantes
+  diferentes; estrada e personagem continuam legíveis.
+- Reinício da cena destrói os volumes antigos e recria cada zona uma única vez.
+- Dados da floresta, estrada, texturas e emissores verdes comparados com a base.
+- Console sem erros durante as verificações.
+
+---
+
+# Histórico — v0.3.1 Round 35
 
 ## Base exclusiva
 `legends-of-aether-v0.3.1-round34-floresta-sinistra-base-round33.zip`.

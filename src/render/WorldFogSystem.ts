@@ -18,8 +18,9 @@ import {worldClock} from '../world/WorldClock';
  *   entardecer/noite e a abertura das luzes locais;
  * - reage às luzes apenas com um leve desvio de tint, sem esbranquiçar.
  *
- * O polígono continua sendo metadado da zona, mas NÃO é mais uma máscara de
- * renderização. Assim não existe borda geométrica capaz de aparecer na tela.
+ * Round 36: zonas delimitadas podem dissipar o volume inteiro antes que seu
+ * retângulo renderizado alcance o limite ou a estrada. Não há película global,
+ * recorte reto visível, textura nova ou dependência de máscara WebGL.
  */
 
 const TEXTURE_PREFIX='aether-fog-wisp-v2';
@@ -129,6 +130,44 @@ function pointInPolygon(x,y,polygon){
   return inside;
 }
 
+function pointSegmentDistance(p,a,b){
+  const dx=b.x-a.x,dy=b.y-a.y;
+  const t=clamp01(((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1));
+  return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);
+}
+
+function segmentDistance(a,b,c,d){
+  const cross=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);
+  const abC=cross(a,b,c),abD=cross(a,b,d),cdA=cross(c,d,a),cdB=cross(c,d,b);
+  if(((abC>0&&abD<0)||(abC<0&&abD>0))&&((cdA>0&&cdB<0)||(cdA<0&&cdB>0)))return 0;
+  return Math.min(pointSegmentDistance(a,c,d),pointSegmentDistance(b,c,d),pointSegmentDistance(c,a,b),pointSegmentDistance(d,a,b));
+}
+
+/** Testa a área inteira do sprite, incluindo rotação, deformação e deriva. */
+export function fogFootprintOpacity(sprite,polygon,path=[],clearRadius=0,feather=32){
+  // Margem cobre também a filtragem/antialias do quad na GPU.
+  const hw=sprite.displayWidth/2+2,hh=sprite.displayHeight/2+2;
+  const cos=Math.cos(sprite.rotation),sin=Math.sin(sprite.rotation);
+  const corners=[[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh]].map(([x,y])=>({
+    x:sprite.x+x*cos-y*sin,y:sprite.y+x*sin+y*cos
+  }));
+  if(corners.some(p=>!pointInPolygon(p.x,p.y,polygon)))return 0;
+  let clearance=Infinity;
+  for(let i=0;i<4;i++){
+    const a=corners[i],b=corners[(i+1)%4];
+    for(let j=0;j<polygon.length;j++){
+      clearance=Math.min(clearance,segmentDistance(a,b,polygon[j],polygon[(j+1)%polygon.length]));
+      if(clearance<=0)return 0; // Também protege reentrâncias do polígono.
+    }
+    for(let j=1;j<path.length;j++){
+      if(pointInPolygon(path[j-1].x,path[j-1].y,corners)||pointInPolygon(path[j].x,path[j].y,corners))return 0;
+      clearance=Math.min(clearance,segmentDistance(a,b,path[j-1],path[j])-clearRadius);
+      if(clearance<=0)return 0;
+    }
+  }
+  return smooth01(clearance/Math.max(1,feather));
+}
+
 function layerProfile(layer){
   if(layer==='background')return {alpha:.105,depthOffset:-.16,width:.44,height:.76,drift:1.00,formation:.56};
   if(layer==='foreground')return {alpha:.052,depthOffset:.24,width:.23,height:.48,drift:1.34,formation:.92};
@@ -149,7 +188,7 @@ export class WorldFogSystem{
     this.ensureTextures();
 
     this.scene.registry?.set?.('worldFogSystem',{
-      version:'Round79.28',
+      version:'Round36-fog-visibility',
       renderer:'world-space-multi-depth-procedural-wisps',
       pseudoVolumetric:true,
       hardPolygonMask:false,
@@ -186,6 +225,14 @@ export class WorldFogSystem{
       opacity:clamp01(spec.opacity??1),
       density:clamp01(spec.density??.34),
       color:spec.color??0x83908c,
+      nightColor:spec.nightColor??spec.color??0x83908c,
+      alphaGain:Math.max(0,spec.alphaGain??1),
+      alphaLimits:spec.alphaLimits??{background:.12,mid:.17,foreground:.075},
+      layerDepths:spec.layerDepths??null,
+      constrainToPolygon:spec.constrainToPolygon===true,
+      clearPath:(spec.clearPath??[]).map(p=>({x:p.x,y:p.y})),
+      clearRadius:Math.max(0,spec.clearRadius??0),
+      edgeFade:Math.max(1,spec.edgeFade??32),
       atmosphereTintStrength:Math.max(0,Math.min(.12,spec.atmosphereTintStrength??0)),
       atmosphereTargets:(spec.atmosphereTargets??[]).map(sprite=>({
         sprite,originalTint:sprite?.tintTopLeft??0xffffff
@@ -227,6 +274,7 @@ export class WorldFogSystem{
   }
 
   depthForWisp(wisp,x,y){
+    if(Number.isFinite(wisp.fixedDepth))return wisp.fixedDepth;
     if(Number.isFinite(wisp.baseU)&&Number.isFinite(wisp.baseV)&&this.scene?.depthAt){
       const offset=this.logicalOffsetFromScreen(x-wisp.bandX,y-wisp.bandY);
       return this.scene.depthAt(wisp.baseU+offset.du,wisp.baseV+offset.dv,wisp.depthOffset);
@@ -271,6 +319,7 @@ export class WorldFogSystem{
             baseRotation:(band.rotation??0)+(rnd()-.5)*.08,
             baseAlpha:profile.alpha*band.opacity,
             depthOffset:profile.depthOffset,
+            fixedDepth:zone.layerDepths?.[layer],
             driftX:band.driftX*profile.drift*(.62+rnd()*.68),
             driftY:Math.max(2,band.driftY*profile.drift*(.70+rnd()*.65)),
             speed:band.speed*(.70+rnd()*.62),
@@ -362,19 +411,23 @@ export class WorldFogSystem{
         // Nascimento/dissipação contínuos: nenhum volume fica eternamente igual.
         const cycle=.5+.5*Math.sin(seconds*wisp.formationSpeed+wisp.phase*1.73);
         const formation=.18+.82*smooth01(cycle);
-        let alpha=wisp.baseAlpha*zone.opacity*zone.density*2.55*intensity*formation;
+        let alpha=wisp.baseAlpha*zone.opacity*zone.density*2.55*intensity*formation*zone.alphaGain;
+
+        if(zone.constrainToPolygon)alpha*=fogFootprintOpacity(sprite,zone.polygon,zone.clearPath,zone.clearRadius,zone.edgeFade);
 
         // Alguns fios de primeiro plano devem ser raros, nunca uma cortina.
         if(wisp.layer==='foreground')alpha*=.72;
 
+        // A mesma intensidade recebida do WorldClock esfria a névoa à noite.
+        const tint=mixColor(wisp.tint,zone.nightColor,intensity);
         const light=this.strongestLightAt(x,y);
         if(light){
           const tintMix=Math.min(.18,light.influence*.18);
-          sprite.setTint(mixColor(wisp.tint,light.color,tintMix));
+          sprite.setTint(mixColor(tint,light.color,tintMix));
           alpha*=1+Math.min(.08,light.influence*.08);
-        }else sprite.setTint(wisp.tint);
+        }else sprite.setTint(tint);
 
-        sprite.setAlpha(clamp01(Math.min(alpha,wisp.layer==='mid'?.17:wisp.layer==='background'?.12:.075)));
+        sprite.setAlpha(clamp01(Math.min(alpha,zone.alphaLimits[wisp.layer])));
         sprite.setDepth(this.depthForWisp(wisp,x,y));
       }
     }

@@ -738,6 +738,49 @@ export class OldRoadAncientForestVisualExtension{
     this.detailGraphics=details;
   }
 
+  registerForestFog(){
+    const fog=this.scene.worldFog;
+    if(!fog?.registerZone)return;
+    const base=OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE;
+    const left=OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_LEFT_CONTINUATION;
+    const wedge=OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BOTTOM_WEDGE;
+    // Contorno externo da união já aprovada. As junções internas não são bordas.
+    const polygon=this.projectPolygon([
+      {u:base.minU,v:base.minV},{u:base.maxU,v:base.minV},
+      ...wedge,{u:left.minU,v:left.maxV}
+    ]);
+    // Emissores ancorados nas raízes e bases existentes, sem mover a composição.
+    let tangleIndex=0;
+    const anchors=this.forestMass.entries.filter(entry=>entry.kind==='hero'||entry.kind==='roots'||
+      (entry.kind==='tangle'&&tangleIndex++%4===0));
+    const bands=anchors.map((entry,i)=>{
+      const hero=entry.kind==='hero';
+      const x=entry.x,y=entry.y-(hero?entry.height*.13:0);
+      const logical=this.territory.screenToLogical(x,y);
+      return {type:hero?'broad':'ribbon',x,y,u:logical.u,v:logical.v,
+        width:entry.width*(hero?2.5:3.2),height:hero?320:210,
+        rotation:Math.sin(i*2.31)*.055,opacity:.82+(i%4)*.04,
+        driftX:13+(i%5)*3,driftY:3+(i%3),speed:.055+(i%7)*.008,
+        phase:i*2.39996323};
+    }).filter(b=>this.isInsideApprovedCoverage(b.u,b.v));
+    const forestDepth=this.forestMass.images[0]?.depth??this.territory.groundDepth(-69.8);
+    this.fogZoneHandle=fog.registerZone({
+      id:'old-road-sinister-forest',polygon,bands,
+      constrainToPolygon:true,clearPath:this.visualRoadPath,
+      clearRadius:VISUAL_ROAD_CLEAR_RADIUS,edgeFade:38,
+      color:0xc1c1b2,nightColor:0xb8c8dc,density:.70,alphaGain:4,
+      alphaLimits:{background:.46,mid:.64,foreground:.26},
+      // A massa aprovada é um conjunto de tiles: fundo atrás deles, fios médios
+      // e próximos acima, todos abaixo dos atores e da iluminação existente.
+      layerDepths:{background:forestDepth-.05,mid:forestDepth+.03,foreground:forestDepth+.06},
+      schedule:timeOfDayMs=>{
+        const current=this.territory.oldRoadAncientForest?.forestFogIntensity(timeOfDayMs)??.18;
+        // Reusa a curva e os horários existentes; corrige apenas o piso visual.
+        return .32+.68*(current-.18)/.82;
+      }
+    });
+  }
+
   build(){
     const baseLogical=rectanglePoints(OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_BASE);
     const leftLogical=rectanglePoints(OLD_ROAD_ANCIENT_FOREST_VISUAL_EXTENSION_LEFT_CONTINUATION);
@@ -778,6 +821,7 @@ export class OldRoadAncientForestVisualExtension{
     this.forestMass=new OldRoadSinisterForest(this);
     // Etapa 2 independente: as chamadas e os dados da Etapa 1 acima ficam intactos.
     this.lowBorder=new OldRoadSinisterRoadside(this);
+    this.registerForestFog();
 
     const data={
       version:'v0.3.1-round27-stage1-ground-final-integration',
@@ -859,6 +903,8 @@ export class OldRoadAncientForestVisualExtension{
   }
 
   destroy(){
+    this.fogZoneHandle?.destroy();
+    this.fogZoneHandle=null;
     this.forestMass?.destroy();
     this.lowBorder?.destroy();
     this.textureLayer?.destroy?.(true);
