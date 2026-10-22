@@ -1,0 +1,29 @@
+{
+  "project": "Legends of Aether",
+  "version": 1,
+  "mandatory": true,
+  "rules": {
+    "visual_markings_are_exact": true,
+    "visual_markings_are_never_approximate": true,
+    "changes_must_stay_inside_marked_area": true,
+    "asset_audit_before_visual_implementation": true,
+    "do_not_improvise_with_inadequate_assets": true,
+    "use_last_user_approved_round_as_base": true,
+    "rejected_rounds_must_not_be_used_as_base": true,
+    "preserve_approved_behavior": true,
+    "no_unrequested_scope_expansion": true,
+    "do_not_claim_visual_validation_without_render": true,
+    "verify_zip_integrity_before_delivery": true
+  },
+  "visual_marking_protocol": {
+    "required_steps": [
+      "inspect_reference_image",
+      "identify_exact_marked_geometry",
+      "identify_stable_map_control_points",
+      "map_pixels_to_world_coordinates",
+      "construct_exact_position_line_or_polygon",
+      "reject_changes_outside_geometry",
+      "validate_against_reference_before_delivery_when_rendering_is_available"
+    ]
+  }
+}
