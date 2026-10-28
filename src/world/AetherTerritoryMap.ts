@@ -39,16 +39,6 @@ function drawRoad(context,points,width=10){
   context.restore();
 }
 
-function ellipseFromLogical(context,u,v,radiusU,radiusV,fill,stroke){
-  const center=mapPoint({u,v});
-  const pu=mapPoint({u:u+radiusU,v}),pv=mapPoint({u,v:v+radiusV});
-  const radiusX=Math.max(Math.abs(pu.x-center.x),Math.abs(pv.x-center.x));
-  const radiusY=Math.max(Math.abs(pu.y-center.y),Math.abs(pv.y-center.y));
-  context.beginPath();context.ellipse(center.x,center.y,radiusX,radiusY,0,0,Math.PI*2);
-  if(fill){context.fillStyle=fill;context.fill()}
-  if(stroke){context.strokeStyle=stroke;context.lineWidth=2;context.stroke()}
-}
-
 function drawDeterministicGround(context){
   const {width,height}=AETHER_TERRITORY_MAP_SIZE;
   const gradient=context.createLinearGradient(0,0,0,height);

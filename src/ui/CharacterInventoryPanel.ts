@@ -1,5 +1,5 @@
 // @ts-nocheck
-import {getItemDefinition,rarityColor} from '../items/itemCatalog';
+import {getItemDefinition} from '../items/itemCatalog';
 import {appearanceFor,idleFrameForFacing} from '../character/PlayerAppearance';
 
 export class CharacterInventoryPanel{

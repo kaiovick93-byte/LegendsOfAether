@@ -1,5 +1,5 @@
 // @ts-nocheck
-import {OldRoadSinisterForest,SINISTER_FOREST_ASSETS} from './OldRoadSinisterForest';
+import {OldRoadSinisterForest} from './OldRoadSinisterForest';
 
 /**
  * v0.3.1 Round 27 — ajuste final de integração do chão sinistro.
@@ -38,11 +38,6 @@ const BASE_SOIL_COLOR=0x202823;
 const BASE_SOIL_SECONDARY=0x2a332d;
 const BASE_SOIL_SHADOW=0x141a17;
 
-const SURFACE_KEYS=Object.freeze([
-  'sinister_ground_surface_dark_01',
-  'sinister_ground_surface_wet_01'
-]);
-
 const DECAL_KEYS=Object.freeze({
   swamp:'sinister_ground_patch_swamp_01',
   debris:'sinister_ground_debris_01',
@@ -54,92 +49,6 @@ const DECAL_KEYS=Object.freeze({
 });
 
 
-const DEAD_TREE_VARIANTS=Object.freeze([
-  'ancient_forest_tree_dead_01',
-  'ancient_forest_tree_dead_02',
-  'ancient_forest_tree_dead_03'
-]);
-
-// Round 21 — preencher toda a área aprovada com massa densa de árvores mortas.
-// Não é mais um punhado de peças isoladas: a cobertura inteira recebe uma malha
-// visual contínua, com linhas alternadas, jitter e profundidade progressiva.
-const DEAD_TREE_FILL_SETTINGS=Object.freeze({
-  startU:-54,
-  endU:-1.2,
-  stepU:5.4,
-  startV:50.8,
-  endV:99.2,
-  stepV:5.0,
-  rowOffset:2.5
-});
-
-const DEAD_TREE_HERO_CLUSTER=Object.freeze([
-  ['ancient_forest_tree_dead_02',-50.0,55.4,1.16,false,.88,-.02],
-  ['ancient_forest_tree_dead_01',-44.8,58.0,1.08,true,.84,-.01],
-  ['ancient_forest_tree_dead_03',-38.8,61.0,1.12,false,.84,.00],
-  ['ancient_forest_tree_dead_02',-32.4,64.0,1.06,true,.84,.00],
-  ['ancient_forest_tree_dead_01',-26.8,67.2,1.04,false,.84,.01],
-  ['ancient_forest_tree_dead_03',-20.5,70.0,1.02,true,.84,.01],
-  ['ancient_forest_tree_dead_02',-14.4,73.2,1.00,false,.84,.02],
-  ['ancient_forest_tree_dead_01',-8.8,76.4,.98,true,.86,.02],
-  ['ancient_forest_tree_dead_03',-5.8,80.2,.96,false,.86,.03],
-  ['ancient_forest_tree_dead_02',-47.5,83.8,1.10,true,.82,.00],
-  ['ancient_forest_tree_dead_01',-37.2,88.4,1.02,false,.82,.01],
-  ['ancient_forest_tree_dead_03',-25.2,92.2,.98,true,.82,.02],
-  ['ancient_forest_tree_dead_02',-12.0,96.8,.94,false,.82,.03]
-]);
-
-const SWAMP_PATCHES=Object.freeze([
-  [-48.2,55.4,.20,.34,-.10,false],
-  [-39.6,61.1,.18,.36,.08,true],
-  [-29.4,66.6,.22,.34,-.04,false],
-  [-18.7,71.8,.19,.33,.14,true],
-  [-10.1,76.3,.17,.35,-.08,false],
-  [-44.3,82.2,.21,.30,.10,true],
-  [-33.8,87.4,.18,.32,-.12,false],
-  [-22.0,92.6,.20,.31,.06,true],
-  [-11.2,96.4,.17,.30,-.10,false],
-  [2.6,88.8,.18,.28,.10,true]
-]);
-
-const DEBRIS_PATCHES=Object.freeze([
-  [-52.0,52.8,.13,.32,-.18,false],
-  [-45.0,58.8,.15,.28,.10,true],
-  [-35.2,63.2,.14,.30,-.06,false],
-  [-25.6,68.2,.13,.28,.12,true],
-  [-16.6,73.0,.15,.27,-.14,false],
-  [-7.8,77.2,.12,.30,.06,true],
-  [-48.6,80.8,.14,.27,-.10,false],
-  [-39.4,85.0,.13,.27,.14,true],
-  [-29.1,89.5,.15,.28,-.08,false],
-  [-18.5,94.0,.13,.27,.11,true],
-  [-9.0,98.0,.12,.25,-.12,false],
-  [3.8,86.0,.14,.24,.05,true]
-]);
-
-const LEAF_PILES=Object.freeze([
-  [-49.8,56.8,.11,.34,.06,false],
-  [-42.4,60.0,.10,.36,-.09,true],
-  [-32.8,65.4,.12,.35,.04,false],
-  [-22.7,70.6,.11,.34,.10,true],
-  [-13.6,75.7,.10,.33,-.07,false],
-  [-5.1,79.0,.12,.34,.08,true],
-  [-46.2,84.0,.11,.32,-.04,false],
-  [-35.6,88.6,.10,.33,.07,true],
-  [-25.0,93.1,.11,.31,-.09,false],
-  [-13.1,97.2,.10,.30,.05,true],
-  [1.3,84.8,.10,.28,-.03,false],
-  [4.9,90.6,.11,.26,.08,true]
-]);
-
-const ROOT_ACCENTS=Object.freeze([
-  [-46.8,57.3,.16,.26,-.18,false],
-  [-35.0,64.5,.17,.24,.08,true],
-  [-23.0,71.2,.18,.24,-.12,false],
-  [-11.4,77.8,.17,.22,.16,true],
-  [-31.5,87.2,.18,.22,-.10,false],
-  [-14.3,96.0,.18,.20,.12,true]
-]);
 
 // Round 18 — costura EXATA na borda marcada pelo usuário.
 // A marcação vermelha coincide com duas arestas lógicas já conhecidas do mapa:
@@ -262,32 +171,12 @@ const pointInPolygon=(u,v,poly)=>{
 };
 
 
-const distancePointToSegment=(px,py,a,b)=>{
-  const vx=b.x-a.x,vy=b.y-a.y;
-  const wx=px-a.x,wy=py-a.y;
-  const len2=vx*vx+vy*vy;
-  const t=len2>0?Math.max(0,Math.min(1,(wx*vx+wy*vy)/len2)):0;
-  const dx=px-(a.x+vx*t),dy=py-(a.y+vy*t);
-  return Math.sqrt(dx*dx+dy*dy);
-};
-
 const mulberry32=seed=>()=>{
   seed|=0;seed=seed+0x6D2B79F5|0;
   let t=Math.imul(seed^seed>>>15,1|seed);
   t=t+Math.imul(t^t>>>7,61|t)^t;
   return ((t^t>>>14)>>>0)/4294967296;
 };
-
-function worldBoundsFromPolygons(polygons=[]){
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  for(const poly of polygons)for(const p of poly){
-    if(p.x<minX)minX=p.x;
-    if(p.y<minY)minY=p.y;
-    if(p.x>maxX)maxX=p.x;
-    if(p.y>maxY)maxY=p.y;
-  }
-  return {minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY};
-}
 
 export class OldRoadAncientForestVisualExtension{
   constructor(territory){
@@ -343,23 +232,6 @@ export class OldRoadAncientForestVisualExtension{
     return mask;
   }
 
-  addGroundDecal(container,key,u,v,{scale=.2,alpha=.3,rotation=0,flipX=false,flipY=false,originX=.5,originY=.5,tint=null,depthBias=0}={}){
-    if(!this.isInsideApprovedCoverage(u,v)||!this.scene.textures.exists(key))return null;
-    const p=this.territory.project(u,v);
-    const sprite=this.scene.add.image(p.x,p.y,key)
-      .setOrigin(originX,originY)
-      .setScale(scale)
-      .setAlpha(alpha)
-      .setRotation(rotation)
-      .setFlipX(flipX)
-      .setFlipY(flipY);
-    if(tint!=null)sprite.setTint(tint);
-    if(depthBias)sprite.setDepth(this.territory.groundDepth(-89.96+depthBias));
-    container.add(sprite);
-    this.floorSprites.push(sprite);
-    return sprite;
-  }
-
   addTransitionDecal(container,key,u,v,{scale=.16,alpha=.9,rotation=0,flipX=false,flipY=false,originX=.5,originY=.5}={}){
     if(!this.scene.textures.exists(key))return null;
     const p=this.territory.project(u,v);
@@ -375,15 +247,6 @@ export class OldRoadAncientForestVisualExtension{
     return sprite;
   }
 
-
-  isInsideVisualRoadCorridor(u,v){
-    if(!this.visualRoadPath||this.visualRoadPath.length<2)return false;
-    const p=this.territory.project(u,v);
-    for(let i=1;i<this.visualRoadPath.length;i++){
-      if(distancePointToSegment(p.x,p.y,this.visualRoadPath[i-1],this.visualRoadPath[i])<=VISUAL_ROAD_CLEAR_RADIUS)return true;
-    }
-    return false;
-  }
 
   buildVisualRoadContinuation(){
     const road=this.scene.registry.get('oldRoadConnectorTest');
@@ -455,7 +318,6 @@ export class OldRoadAncientForestVisualExtension{
       const tx=dx/len,ty=dy/len;
       const nx=-ty,ny=tx;
       const samples=Math.max(1,Math.ceil(len/polish.sampleStepPx));
-      const upperSideBias=(side)=>side>0?-8:0;
       const roadAngle=Math.atan2(dy,dx);
 
       for(let i=0;i<=samples;i++){
@@ -541,69 +403,6 @@ export class OldRoadAncientForestVisualExtension{
     this.roadsideGroundCount=count;
   }
 
-  addDeadTree(key,u,v,{scale=1,alpha=.82,flipX=false,depthOffset=0,tint=null}={}){
-    if(!this.isInsideApprovedCoverage(u,v)||this.isInsideVisualRoadCorridor(u,v)||!this.scene.textures.exists(key))return null;
-    const p=this.territory.project(u,v);
-    const source=this.scene.textures.get(key)?.getSourceImage?.();
-    const originY=source?.height?Math.max(.86,Math.min(1,(source.height-12)/source.height)):.94;
-    const sprite=this.scene.add.image(p.x,p.y,key)
-      .setOrigin(.5,originY)
-      .setScale(scale)
-      .setAlpha(alpha)
-      .setFlipX(flipX)
-      .setDepth(this.territory.depthAt(u,v,.08+depthOffset));
-    if(tint!=null)sprite.setTint(tint);
-    this.treeSprites.push(sprite);
-    return sprite;
-  }
-
-  buildDeadTreeLayer(){
-    const rng=mulberry32(424242);
-    let count=0;
-
-    // 1) Massa hero: algumas árvores maiores para quebrar a repetição.
-    for(const [key,u,v,scale,flipX,alpha,depthOffset] of DEAD_TREE_HERO_CLUSTER){
-      if(this.addDeadTree(key,u,v,{scale,flipX,alpha,depthOffset}))count++;
-    }
-
-    // 2) Malha principal: preencher toda a cobertura aprovada.
-    const {startU,endU,stepU,startV,endV,stepV,rowOffset}=DEAD_TREE_FILL_SETTINGS;
-    let rowIndex=0;
-    for(let v=startV;v<=endV;v+=stepV,rowIndex++){
-      const offset=(rowIndex%2===0)?0:rowOffset;
-      for(let u=startU+offset;u<=endU;u+=stepU){
-        const jitterU=(rng()-.5)*1.45;
-        const jitterV=(rng()-.5)*1.25;
-        const uu=u+jitterU;
-        const vv=v+jitterV;
-        if(!this.isInsideApprovedCoverage(uu,vv))continue;
-
-        const variantIndex=Math.floor(rng()*DEAD_TREE_VARIANTS.length)%DEAD_TREE_VARIANTS.length;
-        const key=DEAD_TREE_VARIANTS[variantIndex];
-        const depthT=Math.max(0,Math.min(1,(vv-50)/50));
-        const scale=.84 + depthT*.22 + rng()*.12;
-        const alpha=.52 + depthT*.22 + rng()*.08;
-        const flipX=rng()>.5;
-        const depthOffset=-.02 + rng()*.05;
-        if(this.addDeadTree(key,uu,vv,{scale,alpha,flipX,depthOffset}))count++;
-      }
-    }
-
-    // 3) Faixa de borda: reforçar a leitura da parede de árvores na lateral esquerda.
-    for(let v=52;v<=98;v+=4.8){
-      const uu=-54.8 + (rng()-.5)*.9;
-      const vv=v + (rng()-.5)*1.1;
-      if(!this.isInsideApprovedCoverage(uu,vv))continue;
-      const key=DEAD_TREE_VARIANTS[Math.floor(rng()*DEAD_TREE_VARIANTS.length)%DEAD_TREE_VARIANTS.length];
-      const scale=1.02 + rng()*.20;
-      const alpha=.74 + rng()*.10;
-      const flipX=rng()>.5;
-      if(this.addDeadTree(key,uu,vv,{scale,alpha,flipX,depthOffset:.02}))count++;
-    }
-
-    this.deadTreeCount=count;
-  }
-
   addLogicalTransitionSegment(container,key,a,b,count,{scale=.145,alpha=.46,flipSeed=0}={}){
     const pa=this.territory.project(a.u,a.v);
     const pb=this.territory.project(b.u,b.v);
@@ -652,89 +451,6 @@ export class OldRoadAncientForestVisualExtension{
     });
 
     this.transitionLayer=container;
-  }
-
-  buildFloorTextureLayer(mask,worldPolygons){
-    const depth=this.territory.groundDepth(-89.96);
-    const container=this.scene.add.container(0,0).setDepth(depth);
-    const bounds=worldBoundsFromPolygons(worldPolygons);
-    const pad=160;
-    const x=bounds.minX-pad;
-    const y=bounds.minY-pad;
-    const width=Math.ceil(bounds.width+pad*2);
-    const height=Math.ceil(bounds.height+pad*2);
-
-    if(this.scene.textures.exists(SURFACE_KEYS[0])){
-      const baseA=this.scene.add.tileSprite(x,y,width,height,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.60);
-      baseA.tilePositionX=168;
-      baseA.tilePositionY=96;
-      baseA.tileScaleX=.55;
-      baseA.tileScaleY=.50;
-      container.add(baseA);
-      this.floorSprites.push(baseA);
-
-      // Terceira leitura muito sutil do MESMO asset: escala e deslocamento
-      // desencontrados quebram a repetição perceptível sem introduzir textura nova.
-      const baseC=this.scene.add.tileSprite(x-72,y-54,width+144,height+108,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.10);
-      baseC.tilePositionX=517;
-      baseC.tilePositionY=271;
-      baseC.tileScaleX=.43;
-      baseC.tileScaleY=.58;
-      container.add(baseC);
-      this.floorSprites.push(baseC);
-    }
-
-    if(this.scene.textures.exists(SURFACE_KEYS[1])){
-      const baseB=this.scene.add.tileSprite(x-48,y-36,width+96,height+72,SURFACE_KEYS[1]).setOrigin(0,0).setAlpha(.34);
-      baseB.tilePositionX=392;
-      baseB.tilePositionY=148;
-      baseB.tileScaleX=.47;
-      baseB.tileScaleY=.53;
-      container.add(baseB);
-      this.floorSprites.push(baseB);
-    }
-
-    // Véu tonal para amarrar as superfícies e manter o solo sombrio.
-    const veil=this.scene.add.rectangle(bounds.minX+bounds.width/2,bounds.minY+bounds.height/2,width,height,0x17211d,.12);
-    container.add(veil);
-    this.floorSprites.push(veil);
-
-    for(const [u,v,scale,alpha,rotation,flipX] of SWAMP_PATCHES){
-      this.addGroundDecal(container,DECAL_KEYS.swamp,u,v,{scale,alpha,rotation,flipX,originY:.54});
-    }
-    for(const [u,v,scale,alpha,rotation,flipX] of DEBRIS_PATCHES){
-      this.addGroundDecal(container,DECAL_KEYS.debris,u,v,{scale,alpha,rotation,flipX,originY:.54});
-    }
-    for(const [u,v,scale,alpha,rotation,flipX] of LEAF_PILES){
-      this.addGroundDecal(container,DECAL_KEYS.leafPile,u,v,{scale,alpha,rotation,flipX,originY:.56});
-    }
-    for(const [u,v,scale,alpha,rotation,flipX] of ROOT_ACCENTS){
-      this.addGroundDecal(container,DECAL_KEYS.roots,u,v,{scale,alpha,rotation,flipX,originY:.58});
-    }
-
-    container.setMask(mask);
-    this.textureLayer=container;
-  }
-
-  buildOrganicGroundDetails(mask){
-    const rng=mulberry32(271828);
-    const details=this.scene.add.graphics();
-    details.setDepth(this.territory.groundDepth(-89.95));
-
-    // Manchas suaves para quebrar repetição do tile, sem introduzir props altos.
-    for(let i=0;i<52;i++){
-      const u=-55+rng()*63;
-      const v=49+rng()*51;
-      if(!this.isInsideApprovedCoverage(u,v))continue;
-      const p=this.territory.project(u,v);
-      const w=120+rng()*220;
-      const h=28+rng()*70;
-      details.fillStyle(rng()>.55?0x1b241f:0x342c24,.055+rng()*.065);
-      details.fillEllipse(p.x,p.y,w,h);
-    }
-
-    details.setMask(mask);
-    this.detailGraphics=details;
   }
 
   registerForestFog(){

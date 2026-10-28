@@ -1,6 +1,5 @@
 // @ts-nocheck
 import {SINISTER_LOW_ROADSIDE_ASSETS} from './OldRoadSinisterRoadside';
-import {OLD_ROAD_ANCIENT_FOREST_ASSETS} from './OldRoadAncientForest';
 import {OldRoadSinisterForestComposition} from './OldRoadSinisterForestComposition';
 
 /** v0.3.2-round01: arte ancestral; composição do Round 34 retida SÓ como dados dos emissores do Round 39. */
@@ -11,11 +10,9 @@ const LEGACY_FOG_FOOTPRINTS=Object.freeze({
   mistWeb:{key:'sinister_forest_mist_web',path:ROOT+'sinister-forest/teia_nebulosa_em_galhos_retorcidos.png',crop:[0,0,1254,1254]},
   decay:{key:'sinister_forest_decay',path:ROOT+'sinister-forest/mata_decomposta_com_raízes_e_cogumelos.png',crop:[0,0,1254,1254]}
 });
-export const SINISTER_FOREST_ASSETS=OLD_ROAD_ANCIENT_FOREST_ASSETS;
 // Apenas dimensões históricas: nenhuma destas imagens antigas é desenhada.
 const ART={...SINISTER_LOW_ROADSIDE_ASSETS,...LEGACY_FOG_FOOTPRINTS,
   debris:{key:'sinister_ground_debris_01',path:ROOT+'generated-ground/sinister_ground_debris_01.png',crop:[0,0,1254,1254]}};
-const ROAD_CLEARANCE=66; // 512 px do módulo × .25 / 2, mais 2 px de margem.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const random=seed=>()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 

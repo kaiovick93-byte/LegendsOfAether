@@ -5,10 +5,8 @@ export class ControlsPanel {
   private subtitle: Phaser.GameObjects.Text;
   private rows: Phaser.GameObjects.Text[] = [];
   private visible = false;
-  private scene: Phaser.Scene;
 
   constructor(scene: Phaser.Scene) {
-    this.scene = scene;
     const cx = scene.scale.width / 2;
     const cy = scene.scale.height / 2;
 

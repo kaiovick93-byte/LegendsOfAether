@@ -99,12 +99,16 @@ export class BottomActionBar {
 
   setVisible(value){this.visible=value;this.root.setVisible(value)}
 
+  // Text.setColor() do Phaser redesenha o canvas do texto e reenvia a textura à GPU a
+  // cada chamada, mesmo com a mesma cor. Como update() roda todo frame, só aplica se mudou.
+  setTextColor(text,color){if(text&&text.style.color!==color)text.setColor(color)}
+
   setPotionIconState(index,count){
     const available=count>0,icon=this.slotIcons[index];
     if(available)icon?.clearTint().setAlpha(1);
     else icon?.setTint(0x222936).setAlpha(.34);
     this.slotKeyTexts[index]?.setAlpha(available?1:.48);
-    this.slotTexts[index]?.setColor(available?'#eef2f8':'#697382');
+    this.setTextColor(this.slotTexts[index],available?'#eef2f8':'#697382');
     this.slotBacks[index]?.setFillStyle(available?0x101a2a:0x080c12,available ? .92 : .78);
   }
 
@@ -145,16 +149,18 @@ export class BottomActionBar {
       const safeLocked=this.scene.isSafeZone&&slot.id!=='mobility';
       const state=safeLocked?'ZONA SEGURA':rank<=0?'BLOQ.':cooldown>0?`${(cooldown/1000).toFixed(1)}s`:`${mana} MP`;
       this.slotTexts[visualIndex].setPosition(this.slotTexts[visualIndex].x,-101).setFontSize(7.5)
-        .setText(`${slot.key}\n${definition[0]}\n${state}`)
-        .setColor(safeLocked?'#687487':rank<=0?'#758299':cooldown>0?'#a6afbd':'#f2f4f7');
+        .setText(`${slot.key}\n${definition[0]}\n${state}`);
+      this.setTextColor(this.slotTexts[visualIndex],safeLocked?'#687487':rank<=0?'#758299':cooldown>0?'#a6afbd':'#f2f4f7');
       this.slotBacks[visualIndex].setFillStyle(safeLocked?0x090e16:rank<=0?0x0c121d:cooldown>0?0x151c28:0x101a2a,.92);
     }
     const basic={warrior:['⚔','Corte Básico'],mage:['✦','Rajada Arcana'],ranger:['➶','Tiro Básico']}[this.player.characterClass]||['•','Ataque Básico'];
     this.attackIcon.setText(basic[0]);
-    this.slotTexts[5].setPosition(this.slotTexts[5].x,-101).setFontSize(7.5).setText(`ESPAÇO\n${basic[1]}`).setColor('#f2f4f7');
+    this.slotTexts[5].setPosition(this.slotTexts[5].x,-101).setFontSize(7.5).setText(`ESPAÇO\n${basic[1]}`);
+    this.setTextColor(this.slotTexts[5],'#f2f4f7');
     this.slotBacks[5].setFillStyle(0x171824,.94);
     for(let index=6;index<10;index++){
-      this.slotTexts[index].setPosition(this.slotTexts[index].x,-101).setFontSize(7.5).setText(`${index-3}\n—\nVAZIO`).setColor('#66748a');
+      this.slotTexts[index].setPosition(this.slotTexts[index].x,-101).setFontSize(7.5).setText(`${index-3}\n—\nVAZIO`);
+      this.setTextColor(this.slotTexts[index],'#66748a');
       this.slotBacks[index].setFillStyle(0x0b111b,.86);
     }
     for(const index of [10,11,12,13,14])this.slotTexts[index].setText('');

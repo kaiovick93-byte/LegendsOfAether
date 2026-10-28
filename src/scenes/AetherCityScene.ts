@@ -750,7 +750,6 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   createWallsAndGates() {
-    const C = AetherCityScene;
     const perimeter=this.getCityWallBounds();
     this.wallSprites = [];
     this.wallGroundShadows = [];
@@ -925,32 +924,6 @@ export class AetherCityScene extends Phaser.Scene {
 
 
 
-  addSouthWallLongSection(start, end, towardTower = 0) {
-    const key='iso_city_wall_south_long';
-    const source=this.textures.get(key).getSourceImage();
-    const scale=192/650;
-    // O asset longo foi montado com dois módulos já fundidos e um único
-    // contraforte no encontro central. O pivô coincide com o meio dos
-    // conectores extremos do trecho de oito tiles.
-    const originX=.5;
-    const originY=795/1222;
-    const middle=(start+end)/2+towardTower;
-    const image=new IsoSprite({
-      scene:this,isoX:middle,isoY:AetherCityScene.CITY_MAX,isoZ:0,
-      texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
-      screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
-      depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.08
-    });
-    image.setOrigin(originX,originY).setScale(scale);
-    image.updateIsoPosition();
-    this.wallSprites.push(image);
-
-    const thickness=.06;
-    const rect={u1:start,v1:AetherCityScene.CITY_MAX-thickness,u2:end,v2:AetherCityScene.CITY_MAX+thickness,corner:.08};
-    this.addIsoGroundContact(rect,.10);
-    this.registerSolidMask(image,key,{label:'muralha sul',mode:'isoRect',isoRect:rect});
-  }
-
 
   addBrokenWallSection(fixedAxis, fixed, start, end, flip, towerOverlap = 0) {
     const key='iso_city_wall_broken';
@@ -1017,29 +990,6 @@ export class AetherCityScene extends Phaser.Scene {
       this.registerSolidMask(image,'iso_city_wall',{label:'muralha',mode:'isoRect',isoRect:rect});
       // Oclusão continua intencionalmente fora desta etapa.
     }
-  }
-
-  addSideCornerPillar(u,v) {
-    const key='iso_city_wall_side_corner';
-    const source=this.textures.get(key).getSourceImage();
-    // Só os dois vértices laterais recebem esta peça de acabamento. A leve
-    // sobreposição cobre o encontro das duas faixas sem alterar os cantos
-    // superior/inferior, que já possuem encaixe aprovado.
-    const targetHeight=166;
-    const scale=targetHeight/source.height;
-    const p=this.project(u,v);
-    const pillar=new IsoSprite({
-      scene:this,isoX:u,isoY:v,isoZ:18-targetHeight/2,
-      texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
-      screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
-      depthBase:AetherCityScene.ISO_DEPTH_BASE,
-      // O pilar precisa cobrir inclusive o módulo lateral de maior soma.
-      depthOffset:108
-    }).setScale(scale).setFlipX(u>v);
-    this.wallSprites.push(pillar);
-    this.registerOccluder(pillar,key,p.y+10,{behindMargin:8});
-    this.registerSolidMask(pillar,key,{label:'pilar de canto da muralha',minHits:2});
-    return pillar;
   }
 
   createBuildings() {
@@ -1888,7 +1838,6 @@ export class AetherCityScene extends Phaser.Scene {
     // para não se sobrepor ao volume frontal dela; os pombos mantêm a mesma
     // relação espacial com ele durante a alimentação.
     const homeLogical = {u: 12.75, v: 10.25};
-    const home = this.project(homeLogical.u, homeLogical.v);
     // Um recurso ambiente opcional nunca pode impedir a criação da cidade.
     // Os quatro quadros usam célula, escala corporal e linha dos pés idênticas.
     if (this.textures.exists('elder_feeder_iso_v3')) {
@@ -2011,7 +1960,7 @@ export class AetherCityScene extends Phaser.Scene {
     this.isSafeZone=this.isPlayerInsideCity();
     this.setCityRegionActive(this.player.isoX<=44&&this.player.isoY<=44);
     this.hud.setLocalName(this.aetherTerritory.getLocalName(this.player.isoX,this.player.isoY));
-    this.registry.set('aetherActiveSector',activeSector);
+    if(this.registry.get('aetherActiveSector')!==activeSector)this.registry.set('aetherActiveSector',activeSector);
     this.updateNpcPrompts();
     this.updateActorDepths();
     this.worldLighting?.update?.(_time,delta);
@@ -2356,7 +2305,8 @@ export class AetherCityScene extends Phaser.Scene {
   }
 
   updateNpcPrompts() {
-    for (const npc of this.cityActors.filter(Boolean)) {
+    for (const npc of this.cityActors) {
+      if(!npc)continue;
       if(!npc.active){npc.setNearby(false);continue}
       const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
       npc.setPrompt(npc === this.merchant && distance < 96 ? 'F • Conversar   T • Loja' : 'F • Conversar');

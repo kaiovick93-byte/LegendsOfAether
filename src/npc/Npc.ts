@@ -179,12 +179,6 @@ export class Npc extends IsoContainer{
   });
  }
 
- setRole(role){
-  this.npcRole=role||'';
-  this.roleText?.setText(this.npcRole);
-  return this;
- }
-
  setInteractionActions(items=[]){
   const normalized=(items&&items.length?items:[{key:'F',label:'Conversar',type:'talk'}]).slice(0,2);
   const sig=normalized.map(a=>`${a.key}:${a.label}:${a.type||''}`).join('|');
@@ -405,12 +399,6 @@ export class Npc extends IsoContainer{
   this.sprite.setFrame(frame);
  }
 
- ensureIdleFacing(){
-  if(!this.sprite)return;
-  const target=this.idleFacing||this.currentFacing||'down';
-  if(this.currentFacing!==target)this.setFacing(target);
- }
-
  // Mantido apenas por compatibilidade com código externo antigo. Não é mais usado
  // automaticamente ao aproximar ou conversar.
  facePlayer(){return this}
@@ -454,13 +442,6 @@ export class Npc extends IsoContainer{
    duration:Phaser.Math.Between(1050,1350),
    yoyo:true,repeat:-1,ease:'Sine.easeInOut'
   });
- }
-
- addIdleDecor(go){
-  if(!go)return go;
-  this.idleDecor.push(go);
-  this.characterVisual?.add(go);
-  return go;
  }
 
  createIdleProp(){
@@ -545,160 +526,9 @@ export class Npc extends IsoContainer{
   this.finishIdleAction(2200);
  }
 
- playIsometricBlacksmithIdle(){
-  if(!this.scene.textures.exists('blacksmith_iso_empty')||!this.scene.textures.exists('blacksmith_hammer')){
-   this.resetIsometricPose();this.finishIdleAction();return;
-  }
-  this.sprite.setTexture('blacksmith_iso_empty').setPosition(0,8).setAngle(-.8);
-  const hammer=this.scene.add.image(-31,-41,'blacksmith_hammer').setOrigin(.5).setScale(this.isoDisplayScale).setAngle(-12);
-  this.characterVisual.add(hammer);
-  this.isoActionProp=hammer;
-  this.idleActionTween=this.scene.tweens.add({
-   targets:hammer,x:-7,y:-116,angle:350,duration:450,ease:'Quad.Out',
-   onComplete:()=>{
-    this.idleActionTween=this.scene.tweens.add({
-     targets:hammer,x:-31,y:-41,angle:710,duration:430,ease:'Quad.In',
-     onComplete:()=>{
-      this.spawnIsoSparkles(0xf3a442,-31,-42,5);
-      hammer.destroy();this.isoActionProp=null;
-      this.sprite.setTexture(this.isoBaseTexture);
-      this.resetIsometricPose();this.finishIdleAction(900);
-     }
-    });
-   }
-  });
- }
-
- spawnIsoSparkles(color,x,y,count=3){
-  if(!this.characterVisual)return;
-  for(let i=0;i<count;i++){
-   const spark=this.scene.add.star(x+Phaser.Math.Between(-5,5),y+Phaser.Math.Between(-4,5),4,1.1,2.5,color,.9).setScale(.55);
-   this.characterVisual.add(spark);this.isoEffects.push(spark);
-   this.scene.tweens.add({
-    targets:spark,x:spark.x+Phaser.Math.Between(-8,8),y:spark.y-Phaser.Math.Between(8,18),alpha:0,scale:1.15,
-    duration:430+i*65,ease:'Quad.Out',onComplete:()=>{this.isoEffects=this.isoEffects.filter(item=>item!==spark);spark.destroy()}
-   });
-  }
- }
-
- resetIsometricPose(){
-  if(!this.isIsometricStatic||!this.sprite)return;
-  this.sprite.setPosition(0,8).setAngle(0);
- }
-
  finishIdleAction(extraDelay=0){
   this.idleActionActive=false;
   this.nextIdleAction=this.scene.time.now+Phaser.Math.Between(this.idleMinDelay+extraDelay,this.idleMaxDelay+extraDelay);
- }
-
- playMerchantIdle(){
-  const prop=this.idleProp;
-  if(!prop)return this.finishIdleAction();
-  prop.setVisible(true).setAlpha(0).setY(-16).setScale(.82).setAngle(-6);
-  this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:1,y:-21,scale:1,duration:180,ease:'Sine.Out',onComplete:()=>{
-   this.idleActionTween=this.scene.tweens.add({targets:prop,angle:{from:-6,to:8},yoyo:true,repeat:2,duration:170,ease:'Sine.easeInOut',onComplete:()=>{
-    this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:0,y:-17,duration:170,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(300)}});
-   }});
-  }});
- }
-
- playBlacksmithIdle(){
-  const prop=this.idleProp;
-  if(!prop)return this.finishIdleAction();
-  prop.setVisible(true).setAlpha(.98).setAngle(-34).setY(-28);
-  const strike=()=>{
-   this.idleActionTween=this.scene.tweens.add({targets:prop,angle:24,y:-14,duration:210,ease:'Quad.In',onComplete:()=>{
-    this.spawnForgeSparks();
-    this.scene.tweens.add({targets:prop,angle:-34,y:-28,duration:260,ease:'Quad.Out',onComplete:()=>{
-     this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:0,duration:160,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(650)}});
-    }});
-   }});
-  };
-  strike();
- }
-
- spawnForgeSparks(){
-  if(!this.characterVisual)return;
-  for(let i=0;i<4;i++){
-   const sp=this.scene.add.circle(-10+Phaser.Math.Between(-3,3),-2,1.1+(i%2)*.5,0xf3a442,.92);
-   this.characterVisual.add(sp);this.idleDecor.push(sp);
-   this.scene.tweens.add({targets:sp,x:sp.x+Phaser.Math.Between(-8,10),y:sp.y-Phaser.Math.Between(5,13),alpha:0,duration:320+70*i,ease:'Quad.Out',onComplete:()=>sp.destroy()});
-  }
- }
-
- playHealerIdle(){
-  const prop=this.idleProp;
-  if(!prop)return this.finishIdleAction();
-  prop.setVisible(true).setAlpha(0).setScale(.7).setY(-24);
-  this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:1,scale:1,y:-31,duration:320,ease:'Sine.Out',onComplete:()=>{
-   this.scene.tweens.add({targets:prop,angle:{from:-8,to:8},scale:{from:.96,to:1.08},duration:520,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>{
-    this.scene.tweens.add({targets:prop,alpha:0,y:-25,duration:260,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(400)}});
-   }});
-  }});
- }
-
- playTavernIdle(){
-  const prop=this.idleProp;
-  if(!prop)return this.finishIdleAction();
-  prop.setVisible(true).setAlpha(0).setAngle(-8);
-  this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:1,duration:180,onComplete:()=>{
-   this.scene.tweens.add({targets:prop,angle:{from:-8,to:10},x:{from:10,to:13},duration:260,yoyo:true,repeat:2,ease:'Sine.easeInOut',onComplete:()=>{
-    this.scene.tweens.add({targets:prop,alpha:0,duration:180,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(500)}});
-   }});
-  }});
- }
-
- playScholarIdle(){
-  const book=this.idleProp;
-  if(!book)return this.finishIdleAction();
-  book.setVisible(true).setAlpha(.96);
-  const page=this.scene.add.rectangle(4,-1,8,7,0xf3e8c9,.94).setOrigin(0,.5).setScale(1,1).setAngle(7);
-  book.add(page);this.idleDecor.push(page);
-  this.idleActionTween=this.scene.tweens.add({targets:book,y:{from:-23,to:-25},angle:{from:-1,to:1},duration:420,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>{
-   this.scene.tweens.add({targets:page,scaleX:{from:1,to:.08},x:{from:4,to:-1},duration:260,yoyo:true,ease:'Sine.easeInOut',onComplete:()=>{
-    page.destroy();this.finishIdleAction(850);
-   }});
-  }});
- }
-
- playArtisanIdle(){
-  const prop=this.idleProp;
-  if(!prop)return this.finishIdleAction();
-  this.idleActionTween=this.scene.tweens.add({targets:prop,angle:{from:-3,to:5},x:{from:7,to:10},duration:260,yoyo:true,repeat:3,ease:'Sine.easeInOut',onComplete:()=>this.finishIdleAction(650)});
- }
-
- playElderIdle(){
-  const prop=this.idleProp;
-  if(!prop)return this.finishIdleAction();
-  prop.setVisible(true).setAlpha(0).setScale(.7);
-  this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:.82,scale:1.15,duration:520,ease:'Sine.Out',onComplete:()=>{
-   this.scene.tweens.add({targets:prop,alpha:{from:.45,to:.9},scale:{from:.95,to:1.12},duration:650,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>{
-    this.scene.tweens.add({targets:prop,alpha:0,scale:.8,duration:360,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(1100)}});
-   }});
-  }});
- }
-
- playGuardIdle(profile){
-  const dir=profile==='east_guard'?1:-1;
-  this.idleActionTween=this.scene.tweens.add({targets:this.characterVisual,x:{from:0,to:1.6*dir},angle:{from:0,to:.8*dir},duration:360,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>{
-   if(this.idleProp){
-    this.idleProp.setVisible(true).setAlpha(0).setScale(.5);
-    this.scene.tweens.add({targets:this.idleProp,alpha:{from:0,to:.9},scale:{from:.5,to:1.35},duration:180,yoyo:true,onComplete:()=>this.idleProp?.setVisible(false)});
-   }
-   this.finishIdleAction(700);
-  }});
- }
-
- playResidentIdle(){
-  this.idleActionTween=this.scene.tweens.add({targets:this.characterVisual,x:{from:0,to:1.2},angle:{from:0,to:.6},duration:420,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>this.finishIdleAction(450)});
- }
-
- playTravelerIdle(){
-  this.idleActionTween=this.scene.tweens.add({targets:this.characterVisual,x:{from:0,to:-1.4},angle:{from:0,to:-1.1},duration:330,yoyo:true,repeat:2,ease:'Sine.easeInOut',onComplete:()=>this.finishIdleAction(650)});
- }
-
- playBreathOnlyIdle(){
-  this.idleActionTween=this.scene.tweens.add({targets:this.characterVisual,angle:{from:-.35,to:.35},duration:420,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>this.finishIdleAction()});
  }
 
  cleanupNpc(){

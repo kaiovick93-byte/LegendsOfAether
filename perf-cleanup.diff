@@ -1,0 +1,865 @@
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -1,5 +1,2 @@
+ // @ts-nocheck
+ export const GAME_WIDTH=960, GAME_HEIGHT=540, TILE=32;
+-export const WORLD={widthTiles:60,heightTiles:36,width:60*TILE,height:36*TILE};
+-export const COLORS={bg:0x0d1220,panel:0x182033,panel2:0x24314d,text:'#ecf0ff',muted:'#9aa8c7',green:'#73e6a8',blue:'#7ee0ff',gold:'#ffd166',red:'#ff6b6b'};
+-export const SCENES={MENU:'MenuScene',SELECT:'CharacterSelectScene',TOWN:'AetherCityScene',OUTSKIRTS:'AetherCityScene',HOUSE:'HouseInteriorScene',FOREST:'GreenWoodsScene',CAVE:'CaveScene',CASTLE:'CastleScene',VICTORY:'VictoryScene'};
+--- a/src/entities/Player.ts
++++ b/src/entities/Player.ts
+@@ -128,11 +128,6 @@
+     return{x,y:y+profile.centerYOffset,radiusX:profile.radiusX,radiusY:profile.radiusY};
+   }
+   getVisualSprite(){return this.visual}
+-  getVisualFrame(){return this.visual?.frame}
+-  getVisualFrameNumber(){
+-    const value=Number(this.visual?.frame?.name);
+-    return Number.isFinite(value)?value:this.getIdleFrame();
+-  }
+   getVisualMetrics(){
+     return{
+       width:this.visual?.displayWidth??0,height:this.visual?.displayHeight??0,
+@@ -205,7 +200,6 @@
+   gainXp(n){this.xp+=n;while(this.xp>=this.level*100){this.xp-=this.level*100;this.level++;this.attributePoints+=3;this.hp=this.maxHp;this.mana=this.maxMana;this.scene.sfx?.levelUp?.();this.scene.skillManager?.grant?.();this.showLevelUpEffect()}}
+   showLevelUpEffect(){const s=this.scene;if(!s||!s.add)return;const color=0xffd166;const ring1=s.add.circle(this.x,this.y,24,color,0).setStrokeStyle(4,color,.9).setDepth(60);const ring2=s.add.circle(this.x,this.y,10,color,.28).setStrokeStyle(2,0xfff1b0,.85).setDepth(60);const text=s.add.text(this.x,this.y-58,'LEVEL UP!',{fontFamily:'Arial',fontSize:22,color:'#ffd166',fontStyle:'bold',stroke:'#3a2b08',strokeThickness:4}).setOrigin(.5).setDepth(61);const note=s.add.text(this.x,this.y-34,'+1 Skill  •  +3 Atributos',{fontFamily:'Arial',fontSize:11,color:'#fff3c4',fontStyle:'bold',stroke:'#3a2b08',strokeThickness:3}).setOrigin(.5).setDepth(61);s.tweens.add({targets:[ring1,ring2],scale:3,alpha:0,duration:650,ease:'Cubic.Out',onComplete:()=>{ring1.destroy();ring2.destroy()}});s.tweens.add({targets:text,y:text.y-28,alpha:0,duration:1200,ease:'Cubic.Out',onComplete:()=>text.destroy()});s.tweens.add({targets:note,y:note.y-18,alpha:0,duration:1200,delay:80,ease:'Cubic.Out',onComplete:()=>note.destroy()})}
+   applyClass(id){const s={warrior:{hp:40,mana:0,attack:6,defense:4,speed:0},mage:{hp:0,mana:45,attack:3,defense:0,speed:0},ranger:{hp:12,mana:12,attack:4,defense:1,speed:18}}[id]||null;if(!s)return;this.characterClass=id;if(appearanceFor(this.appearanceId).classId!==id)this.appearanceId=defaultAppearanceForClass(id);this.base={hp:120+s.hp,mana:60+s.mana,attack:14+s.attack,defense:s.defense,speed:170+s.speed};this.recalc(true);this.refreshAppearanceTexture()}
+-  setSkillBonuses(b){this.skills={attack:b.attack||0,hp:b.hp||0,mana:b.mana||0,speed:b.speed||0};this.recalc()}
+   setEquipmentBonuses(b){this.equipment={attack:b.attack||0,defense:b.defense||0,hp:b.hp||0,mana:b.mana||0,speed:b.speed||0};this.recalc()}
+   setAppearance(id){const a=appearanceFor(id);this.appearanceId=a.classId===this.characterClass?a.id:defaultAppearanceForClass(this.characterClass);this.refreshAppearanceTexture();return this.appearanceId}
+   setEquipmentVisual(slots={}){const weapon=!!slots.weapon,armor=!!slots.armor;this.visualState=weapon&&armor?'weapon_armor':weapon?'weapon':armor?'armor':'base';this.refreshAppearanceTexture()}
+--- a/src/npc/Npc.ts
++++ b/src/npc/Npc.ts
+@@ -179,12 +179,6 @@
+   });
+  }
+ 
+- setRole(role){
+-  this.npcRole=role||'';
+-  this.roleText?.setText(this.npcRole);
+-  return this;
+- }
+-
+  setInteractionActions(items=[]){
+   const normalized=(items&&items.length?items:[{key:'F',label:'Conversar',type:'talk'}]).slice(0,2);
+   const sig=normalized.map(a=>`${a.key}:${a.label}:${a.type||''}`).join('|');
+@@ -405,12 +399,6 @@
+   this.sprite.setFrame(frame);
+  }
+ 
+- ensureIdleFacing(){
+-  if(!this.sprite)return;
+-  const target=this.idleFacing||this.currentFacing||'down';
+-  if(this.currentFacing!==target)this.setFacing(target);
+- }
+-
+  // Mantido apenas por compatibilidade com código externo antigo. Não é mais usado
+  // automaticamente ao aproximar ou conversar.
+  facePlayer(){return this}
+@@ -456,13 +444,6 @@
+   });
+  }
+ 
+- addIdleDecor(go){
+-  if(!go)return go;
+-  this.idleDecor.push(go);
+-  this.characterVisual?.add(go);
+-  return go;
+- }
+-
+  createIdleProp(){
+   for(const go of this.idleDecor){try{go.destroy()}catch(e){}}
+   // Os personagens isométricos já carregam seus objetos profissionais na
+@@ -545,162 +526,11 @@
+   this.finishIdleAction(2200);
+  }
+ 
+- playIsometricBlacksmithIdle(){
+-  if(!this.scene.textures.exists('blacksmith_iso_empty')||!this.scene.textures.exists('blacksmith_hammer')){
+-   this.resetIsometricPose();this.finishIdleAction();return;
+-  }
+-  this.sprite.setTexture('blacksmith_iso_empty').setPosition(0,8).setAngle(-.8);
+-  const hammer=this.scene.add.image(-31,-41,'blacksmith_hammer').setOrigin(.5).setScale(this.isoDisplayScale).setAngle(-12);
+-  this.characterVisual.add(hammer);
+-  this.isoActionProp=hammer;
+-  this.idleActionTween=this.scene.tweens.add({
+-   targets:hammer,x:-7,y:-116,angle:350,duration:450,ease:'Quad.Out',
+-   onComplete:()=>{
+-    this.idleActionTween=this.scene.tweens.add({
+-     targets:hammer,x:-31,y:-41,angle:710,duration:430,ease:'Quad.In',
+-     onComplete:()=>{
+-      this.spawnIsoSparkles(0xf3a442,-31,-42,5);
+-      hammer.destroy();this.isoActionProp=null;
+-      this.sprite.setTexture(this.isoBaseTexture);
+-      this.resetIsometricPose();this.finishIdleAction(900);
+-     }
+-    });
+-   }
+-  });
+- }
+-
+- spawnIsoSparkles(color,x,y,count=3){
+-  if(!this.characterVisual)return;
+-  for(let i=0;i<count;i++){
+-   const spark=this.scene.add.star(x+Phaser.Math.Between(-5,5),y+Phaser.Math.Between(-4,5),4,1.1,2.5,color,.9).setScale(.55);
+-   this.characterVisual.add(spark);this.isoEffects.push(spark);
+-   this.scene.tweens.add({
+-    targets:spark,x:spark.x+Phaser.Math.Between(-8,8),y:spark.y-Phaser.Math.Between(8,18),alpha:0,scale:1.15,
+-    duration:430+i*65,ease:'Quad.Out',onComplete:()=>{this.isoEffects=this.isoEffects.filter(item=>item!==spark);spark.destroy()}
+-   });
+-  }
+- }
+-
+- resetIsometricPose(){
+-  if(!this.isIsometricStatic||!this.sprite)return;
+-  this.sprite.setPosition(0,8).setAngle(0);
+- }
+-
+  finishIdleAction(extraDelay=0){
+   this.idleActionActive=false;
+   this.nextIdleAction=this.scene.time.now+Phaser.Math.Between(this.idleMinDelay+extraDelay,this.idleMaxDelay+extraDelay);
+  }
+ 
+- playMerchantIdle(){
+-  const prop=this.idleProp;
+-  if(!prop)return this.finishIdleAction();
+-  prop.setVisible(true).setAlpha(0).setY(-16).setScale(.82).setAngle(-6);
+-  this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:1,y:-21,scale:1,duration:180,ease:'Sine.Out',onComplete:()=>{
+-   this.idleActionTween=this.scene.tweens.add({targets:prop,angle:{from:-6,to:8},yoyo:true,repeat:2,duration:170,ease:'Sine.easeInOut',onComplete:()=>{
+-    this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:0,y:-17,duration:170,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(300)}});
+-   }});
+-  }});
+- }
+-
+- playBlacksmithIdle(){
+-  const prop=this.idleProp;
+-  if(!prop)return this.finishIdleAction();
+-  prop.setVisible(true).setAlpha(.98).setAngle(-34).setY(-28);
+-  const strike=()=>{
+-   this.idleActionTween=this.scene.tweens.add({targets:prop,angle:24,y:-14,duration:210,ease:'Quad.In',onComplete:()=>{
+-    this.spawnForgeSparks();
+-    this.scene.tweens.add({targets:prop,angle:-34,y:-28,duration:260,ease:'Quad.Out',onComplete:()=>{
+-     this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:0,duration:160,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(650)}});
+-    }});
+-   }});
+-  };
+-  strike();
+- }
+-
+- spawnForgeSparks(){
+-  if(!this.characterVisual)return;
+-  for(let i=0;i<4;i++){
+-   const sp=this.scene.add.circle(-10+Phaser.Math.Between(-3,3),-2,1.1+(i%2)*.5,0xf3a442,.92);
+-   this.characterVisual.add(sp);this.idleDecor.push(sp);
+-   this.scene.tweens.add({targets:sp,x:sp.x+Phaser.Math.Between(-8,10),y:sp.y-Phaser.Math.Between(5,13),alpha:0,duration:320+70*i,ease:'Quad.Out',onComplete:()=>sp.destroy()});
+-  }
+- }
+-
+- playHealerIdle(){
+-  const prop=this.idleProp;
+-  if(!prop)return this.finishIdleAction();
+-  prop.setVisible(true).setAlpha(0).setScale(.7).setY(-24);
+-  this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:1,scale:1,y:-31,duration:320,ease:'Sine.Out',onComplete:()=>{
+-   this.scene.tweens.add({targets:prop,angle:{from:-8,to:8},scale:{from:.96,to:1.08},duration:520,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>{
+-    this.scene.tweens.add({targets:prop,alpha:0,y:-25,duration:260,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(400)}});
+-   }});
+-  }});
+- }
+-
+- playTavernIdle(){
+-  const prop=this.idleProp;
+-  if(!prop)return this.finishIdleAction();
+-  prop.setVisible(true).setAlpha(0).setAngle(-8);
+-  this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:1,duration:180,onComplete:()=>{
+-   this.scene.tweens.add({targets:prop,angle:{from:-8,to:10},x:{from:10,to:13},duration:260,yoyo:true,repeat:2,ease:'Sine.easeInOut',onComplete:()=>{
+-    this.scene.tweens.add({targets:prop,alpha:0,duration:180,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(500)}});
+-   }});
+-  }});
+- }
+-
+- playScholarIdle(){
+-  const book=this.idleProp;
+-  if(!book)return this.finishIdleAction();
+-  book.setVisible(true).setAlpha(.96);
+-  const page=this.scene.add.rectangle(4,-1,8,7,0xf3e8c9,.94).setOrigin(0,.5).setScale(1,1).setAngle(7);
+-  book.add(page);this.idleDecor.push(page);
+-  this.idleActionTween=this.scene.tweens.add({targets:book,y:{from:-23,to:-25},angle:{from:-1,to:1},duration:420,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>{
+-   this.scene.tweens.add({targets:page,scaleX:{from:1,to:.08},x:{from:4,to:-1},duration:260,yoyo:true,ease:'Sine.easeInOut',onComplete:()=>{
+-    page.destroy();this.finishIdleAction(850);
+-   }});
+-  }});
+- }
+-
+- playArtisanIdle(){
+-  const prop=this.idleProp;
+-  if(!prop)return this.finishIdleAction();
+-  this.idleActionTween=this.scene.tweens.add({targets:prop,angle:{from:-3,to:5},x:{from:7,to:10},duration:260,yoyo:true,repeat:3,ease:'Sine.easeInOut',onComplete:()=>this.finishIdleAction(650)});
+- }
+-
+- playElderIdle(){
+-  const prop=this.idleProp;
+-  if(!prop)return this.finishIdleAction();
+-  prop.setVisible(true).setAlpha(0).setScale(.7);
+-  this.idleActionTween=this.scene.tweens.add({targets:prop,alpha:.82,scale:1.15,duration:520,ease:'Sine.Out',onComplete:()=>{
+-   this.scene.tweens.add({targets:prop,alpha:{from:.45,to:.9},scale:{from:.95,to:1.12},duration:650,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>{
+-    this.scene.tweens.add({targets:prop,alpha:0,scale:.8,duration:360,onComplete:()=>{prop.setVisible(false);this.finishIdleAction(1100)}});
+-   }});
+-  }});
+- }
+-
+- playGuardIdle(profile){
+-  const dir=profile==='east_guard'?1:-1;
+-  this.idleActionTween=this.scene.tweens.add({targets:this.characterVisual,x:{from:0,to:1.6*dir},angle:{from:0,to:.8*dir},duration:360,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>{
+-   if(this.idleProp){
+-    this.idleProp.setVisible(true).setAlpha(0).setScale(.5);
+-    this.scene.tweens.add({targets:this.idleProp,alpha:{from:0,to:.9},scale:{from:.5,to:1.35},duration:180,yoyo:true,onComplete:()=>this.idleProp?.setVisible(false)});
+-   }
+-   this.finishIdleAction(700);
+-  }});
+- }
+-
+- playResidentIdle(){
+-  this.idleActionTween=this.scene.tweens.add({targets:this.characterVisual,x:{from:0,to:1.2},angle:{from:0,to:.6},duration:420,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>this.finishIdleAction(450)});
+- }
+-
+- playTravelerIdle(){
+-  this.idleActionTween=this.scene.tweens.add({targets:this.characterVisual,x:{from:0,to:-1.4},angle:{from:0,to:-1.1},duration:330,yoyo:true,repeat:2,ease:'Sine.easeInOut',onComplete:()=>this.finishIdleAction(650)});
+- }
+-
+- playBreathOnlyIdle(){
+-  this.idleActionTween=this.scene.tweens.add({targets:this.characterVisual,angle:{from:-.35,to:.35},duration:420,yoyo:true,repeat:1,ease:'Sine.easeInOut',onComplete:()=>this.finishIdleAction()});
+- }
+-
+  cleanupNpc(){
+   try{this.scene?.events?.off('update',this.handleNpcUpdate,this)}catch(e){}
+   try{this.idleBobTween?.stop()}catch(e){}
+--- a/src/prologue/OldAetherPrologue.ts
++++ b/src/prologue/OldAetherPrologue.ts
+@@ -132,8 +132,6 @@
+   COMPLETED:'COMPLETED'
+ });
+ 
+-const STAGES=new Set(Object.values(OLD_AETHER_PROLOGUE_STAGES));
+-
+ /** Rastreio provisório, ancorado abaixo do minimapa, e não na tela-mundo. */
+ class PrologueHud{
+   constructor(scene,readState){
+@@ -1154,7 +1152,6 @@
+       if(enemy===this.wolf&&this.isWolfEntranceActive())continue;
+       const data=enemy.prologue,iso=enemy.iso,player=this.scene.player;
+       const du=player.isoX-iso.u,dv=player.isoY-iso.v,logicalDistance=Math.hypot(du,dv);
+-      const prior=this.scene.project(iso.u,iso.v);
+       let targetU=iso.u,targetV=iso.v;
+       if(enemy.attackPendingAt&&time>=enemy.attackPendingAt){
+         enemy.attackPendingAt=0;
+@@ -1185,7 +1182,6 @@
+           this.startEnemyAttack(enemy,time);
+         }
+       }
+-      const next=this.scene.project(iso.u,iso.v);
+       this.syncEnemyVisual(enemy);
+     }
+   }
+--- a/src/quests/QuestManager.ts
++++ b/src/quests/QuestManager.ts
+@@ -1,5 +1,5 @@
+ // @ts-nocheck
+-import {QUESTS} from './questData';import {getItemDefinition} from '../items/itemCatalog';
++import {QUESTS} from './questData';
+ export class QuestManager{constructor(){this.state={}}
+  get(giver){return QUESTS.find(q=>q.giver===giver)}
+  accept(giver){const q=this.get(giver);if(!q)return false;this.state[q.id]??={accepted:true,completed:false};this.state[q.id].accepted=true;return true}
+--- a/src/scenes/AetherCityScene.ts
++++ b/src/scenes/AetherCityScene.ts
+@@ -750,7 +750,6 @@
+   }
+ 
+   createWallsAndGates() {
+-    const C = AetherCityScene;
+     const perimeter=this.getCityWallBounds();
+     this.wallSprites = [];
+     this.wallGroundShadows = [];
+@@ -925,32 +924,6 @@
+ 
+ 
+ 
+-  addSouthWallLongSection(start, end, towardTower = 0) {
+-    const key='iso_city_wall_south_long';
+-    const source=this.textures.get(key).getSourceImage();
+-    const scale=192/650;
+-    // O asset longo foi montado com dois módulos já fundidos e um único
+-    // contraforte no encontro central. O pivô coincide com o meio dos
+-    // conectores extremos do trecho de oito tiles.
+-    const originX=.5;
+-    const originY=795/1222;
+-    const middle=(start+end)/2+towardTower;
+-    const image=new IsoSprite({
+-      scene:this,isoX:middle,isoY:AetherCityScene.CITY_MAX,isoZ:0,
+-      texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
+-      screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
+-      depthBase:AetherCityScene.ISO_DEPTH_BASE,depthOffset:.08
+-    });
+-    image.setOrigin(originX,originY).setScale(scale);
+-    image.updateIsoPosition();
+-    this.wallSprites.push(image);
+-
+-    const thickness=.06;
+-    const rect={u1:start,v1:AetherCityScene.CITY_MAX-thickness,u2:end,v2:AetherCityScene.CITY_MAX+thickness,corner:.08};
+-    this.addIsoGroundContact(rect,.10);
+-    this.registerSolidMask(image,key,{label:'muralha sul',mode:'isoRect',isoRect:rect});
+-  }
+-
+ 
+   addBrokenWallSection(fixedAxis, fixed, start, end, flip, towerOverlap = 0) {
+     const key='iso_city_wall_broken';
+@@ -1019,29 +992,6 @@
+     }
+   }
+ 
+-  addSideCornerPillar(u,v) {
+-    const key='iso_city_wall_side_corner';
+-    const source=this.textures.get(key).getSourceImage();
+-    // Só os dois vértices laterais recebem esta peça de acabamento. A leve
+-    // sobreposição cobre o encontro das duas faixas sem alterar os cantos
+-    // superior/inferior, que já possuem encaixe aprovado.
+-    const targetHeight=166;
+-    const scale=targetHeight/source.height;
+-    const p=this.project(u,v);
+-    const pillar=new IsoSprite({
+-      scene:this,isoX:u,isoY:v,isoZ:18-targetHeight/2,
+-      texture:key,tileWidth:AetherCityScene.TILE_WIDTH,tileHeight:AetherCityScene.TILE_HEIGHT,
+-      screenOriginX:AetherCityScene.ORIGIN_X,screenOriginY:AetherCityScene.ORIGIN_Y,
+-      depthBase:AetherCityScene.ISO_DEPTH_BASE,
+-      // O pilar precisa cobrir inclusive o módulo lateral de maior soma.
+-      depthOffset:108
+-    }).setScale(scale).setFlipX(u>v);
+-    this.wallSprites.push(pillar);
+-    this.registerOccluder(pillar,key,p.y+10,{behindMargin:8});
+-    this.registerSolidMask(pillar,key,{label:'pilar de canto da muralha',minHits:2});
+-    return pillar;
+-  }
+-
+   createBuildings() {
+     this.cityBuildings = [];
+     for (const building of this.getBuildingPlan()) {
+@@ -1888,7 +1838,6 @@
+     // para não se sobrepor ao volume frontal dela; os pombos mantêm a mesma
+     // relação espacial com ele durante a alimentação.
+     const homeLogical = {u: 12.75, v: 10.25};
+-    const home = this.project(homeLogical.u, homeLogical.v);
+     // Um recurso ambiente opcional nunca pode impedir a criação da cidade.
+     // Os quatro quadros usam célula, escala corporal e linha dos pés idênticas.
+     if (this.textures.exists('elder_feeder_iso_v3')) {
+@@ -2011,7 +1960,7 @@
+     this.isSafeZone=this.isPlayerInsideCity();
+     this.setCityRegionActive(this.player.isoX<=44&&this.player.isoY<=44);
+     this.hud.setLocalName(this.aetherTerritory.getLocalName(this.player.isoX,this.player.isoY));
+-    this.registry.set('aetherActiveSector',activeSector);
++    if(this.registry.get('aetherActiveSector')!==activeSector)this.registry.set('aetherActiveSector',activeSector);
+     this.updateNpcPrompts();
+     this.updateActorDepths();
+     this.worldLighting?.update?.(_time,delta);
+@@ -2356,7 +2305,8 @@
+   }
+ 
+   updateNpcPrompts() {
+-    for (const npc of this.cityActors.filter(Boolean)) {
++    for (const npc of this.cityActors) {
++      if(!npc)continue;
+       if(!npc.active){npc.setNearby(false);continue}
+       const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
+       npc.setPrompt(npc === this.merchant && distance < 96 ? 'F • Conversar   T • Loja' : 'F • Conversar');
+--- a/src/scenes/CastleScene.ts
++++ b/src/scenes/CastleScene.ts
+@@ -8,7 +8,7 @@
+  spawnEnemies(){this.enemies=[new Enemy(this,500,260,'Guarda',{hp:76,attackDamage:16,xpReward:38}),new Enemy(this,760,380,'Mago da Coroa',{hp:100,attackDamage:20,xpReward:55}),new Enemy(this,950,500,'Cavaleiro',{hp:120,attackDamage:23,xpReward:65})];this.mini=new CastleMiniBoss(this,1200,420);this.boss=new CastleBoss(this,1580,420)}
+  setupHud(){this.hud=new MapHud(this,{player:this.player,inventory:this.inv,equipment:this.equip,abilities:this.abilities,skills:this.skillManager,save:()=>this.saveGame(),onMenu:()=>this.goMenu(),worldWidth:1920,worldHeight:1152,localName:'CASTELO',markers:[{x:100,y:560,color:0xffd166,label:'Caverna'},{x:1580,y:420,color:0xff6b6b,label:'Rei'}]})}
+  setupInput(){this.cursors=this.input.keyboard.createCursorKeys();this.keys=this.input.keyboard.addKeys('W,A,S,D');this.attackKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);this.q=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);this.one=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);this.two=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO)}
+- update(){if(this.hud.handle({collect:()=>this.collect(),talk:()=>this.message('Não há NPCs seguros nesta região.'),afterAction:()=>this.saveGame()})){this.hud.update();return}if(this.player.isDead()){this.handleDeath();return}this.move();for(const e of this.enemies){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}this.mini.updateAI(this.player);this.combat.enemyAttack(this.mini,this.player);if(this.boss.isAlive()){this.boss.updateAI(this.player);this.combat.enemyAttack(this.boss,this.player)}const t=[...this.enemies,this.mini,this.boss];if(Phaser.Input.Keyboard.JustDown(this.attackKey))this.combat.playerAttack(this.player,t);if(Phaser.Input.Keyboard.JustDown(this.q))this.abilities.use('primary',t);if(Phaser.Input.Keyboard.JustDown(this.one))this.abilities.use('secondary',t);if(Phaser.Input.Keyboard.JustDown(this.two))this.abilities.use('mobility',t);for(let i=0;i<this.enemies.length;i++){const e=this.enemies[i];if(e.dead&&!e.respawnTimer){e.respawnTimer=this.time.delayedCall(9000,()=>{this.respawnOne(i);});}}this.loot.update(this.player.x,this.player.y);this.hud.setLocalName(this.player.x<220?'ENTRADA DO CASTELO':'CASTELO');this.hud.update();if(!this.boss.isAlive()&&!this.victoryTriggered){this.victoryTriggered=true;const relic=getItemDefinition('royal_signet');if(relic)this.inv.add(relic.id,1);this.saveGame();this.time.delayedCall(900,()=>this.scene.start('VictoryScene'))}if(this.player.x<150&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'CaveScene',x:1740,y:560});this.scene.start('CaveScene')}}
++ update(){if(this.hud.handle({collect:()=>this.collect(),talk:()=>this.message('Não há NPCs seguros nesta região.'),afterAction:()=>this.saveGame()})){this.hud.update();return}if(this.player.isDead()){this.handleDeath();return}this.move();for(const e of this.enemies){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}this.mini.updateAI(this.player);this.combat.enemyAttack(this.mini,this.player);if(this.boss.isAlive()){this.boss.updateAI(this.player);this.combat.enemyAttack(this.boss,this.player)}const atk=Phaser.Input.Keyboard.JustDown(this.attackKey),k0=Phaser.Input.Keyboard.JustDown(this.q),k1=Phaser.Input.Keyboard.JustDown(this.one),k2=Phaser.Input.Keyboard.JustDown(this.two);if(atk||k0||k1||k2){const t=[...this.enemies,this.mini,this.boss];if(atk)this.combat.playerAttack(this.player,t);if(k0)this.abilities.use('primary',t);if(k1)this.abilities.use('secondary',t);if(k2)this.abilities.use('mobility',t)}for(let i=0;i<this.enemies.length;i++){const e=this.enemies[i];if(e.dead&&!e.respawnTimer){e.respawnTimer=this.time.delayedCall(9000,()=>{this.respawnOne(i);});}}this.loot.update(this.player.x,this.player.y);this.hud.setLocalName(this.player.x<220?'ENTRADA DO CASTELO':'CASTELO');this.hud.update();if(!this.boss.isAlive()&&!this.victoryTriggered){this.victoryTriggered=true;const relic=getItemDefinition('royal_signet');if(relic)this.inv.add(relic.id,1);this.saveGame();this.time.delayedCall(900,()=>this.scene.start('VictoryScene'))}if(this.player.x<150&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'CaveScene',x:1740,y:560});this.scene.start('CaveScene')}}
+  move(){const dx=(this.cursors.right.isDown||this.keys.D.isDown?1:0)-(this.cursors.left.isDown||this.keys.A.isDown?1:0);const dy=(this.cursors.down.isDown||this.keys.S.isDown?1:0)-(this.cursors.up.isDown||this.keys.W.isDown?1:0);this.player.playMove(this.player.move(dx,dy))}
+  collect(){const d=this.loot.collectNear(this.player.x,this.player.y);if(d){this.sfx.pickup();this.saveGame();this.hud.bottom.update()}}
+  respawnOne(i){const p=[{x:500,y:260,name:'Guarda',stats:{hp:76,attackDamage:16,xpReward:38}},{x:760,y:380,name:'Mago da Coroa',stats:{hp:100,attackDamage:20,xpReward:55}},{x:950,y:500,name:'Cavaleiro',stats:{hp:120,attackDamage:23,xpReward:65}}][i];if(p)this.enemies[i]=new Enemy(this,p.x,p.y,p.name,p.stats)}
+--- a/src/scenes/CaveScene.ts
++++ b/src/scenes/CaveScene.ts
+@@ -8,7 +8,7 @@
+  spawnEnemies(){this.enemies=[new Enemy(this,520,250,'Esqueleto',{hp:55,attackDamage:13,xpReward:25}),new Enemy(this,760,380,'Cultista',{hp:65,attackDamage:15,xpReward:30}),new Enemy(this,980,520,'Morcego Sombrio',{hp:30,speed:110,attackDamage:10,xpReward:22})];this.mini=new CaveMiniBoss(this,1250,420)}
+  setupHud(){this.hud=new MapHud(this,{player:this.player,inventory:this.inv,equipment:this.equip,abilities:this.abilities,skills:this.skillManager,save:()=>this.saveGame(),onMenu:()=>this.goMenu(),worldWidth:1920,worldHeight:1152,localName:'CAVERNA',markers:[{x:110,y:560,color:0xffd166,label:'Floresta'},{x:1770,y:560,color:0xc084fc,label:'Castelo'}]})}
+  setupInput(){this.cursors=this.input.keyboard.createCursorKeys();this.keys=this.input.keyboard.addKeys('W,A,S,D');this.attackKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);this.q=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);this.one=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);this.two=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO)}
+- update(){if(this.hud.handle({collect:()=>this.collect(),talk:()=>this.message('Não há NPCs seguros nesta região.'),afterAction:()=>this.saveGame()})){this.hud.update();return}if(this.player.isDead()){this.handleDeath();return}this.move();for(const e of this.enemies){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}this.mini.updateAI(this.player);this.combat.enemyAttack(this.mini,this.player);const t=[...this.enemies,this.mini];if(Phaser.Input.Keyboard.JustDown(this.attackKey))this.combat.playerAttack(this.player,t);if(Phaser.Input.Keyboard.JustDown(this.q))this.abilities.use('primary',t);if(Phaser.Input.Keyboard.JustDown(this.one))this.abilities.use('secondary',t);if(Phaser.Input.Keyboard.JustDown(this.two))this.abilities.use('mobility',t);for(let i=0;i<this.enemies.length;i++){const e=this.enemies[i];if(e.dead&&!e.respawnTimer){e.respawnTimer=this.time.delayedCall(9000,()=>{this.respawnOne(i);});}}this.loot.update(this.player.x,this.player.y);this.hud.setLocalName(this.player.x>1770?'PORTAL DO CASTELO':'CAVERNA');this.hud.update();if(this.player.x<150&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'GreenWoodsScene',x:2185,y:760});this.scene.start('GreenWoodsScene')}if(this.player.x>1770&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'CastleScene',x:140,y:560});this.scene.start('CastleScene')}}
++ update(){if(this.hud.handle({collect:()=>this.collect(),talk:()=>this.message('Não há NPCs seguros nesta região.'),afterAction:()=>this.saveGame()})){this.hud.update();return}if(this.player.isDead()){this.handleDeath();return}this.move();for(const e of this.enemies){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}this.mini.updateAI(this.player);this.combat.enemyAttack(this.mini,this.player);const atk=Phaser.Input.Keyboard.JustDown(this.attackKey),k0=Phaser.Input.Keyboard.JustDown(this.q),k1=Phaser.Input.Keyboard.JustDown(this.one),k2=Phaser.Input.Keyboard.JustDown(this.two);if(atk||k0||k1||k2){const t=[...this.enemies,this.mini];if(atk)this.combat.playerAttack(this.player,t);if(k0)this.abilities.use('primary',t);if(k1)this.abilities.use('secondary',t);if(k2)this.abilities.use('mobility',t)}for(let i=0;i<this.enemies.length;i++){const e=this.enemies[i];if(e.dead&&!e.respawnTimer){e.respawnTimer=this.time.delayedCall(9000,()=>{this.respawnOne(i);});}}this.loot.update(this.player.x,this.player.y);this.hud.setLocalName(this.player.x>1770?'PORTAL DO CASTELO':'CAVERNA');this.hud.update();if(this.player.x<150&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'GreenWoodsScene',x:2185,y:760});this.scene.start('GreenWoodsScene')}if(this.player.x>1770&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'CastleScene',x:140,y:560});this.scene.start('CastleScene')}}
+  move(){const dx=(this.cursors.right.isDown||this.keys.D.isDown?1:0)-(this.cursors.left.isDown||this.keys.A.isDown?1:0);const dy=(this.cursors.down.isDown||this.keys.S.isDown?1:0)-(this.cursors.up.isDown||this.keys.W.isDown?1:0);this.player.playMove(this.player.move(dx,dy))}
+  collect(){const d=this.loot.collectNear(this.player.x,this.player.y);if(d){this.sfx.pickup();this.saveGame();this.hud.bottom.update()}}
+  respawnOne(i){const p=[{x:520,y:250,name:'Esqueleto',stats:{hp:55,attackDamage:13,xpReward:25}},{x:760,y:380,name:'Cultista',stats:{hp:65,attackDamage:15,xpReward:30}},{x:980,y:520,name:'Morcego Sombrio',stats:{hp:30,speed:110,attackDamage:10,xpReward:22}}][i];if(p)this.enemies[i]=new Enemy(this,p.x,p.y,p.name,p.stats)}
+--- a/src/scenes/GreenWoodsScene.ts
++++ b/src/scenes/GreenWoodsScene.ts
+@@ -32,7 +32,7 @@
+  createDungeonRunes(){this.dungeonRunes=[new DungeonRune(this,1120,760,'Masmorra da Clareira','CLAREIRA DO NASCENTE'),new DungeonRune(this,1930,340,'Masmorra do Pântano','PÂNTANO SOMBRIO'),new DungeonRune(this,1930,1090,'Masmorra do Bosque','BOSQUE PROFUNDO'),new DungeonRune(this,1250,560,'Masmorra da Floresta','FLORESTA VERDE')]} 
+  setupInput(){this.cursors=this.input.keyboard.createCursorKeys();this.keys=this.input.keyboard.addKeys('W,A,S,D');this.attackKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);this.q=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);this.fKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);this.one=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);this.two=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO)}
+  movePlayer(){const dx=(this.cursors.right.isDown||this.keys.D.isDown?1:0)-(this.cursors.left.isDown||this.keys.A.isDown?1:0);const dy=(this.cursors.down.isDown||this.keys.S.isDown?1:0)-(this.cursors.up.isDown||this.keys.W.isDown?1:0);const moved=this.player.move(dx,dy);if(typeof this.player.playMove==='function')this.player.playMove(moved)}
+- update(){this.updateNpcPrompts();if(this.dialogueOpen){this.player.move(0,0);if(Phaser.Input.Keyboard.JustDown(this.dialogueF)||Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)))this.closeDialogue();return}if(Phaser.Input.Keyboard.JustDown(this.fKey)){const rune=this.findNearbyRune();if(rune){this.readRune(rune);return}if(this.isNearWaystone()){this.readWaystone();return}if(this.findNearbyNpc()){this.talk();return}}if(this.hud.handle({collect:()=>this.collect(),talk:()=>this.talk(),afterAction:()=>this.saveGame()})){this.hud.update();return}if(this.player.isDead()){this.handleDeath();return}this.waystone.updatePrompt(this.player.x,this.player.y);this.movePlayer();this.enforceForestExits(this.player.x,this.player.y);for(const e of this.enemies){if(!e.dead){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}else if(!e.respawnTimer)e.respawnTimer=this.time.delayedCall(9000,()=>this.respawnOne(this.enemies.indexOf(e)))}for(const e of this.forestSpiritSpawns||[]){if(!e.dead){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}}for(const e of this.regionElites||[]){if(!e.dead){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}else if(!e.respawnTimer)e.respawnTimer=this.time.delayedCall(16000,()=>this.respawnRegionElite(e))}if(this.mini&&!this.mini.dead){this.mini.updateAI(this.player);this.combat.enemyAttack(this.mini,this.player)}if(this.ruinGuardian){this.ruinGuardian.updateAI(this.player);this.combat.enemyAttack(this.ruinGuardian,this.player);if(this.ruinGuardian.dead&&!this.miniRuinHandled){this.miniRuinHandled=true;this.worldFlags={...(this.worldFlags||{}),ruinsGuardianDefeated:true};this.registry.set('worldFlags',this.worldFlags);this.saveGame();this.spawnRuinsScholar()}}const t=[...this.enemies,...(this.forestSpiritSpawns||[]),...(this.regionElites||[]),...(this.mini?[this.mini]:[]),...(this.ruinGuardian?[this.ruinGuardian]:[])];if(Phaser.Input.Keyboard.JustDown(this.attackKey))this.combat.playerAttack(this.player,t);if(Phaser.Input.Keyboard.JustDown(this.q))this.abilities.use('primary',t);if(Phaser.Input.Keyboard.JustDown(this.one))this.abilities.use('secondary',t);if(Phaser.Input.Keyboard.JustDown(this.two))this.abilities.use('mobility',t);this.loot.update(this.player.x,this.player.y);this.hud.setLocalName(this.getLocal());this.hud.update();if(this.cavePortal.getBounds().contains(this.player.x,this.player.y)&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'CaveScene',x:220,y:760,hp:this.player.hp,mana:this.player.mana});this.scene.start('CaveScene')}if(this.cityGate.getBounds().contains(this.player.x,this.player.y)&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'WorldScene',x:3780,y:650,hp:this.player.hp,mana:this.player.mana});this.scene.start('WorldScene')}}
++ update(){this.updateNpcPrompts();if(this.dialogueOpen){this.player.move(0,0);if(Phaser.Input.Keyboard.JustDown(this.dialogueF)||Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)))this.closeDialogue();return}if(Phaser.Input.Keyboard.JustDown(this.fKey)){const rune=this.findNearbyRune();if(rune){this.readRune(rune);return}if(this.isNearWaystone()){this.readWaystone();return}if(this.findNearbyNpc()){this.talk();return}}if(this.hud.handle({collect:()=>this.collect(),talk:()=>this.talk(),afterAction:()=>this.saveGame()})){this.hud.update();return}if(this.player.isDead()){this.handleDeath();return}this.waystone.updatePrompt(this.player.x,this.player.y);this.movePlayer();this.enforceForestExits(this.player.x,this.player.y);for(const e of this.enemies){if(!e.dead){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}else if(!e.respawnTimer)e.respawnTimer=this.time.delayedCall(9000,()=>this.respawnOne(this.enemies.indexOf(e)))}for(const e of this.forestSpiritSpawns||[]){if(!e.dead){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}}for(const e of this.regionElites||[]){if(!e.dead){e.updateAI(this.player);this.combat.enemyAttack(e,this.player)}else if(!e.respawnTimer)e.respawnTimer=this.time.delayedCall(16000,()=>this.respawnRegionElite(e))}if(this.mini&&!this.mini.dead){this.mini.updateAI(this.player);this.combat.enemyAttack(this.mini,this.player)}if(this.ruinGuardian){this.ruinGuardian.updateAI(this.player);this.combat.enemyAttack(this.ruinGuardian,this.player);if(this.ruinGuardian.dead&&!this.miniRuinHandled){this.miniRuinHandled=true;this.worldFlags={...(this.worldFlags||{}),ruinsGuardianDefeated:true};this.registry.set('worldFlags',this.worldFlags);this.saveGame();this.spawnRuinsScholar()}}const atk=Phaser.Input.Keyboard.JustDown(this.attackKey),k0=Phaser.Input.Keyboard.JustDown(this.q),k1=Phaser.Input.Keyboard.JustDown(this.one),k2=Phaser.Input.Keyboard.JustDown(this.two);if(atk||k0||k1||k2){const t=[...this.enemies,...(this.forestSpiritSpawns||[]),...(this.regionElites||[]),...(this.mini?[this.mini]:[]),...(this.ruinGuardian?[this.ruinGuardian]:[])];if(atk)this.combat.playerAttack(this.player,t);if(k0)this.abilities.use('primary',t);if(k1)this.abilities.use('secondary',t);if(k2)this.abilities.use('mobility',t)}this.loot.update(this.player.x,this.player.y);this.hud.setLocalName(this.getLocal());this.hud.update();if(this.cavePortal.getBounds().contains(this.player.x,this.player.y)&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'CaveScene',x:220,y:760,hp:this.player.hp,mana:this.player.mana});this.scene.start('CaveScene')}if(this.cityGate.getBounds().contains(this.player.x,this.player.y)&&!this.switching){this.switching=true;this.saveGame();this.registry.set('transitionSpawn',{scene:'WorldScene',x:3780,y:650,hp:this.player.hp,mana:this.player.mana});this.scene.start('WorldScene')}}
+  isNearWaystone(){return this.waystone&&Phaser.Math.Distance.Between(this.player.x,this.player.y,this.waystone.x,this.waystone.y)<=85}
+  readWaystone(){this.hud.openExternalModal();this.dialogueOpen=true;this.dialogueF=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);this.dialogue.open('Marco de Senda',this.waystone.readMessage(),[{label:'Fechar',onSelect:()=>this.closeDialogue()}])}
+  respawnRegionElite(e){const C=e.constructor;const fresh=new C(this,e.x,e.y);const idx=this.regionElites.indexOf(e);if(idx>=0)this.regionElites[idx]=fresh}
+--- a/src/ui/BottomActionBar.ts
++++ b/src/ui/BottomActionBar.ts
+@@ -99,12 +99,16 @@
+ 
+   setVisible(value){this.visible=value;this.root.setVisible(value)}
+ 
++  // Text.setColor() do Phaser redesenha o canvas do texto e reenvia a textura à GPU a
++  // cada chamada, mesmo com a mesma cor. Como update() roda todo frame, só aplica se mudou.
++  setTextColor(text,color){if(text&&text.style.color!==color)text.setColor(color)}
++
+   setPotionIconState(index,count){
+     const available=count>0,icon=this.slotIcons[index];
+     if(available)icon?.clearTint().setAlpha(1);
+     else icon?.setTint(0x222936).setAlpha(.34);
+     this.slotKeyTexts[index]?.setAlpha(available?1:.48);
+-    this.slotTexts[index]?.setColor(available?'#eef2f8':'#697382');
++    this.setTextColor(this.slotTexts[index],available?'#eef2f8':'#697382');
+     this.slotBacks[index]?.setFillStyle(available?0x101a2a:0x080c12,available ? .92 : .78);
+   }
+ 
+@@ -145,16 +149,18 @@
+       const safeLocked=this.scene.isSafeZone&&slot.id!=='mobility';
+       const state=safeLocked?'ZONA SEGURA':rank<=0?'BLOQ.':cooldown>0?`${(cooldown/1000).toFixed(1)}s`:`${mana} MP`;
+       this.slotTexts[visualIndex].setPosition(this.slotTexts[visualIndex].x,-101).setFontSize(7.5)
+-        .setText(`${slot.key}\n${definition[0]}\n${state}`)
+-        .setColor(safeLocked?'#687487':rank<=0?'#758299':cooldown>0?'#a6afbd':'#f2f4f7');
++        .setText(`${slot.key}\n${definition[0]}\n${state}`);
++      this.setTextColor(this.slotTexts[visualIndex],safeLocked?'#687487':rank<=0?'#758299':cooldown>0?'#a6afbd':'#f2f4f7');
+       this.slotBacks[visualIndex].setFillStyle(safeLocked?0x090e16:rank<=0?0x0c121d:cooldown>0?0x151c28:0x101a2a,.92);
+     }
+     const basic={warrior:['⚔','Corte Básico'],mage:['✦','Rajada Arcana'],ranger:['➶','Tiro Básico']}[this.player.characterClass]||['•','Ataque Básico'];
+     this.attackIcon.setText(basic[0]);
+-    this.slotTexts[5].setPosition(this.slotTexts[5].x,-101).setFontSize(7.5).setText(`ESPAÇO\n${basic[1]}`).setColor('#f2f4f7');
++    this.slotTexts[5].setPosition(this.slotTexts[5].x,-101).setFontSize(7.5).setText(`ESPAÇO\n${basic[1]}`);
++    this.setTextColor(this.slotTexts[5],'#f2f4f7');
+     this.slotBacks[5].setFillStyle(0x171824,.94);
+     for(let index=6;index<10;index++){
+-      this.slotTexts[index].setPosition(this.slotTexts[index].x,-101).setFontSize(7.5).setText(`${index-3}\n—\nVAZIO`).setColor('#66748a');
++      this.slotTexts[index].setPosition(this.slotTexts[index].x,-101).setFontSize(7.5).setText(`${index-3}\n—\nVAZIO`);
++      this.setTextColor(this.slotTexts[index],'#66748a');
+       this.slotBacks[index].setFillStyle(0x0b111b,.86);
+     }
+     for(const index of [10,11,12,13,14])this.slotTexts[index].setText('');
+--- a/src/ui/CharacterInventoryPanel.ts
++++ b/src/ui/CharacterInventoryPanel.ts
+@@ -1,5 +1,5 @@
+ // @ts-nocheck
+-import {getItemDefinition,rarityColor} from '../items/itemCatalog';
++import {getItemDefinition} from '../items/itemCatalog';
+ import {appearanceFor,idleFrameForFacing} from '../character/PlayerAppearance';
+ 
+ export class CharacterInventoryPanel{
+--- a/src/ui/ControlsPanel.ts
++++ b/src/ui/ControlsPanel.ts
+@@ -5,10 +5,8 @@
+   private subtitle: Phaser.GameObjects.Text;
+   private rows: Phaser.GameObjects.Text[] = [];
+   private visible = false;
+-  private scene: Phaser.Scene;
+ 
+   constructor(scene: Phaser.Scene) {
+-    this.scene = scene;
+     const cx = scene.scale.width / 2;
+     const cy = scene.scale.height / 2;
+ 
+--- a/src/world/AetherTerritoryMap.ts
++++ b/src/world/AetherTerritoryMap.ts
+@@ -39,16 +39,6 @@
+   context.restore();
+ }
+ 
+-function ellipseFromLogical(context,u,v,radiusU,radiusV,fill,stroke){
+-  const center=mapPoint({u,v});
+-  const pu=mapPoint({u:u+radiusU,v}),pv=mapPoint({u,v:v+radiusV});
+-  const radiusX=Math.max(Math.abs(pu.x-center.x),Math.abs(pv.x-center.x));
+-  const radiusY=Math.max(Math.abs(pu.y-center.y),Math.abs(pv.y-center.y));
+-  context.beginPath();context.ellipse(center.x,center.y,radiusX,radiusY,0,0,Math.PI*2);
+-  if(fill){context.fillStyle=fill;context.fill()}
+-  if(stroke){context.strokeStyle=stroke;context.lineWidth=2;context.stroke()}
+-}
+-
+ function drawDeterministicGround(context){
+   const {width,height}=AETHER_TERRITORY_MAP_SIZE;
+   const gradient=context.createLinearGradient(0,0,0,height);
+--- a/src/world/OldRoadAncientForestVisualExtension.ts
++++ b/src/world/OldRoadAncientForestVisualExtension.ts
+@@ -1,5 +1,5 @@
+ // @ts-nocheck
+-import {OldRoadSinisterForest,SINISTER_FOREST_ASSETS} from './OldRoadSinisterForest';
++import {OldRoadSinisterForest} from './OldRoadSinisterForest';
+ 
+ /**
+  * v0.3.1 Round 27 — ajuste final de integração do chão sinistro.
+@@ -38,11 +38,6 @@
+ const BASE_SOIL_SECONDARY=0x2a332d;
+ const BASE_SOIL_SHADOW=0x141a17;
+ 
+-const SURFACE_KEYS=Object.freeze([
+-  'sinister_ground_surface_dark_01',
+-  'sinister_ground_surface_wet_01'
+-]);
+-
+ const DECAL_KEYS=Object.freeze({
+   swamp:'sinister_ground_patch_swamp_01',
+   debris:'sinister_ground_debris_01',
+@@ -54,92 +49,6 @@
+ });
+ 
+ 
+-const DEAD_TREE_VARIANTS=Object.freeze([
+-  'ancient_forest_tree_dead_01',
+-  'ancient_forest_tree_dead_02',
+-  'ancient_forest_tree_dead_03'
+-]);
+-
+-// Round 21 — preencher toda a área aprovada com massa densa de árvores mortas.
+-// Não é mais um punhado de peças isoladas: a cobertura inteira recebe uma malha
+-// visual contínua, com linhas alternadas, jitter e profundidade progressiva.
+-const DEAD_TREE_FILL_SETTINGS=Object.freeze({
+-  startU:-54,
+-  endU:-1.2,
+-  stepU:5.4,
+-  startV:50.8,
+-  endV:99.2,
+-  stepV:5.0,
+-  rowOffset:2.5
+-});
+-
+-const DEAD_TREE_HERO_CLUSTER=Object.freeze([
+-  ['ancient_forest_tree_dead_02',-50.0,55.4,1.16,false,.88,-.02],
+-  ['ancient_forest_tree_dead_01',-44.8,58.0,1.08,true,.84,-.01],
+-  ['ancient_forest_tree_dead_03',-38.8,61.0,1.12,false,.84,.00],
+-  ['ancient_forest_tree_dead_02',-32.4,64.0,1.06,true,.84,.00],
+-  ['ancient_forest_tree_dead_01',-26.8,67.2,1.04,false,.84,.01],
+-  ['ancient_forest_tree_dead_03',-20.5,70.0,1.02,true,.84,.01],
+-  ['ancient_forest_tree_dead_02',-14.4,73.2,1.00,false,.84,.02],
+-  ['ancient_forest_tree_dead_01',-8.8,76.4,.98,true,.86,.02],
+-  ['ancient_forest_tree_dead_03',-5.8,80.2,.96,false,.86,.03],
+-  ['ancient_forest_tree_dead_02',-47.5,83.8,1.10,true,.82,.00],
+-  ['ancient_forest_tree_dead_01',-37.2,88.4,1.02,false,.82,.01],
+-  ['ancient_forest_tree_dead_03',-25.2,92.2,.98,true,.82,.02],
+-  ['ancient_forest_tree_dead_02',-12.0,96.8,.94,false,.82,.03]
+-]);
+-
+-const SWAMP_PATCHES=Object.freeze([
+-  [-48.2,55.4,.20,.34,-.10,false],
+-  [-39.6,61.1,.18,.36,.08,true],
+-  [-29.4,66.6,.22,.34,-.04,false],
+-  [-18.7,71.8,.19,.33,.14,true],
+-  [-10.1,76.3,.17,.35,-.08,false],
+-  [-44.3,82.2,.21,.30,.10,true],
+-  [-33.8,87.4,.18,.32,-.12,false],
+-  [-22.0,92.6,.20,.31,.06,true],
+-  [-11.2,96.4,.17,.30,-.10,false],
+-  [2.6,88.8,.18,.28,.10,true]
+-]);
+-
+-const DEBRIS_PATCHES=Object.freeze([
+-  [-52.0,52.8,.13,.32,-.18,false],
+-  [-45.0,58.8,.15,.28,.10,true],
+-  [-35.2,63.2,.14,.30,-.06,false],
+-  [-25.6,68.2,.13,.28,.12,true],
+-  [-16.6,73.0,.15,.27,-.14,false],
+-  [-7.8,77.2,.12,.30,.06,true],
+-  [-48.6,80.8,.14,.27,-.10,false],
+-  [-39.4,85.0,.13,.27,.14,true],
+-  [-29.1,89.5,.15,.28,-.08,false],
+-  [-18.5,94.0,.13,.27,.11,true],
+-  [-9.0,98.0,.12,.25,-.12,false],
+-  [3.8,86.0,.14,.24,.05,true]
+-]);
+-
+-const LEAF_PILES=Object.freeze([
+-  [-49.8,56.8,.11,.34,.06,false],
+-  [-42.4,60.0,.10,.36,-.09,true],
+-  [-32.8,65.4,.12,.35,.04,false],
+-  [-22.7,70.6,.11,.34,.10,true],
+-  [-13.6,75.7,.10,.33,-.07,false],
+-  [-5.1,79.0,.12,.34,.08,true],
+-  [-46.2,84.0,.11,.32,-.04,false],
+-  [-35.6,88.6,.10,.33,.07,true],
+-  [-25.0,93.1,.11,.31,-.09,false],
+-  [-13.1,97.2,.10,.30,.05,true],
+-  [1.3,84.8,.10,.28,-.03,false],
+-  [4.9,90.6,.11,.26,.08,true]
+-]);
+-
+-const ROOT_ACCENTS=Object.freeze([
+-  [-46.8,57.3,.16,.26,-.18,false],
+-  [-35.0,64.5,.17,.24,.08,true],
+-  [-23.0,71.2,.18,.24,-.12,false],
+-  [-11.4,77.8,.17,.22,.16,true],
+-  [-31.5,87.2,.18,.22,-.10,false],
+-  [-14.3,96.0,.18,.20,.12,true]
+-]);
+ 
+ // Round 18 — costura EXATA na borda marcada pelo usuário.
+ // A marcação vermelha coincide com duas arestas lógicas já conhecidas do mapa:
+@@ -262,15 +171,6 @@
+ };
+ 
+ 
+-const distancePointToSegment=(px,py,a,b)=>{
+-  const vx=b.x-a.x,vy=b.y-a.y;
+-  const wx=px-a.x,wy=py-a.y;
+-  const len2=vx*vx+vy*vy;
+-  const t=len2>0?Math.max(0,Math.min(1,(wx*vx+wy*vy)/len2)):0;
+-  const dx=px-(a.x+vx*t),dy=py-(a.y+vy*t);
+-  return Math.sqrt(dx*dx+dy*dy);
+-};
+-
+ const mulberry32=seed=>()=>{
+   seed|=0;seed=seed+0x6D2B79F5|0;
+   let t=Math.imul(seed^seed>>>15,1|seed);
+@@ -278,17 +178,6 @@
+   return ((t^t>>>14)>>>0)/4294967296;
+ };
+ 
+-function worldBoundsFromPolygons(polygons=[]){
+-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+-  for(const poly of polygons)for(const p of poly){
+-    if(p.x<minX)minX=p.x;
+-    if(p.y<minY)minY=p.y;
+-    if(p.x>maxX)maxX=p.x;
+-    if(p.y>maxY)maxY=p.y;
+-  }
+-  return {minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY};
+-}
+-
+ export class OldRoadAncientForestVisualExtension{
+   constructor(territory){
+     this.territory=territory;
+@@ -343,23 +232,6 @@
+     return mask;
+   }
+ 
+-  addGroundDecal(container,key,u,v,{scale=.2,alpha=.3,rotation=0,flipX=false,flipY=false,originX=.5,originY=.5,tint=null,depthBias=0}={}){
+-    if(!this.isInsideApprovedCoverage(u,v)||!this.scene.textures.exists(key))return null;
+-    const p=this.territory.project(u,v);
+-    const sprite=this.scene.add.image(p.x,p.y,key)
+-      .setOrigin(originX,originY)
+-      .setScale(scale)
+-      .setAlpha(alpha)
+-      .setRotation(rotation)
+-      .setFlipX(flipX)
+-      .setFlipY(flipY);
+-    if(tint!=null)sprite.setTint(tint);
+-    if(depthBias)sprite.setDepth(this.territory.groundDepth(-89.96+depthBias));
+-    container.add(sprite);
+-    this.floorSprites.push(sprite);
+-    return sprite;
+-  }
+-
+   addTransitionDecal(container,key,u,v,{scale=.16,alpha=.9,rotation=0,flipX=false,flipY=false,originX=.5,originY=.5}={}){
+     if(!this.scene.textures.exists(key))return null;
+     const p=this.territory.project(u,v);
+@@ -376,15 +248,6 @@
+   }
+ 
+ 
+-  isInsideVisualRoadCorridor(u,v){
+-    if(!this.visualRoadPath||this.visualRoadPath.length<2)return false;
+-    const p=this.territory.project(u,v);
+-    for(let i=1;i<this.visualRoadPath.length;i++){
+-      if(distancePointToSegment(p.x,p.y,this.visualRoadPath[i-1],this.visualRoadPath[i])<=VISUAL_ROAD_CLEAR_RADIUS)return true;
+-    }
+-    return false;
+-  }
+-
+   buildVisualRoadContinuation(){
+     const road=this.scene.registry.get('oldRoadConnectorTest');
+     const start=road?.start?.actual;
+@@ -455,7 +318,6 @@
+       const tx=dx/len,ty=dy/len;
+       const nx=-ty,ny=tx;
+       const samples=Math.max(1,Math.ceil(len/polish.sampleStepPx));
+-      const upperSideBias=(side)=>side>0?-8:0;
+       const roadAngle=Math.atan2(dy,dx);
+ 
+       for(let i=0;i<=samples;i++){
+@@ -541,69 +403,6 @@
+     this.roadsideGroundCount=count;
+   }
+ 
+-  addDeadTree(key,u,v,{scale=1,alpha=.82,flipX=false,depthOffset=0,tint=null}={}){
+-    if(!this.isInsideApprovedCoverage(u,v)||this.isInsideVisualRoadCorridor(u,v)||!this.scene.textures.exists(key))return null;
+-    const p=this.territory.project(u,v);
+-    const source=this.scene.textures.get(key)?.getSourceImage?.();
+-    const originY=source?.height?Math.max(.86,Math.min(1,(source.height-12)/source.height)):.94;
+-    const sprite=this.scene.add.image(p.x,p.y,key)
+-      .setOrigin(.5,originY)
+-      .setScale(scale)
+-      .setAlpha(alpha)
+-      .setFlipX(flipX)
+-      .setDepth(this.territory.depthAt(u,v,.08+depthOffset));
+-    if(tint!=null)sprite.setTint(tint);
+-    this.treeSprites.push(sprite);
+-    return sprite;
+-  }
+-
+-  buildDeadTreeLayer(){
+-    const rng=mulberry32(424242);
+-    let count=0;
+-
+-    // 1) Massa hero: algumas árvores maiores para quebrar a repetição.
+-    for(const [key,u,v,scale,flipX,alpha,depthOffset] of DEAD_TREE_HERO_CLUSTER){
+-      if(this.addDeadTree(key,u,v,{scale,flipX,alpha,depthOffset}))count++;
+-    }
+-
+-    // 2) Malha principal: preencher toda a cobertura aprovada.
+-    const {startU,endU,stepU,startV,endV,stepV,rowOffset}=DEAD_TREE_FILL_SETTINGS;
+-    let rowIndex=0;
+-    for(let v=startV;v<=endV;v+=stepV,rowIndex++){
+-      const offset=(rowIndex%2===0)?0:rowOffset;
+-      for(let u=startU+offset;u<=endU;u+=stepU){
+-        const jitterU=(rng()-.5)*1.45;
+-        const jitterV=(rng()-.5)*1.25;
+-        const uu=u+jitterU;
+-        const vv=v+jitterV;
+-        if(!this.isInsideApprovedCoverage(uu,vv))continue;
+-
+-        const variantIndex=Math.floor(rng()*DEAD_TREE_VARIANTS.length)%DEAD_TREE_VARIANTS.length;
+-        const key=DEAD_TREE_VARIANTS[variantIndex];
+-        const depthT=Math.max(0,Math.min(1,(vv-50)/50));
+-        const scale=.84 + depthT*.22 + rng()*.12;
+-        const alpha=.52 + depthT*.22 + rng()*.08;
+-        const flipX=rng()>.5;
+-        const depthOffset=-.02 + rng()*.05;
+-        if(this.addDeadTree(key,uu,vv,{scale,alpha,flipX,depthOffset}))count++;
+-      }
+-    }
+-
+-    // 3) Faixa de borda: reforçar a leitura da parede de árvores na lateral esquerda.
+-    for(let v=52;v<=98;v+=4.8){
+-      const uu=-54.8 + (rng()-.5)*.9;
+-      const vv=v + (rng()-.5)*1.1;
+-      if(!this.isInsideApprovedCoverage(uu,vv))continue;
+-      const key=DEAD_TREE_VARIANTS[Math.floor(rng()*DEAD_TREE_VARIANTS.length)%DEAD_TREE_VARIANTS.length];
+-      const scale=1.02 + rng()*.20;
+-      const alpha=.74 + rng()*.10;
+-      const flipX=rng()>.5;
+-      if(this.addDeadTree(key,uu,vv,{scale,alpha,flipX,depthOffset:.02}))count++;
+-    }
+-
+-    this.deadTreeCount=count;
+-  }
+-
+   addLogicalTransitionSegment(container,key,a,b,count,{scale=.145,alpha=.46,flipSeed=0}={}){
+     const pa=this.territory.project(a.u,a.v);
+     const pb=this.territory.project(b.u,b.v);
+@@ -654,89 +453,6 @@
+     this.transitionLayer=container;
+   }
+ 
+-  buildFloorTextureLayer(mask,worldPolygons){
+-    const depth=this.territory.groundDepth(-89.96);
+-    const container=this.scene.add.container(0,0).setDepth(depth);
+-    const bounds=worldBoundsFromPolygons(worldPolygons);
+-    const pad=160;
+-    const x=bounds.minX-pad;
+-    const y=bounds.minY-pad;
+-    const width=Math.ceil(bounds.width+pad*2);
+-    const height=Math.ceil(bounds.height+pad*2);
+-
+-    if(this.scene.textures.exists(SURFACE_KEYS[0])){
+-      const baseA=this.scene.add.tileSprite(x,y,width,height,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.60);
+-      baseA.tilePositionX=168;
+-      baseA.tilePositionY=96;
+-      baseA.tileScaleX=.55;
+-      baseA.tileScaleY=.50;
+-      container.add(baseA);
+-      this.floorSprites.push(baseA);
+-
+-      // Terceira leitura muito sutil do MESMO asset: escala e deslocamento
+-      // desencontrados quebram a repetição perceptível sem introduzir textura nova.
+-      const baseC=this.scene.add.tileSprite(x-72,y-54,width+144,height+108,SURFACE_KEYS[0]).setOrigin(0,0).setAlpha(.10);
+-      baseC.tilePositionX=517;
+-      baseC.tilePositionY=271;
+-      baseC.tileScaleX=.43;
+-      baseC.tileScaleY=.58;
+-      container.add(baseC);
+-      this.floorSprites.push(baseC);
+-    }
+-
+-    if(this.scene.textures.exists(SURFACE_KEYS[1])){
+-      const baseB=this.scene.add.tileSprite(x-48,y-36,width+96,height+72,SURFACE_KEYS[1]).setOrigin(0,0).setAlpha(.34);
+-      baseB.tilePositionX=392;
+-      baseB.tilePositionY=148;
+-      baseB.tileScaleX=.47;
+-      baseB.tileScaleY=.53;
+-      container.add(baseB);
+-      this.floorSprites.push(baseB);
+-    }
+-
+-    // Véu tonal para amarrar as superfícies e manter o solo sombrio.
+-    const veil=this.scene.add.rectangle(bounds.minX+bounds.width/2,bounds.minY+bounds.height/2,width,height,0x17211d,.12);
+-    container.add(veil);
+-    this.floorSprites.push(veil);
+-
+-    for(const [u,v,scale,alpha,rotation,flipX] of SWAMP_PATCHES){
+-      this.addGroundDecal(container,DECAL_KEYS.swamp,u,v,{scale,alpha,rotation,flipX,originY:.54});
+-    }
+-    for(const [u,v,scale,alpha,rotation,flipX] of DEBRIS_PATCHES){
+-      this.addGroundDecal(container,DECAL_KEYS.debris,u,v,{scale,alpha,rotation,flipX,originY:.54});
+-    }
+-    for(const [u,v,scale,alpha,rotation,flipX] of LEAF_PILES){
+-      this.addGroundDecal(container,DECAL_KEYS.leafPile,u,v,{scale,alpha,rotation,flipX,originY:.56});
+-    }
+-    for(const [u,v,scale,alpha,rotation,flipX] of ROOT_ACCENTS){
+-      this.addGroundDecal(container,DECAL_KEYS.roots,u,v,{scale,alpha,rotation,flipX,originY:.58});
+-    }
+-
+-    container.setMask(mask);
+-    this.textureLayer=container;
+-  }
+-
+-  buildOrganicGroundDetails(mask){
+-    const rng=mulberry32(271828);
+-    const details=this.scene.add.graphics();
+-    details.setDepth(this.territory.groundDepth(-89.95));
+-
+-    // Manchas suaves para quebrar repetição do tile, sem introduzir props altos.
+-    for(let i=0;i<52;i++){
+-      const u=-55+rng()*63;
+-      const v=49+rng()*51;
+-      if(!this.isInsideApprovedCoverage(u,v))continue;
+-      const p=this.territory.project(u,v);
+-      const w=120+rng()*220;
+-      const h=28+rng()*70;
+-      details.fillStyle(rng()>.55?0x1b241f:0x342c24,.055+rng()*.065);
+-      details.fillEllipse(p.x,p.y,w,h);
+-    }
+-
+-    details.setMask(mask);
+-    this.detailGraphics=details;
+-  }
+-
+   registerForestFog(){
+     const fog=this.scene.worldFog;
+     if(!fog?.registerZone)return;
+--- a/src/world/OldRoadSinisterForest.ts
++++ b/src/world/OldRoadSinisterForest.ts
+@@ -1,6 +1,5 @@
+ // @ts-nocheck
+ import {SINISTER_LOW_ROADSIDE_ASSETS} from './OldRoadSinisterRoadside';
+-import {OLD_ROAD_ANCIENT_FOREST_ASSETS} from './OldRoadAncientForest';
+ import {OldRoadSinisterForestComposition} from './OldRoadSinisterForestComposition';
+ 
+ /** v0.3.2-round01: arte ancestral; composição do Round 34 retida SÓ como dados dos emissores do Round 39. */
+@@ -11,11 +10,9 @@
+   mistWeb:{key:'sinister_forest_mist_web',path:ROOT+'sinister-forest/teia_nebulosa_em_galhos_retorcidos.png',crop:[0,0,1254,1254]},
+   decay:{key:'sinister_forest_decay',path:ROOT+'sinister-forest/mata_decomposta_com_raízes_e_cogumelos.png',crop:[0,0,1254,1254]}
+ });
+-export const SINISTER_FOREST_ASSETS=OLD_ROAD_ANCIENT_FOREST_ASSETS;
+ // Apenas dimensões históricas: nenhuma destas imagens antigas é desenhada.
+ const ART={...SINISTER_LOW_ROADSIDE_ASSETS,...LEGACY_FOG_FOOTPRINTS,
+   debris:{key:'sinister_ground_debris_01',path:ROOT+'generated-ground/sinister_ground_debris_01.png',crop:[0,0,1254,1254]}};
+-const ROAD_CLEARANCE=66; // 512 px do módulo × .25 / 2, mais 2 px de margem.
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const random=seed=>()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+ 

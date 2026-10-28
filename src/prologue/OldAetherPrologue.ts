@@ -132,8 +132,6 @@ export const OLD_AETHER_PROLOGUE_STAGES=Object.freeze({
   COMPLETED:'COMPLETED'
 });
 
-const STAGES=new Set(Object.values(OLD_AETHER_PROLOGUE_STAGES));
-
 /** Rastreio provisório, ancorado abaixo do minimapa, e não na tela-mundo. */
 class PrologueHud{
   constructor(scene,readState){
@@ -1154,7 +1152,6 @@ export class OldAetherPrologue{
       if(enemy===this.wolf&&this.isWolfEntranceActive())continue;
       const data=enemy.prologue,iso=enemy.iso,player=this.scene.player;
       const du=player.isoX-iso.u,dv=player.isoY-iso.v,logicalDistance=Math.hypot(du,dv);
-      const prior=this.scene.project(iso.u,iso.v);
       let targetU=iso.u,targetV=iso.v;
       if(enemy.attackPendingAt&&time>=enemy.attackPendingAt){
         enemy.attackPendingAt=0;
@@ -1185,7 +1182,6 @@ export class OldAetherPrologue{
           this.startEnemyAttack(enemy,time);
         }
       }
-      const next=this.scene.project(iso.u,iso.v);
       this.syncEnemyVisual(enemy);
     }
   }
